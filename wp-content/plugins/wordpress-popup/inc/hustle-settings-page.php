@@ -1,34 +1,27 @@
 <?php
 /**
  * Class Hustle_Settings_Page
- *
  */
 class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 
 	/**
 	 * Key of the Hustle's settings in wp_options.
+	 *
 	 * @since 4.0
 	 */
 	const SETTINGS_OPTION_KEY = 'hustle_settings';
-
-	const DISMISSED_USER_META = 'hustle_dismissed_notifications';
 
 	public function init() {
 
 		$this->page = 'hustle_settings';
 
-		$this->page_title = __( 'Hustle Settings', 'wordpress-popup' );
+		$this->page_title = __( 'Hustle Settings', 'hustle' );
 
-		$this->page_menu_title = __( 'Settings', 'wordpress-popup' );
+		$this->page_menu_title = __( 'Settings', 'hustle' );
 
 		$this->page_capability = 'hustle_edit_settings';
 
 		$this->page_template_path = 'admin/settings';
-
-		/**
-		 * Add visual settings classes
-		 */
-		add_filter( 'hustle_sui_wrap_class', array( $this, 'sui_wrap_class' ) );
 	}
 
 	/**
@@ -37,7 +30,15 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 	 * @since 4.1.0
 	 */
 	public function run_action_on_page_load() {
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_hui_scripts' ] );
+
+		// Set up all the filters and buttons for tinymce editors.
+		$this->set_up_tinymce();
+
+		add_filter( 'mce_external_plugins', array( $this, 'remove_all_mce_external_plugins' ), -1 );
+
+		add_action( 'admin_enqueue_scripts', array( 'Hustle_Module_Front', 'add_hui_scripts' ) );
+
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 		$restore = filter_input( INPUT_GET, 'hustle-restore-40x', FILTER_VALIDATE_BOOLEAN );
 		if ( $restore ) {
@@ -46,21 +47,23 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 	}
 
 	/**
-	 * Enqueue HUI scripts
-	 * Used to render the recaptcha.
+	 * Enqueue colorpicker scripts
 	 *
-	 * @since 4.1.0
+	 * @since 4.2.0
 	 */
-	public function enqueue_hui_scripts() {
+	public function enqueue_scripts() {
+		wp_register_script( 'wp-color-picker-alpha', Opt_In::$plugin_url . 'assets/js/vendor/wp-color-picker-alpha.min.js', array( 'wp-color-picker' ), '1.2.2', true );
 
-		// Register Hustle UI functions.
-		wp_enqueue_script(
-			'hui_scripts',
-			Opt_In::$plugin_url . 'assets/hustle-ui/js/hustle-ui.min.js',
-			array( 'jquery' ),
-			Opt_In::VERSION,
-			true
+		$color_picker_strings = array(
+			'clear'            => __( 'Clear', 'hustle' ),
+			'clearAriaLabel'   => __( 'Clear color', 'hustle' ),
+			'defaultString'    => __( 'Default', 'hustle' ),
+			'defaultAriaLabel' => __( 'Select default color', 'hustle' ),
+			'pick'             => __( 'Select Color', 'hustle' ),
+			'defaultLabel'     => __( 'Color value', 'hustle' ),
 		);
+		wp_localize_script( 'wp-color-picker-alpha', 'wpColorPickerL10n', $color_picker_strings );
+		wp_enqueue_script( 'wp-color-picker-alpha' );
 	}
 
 	public function get_page_template_args() {
@@ -91,18 +94,22 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 	public function register_current_json( $current_array ) {
 
 		// Error messages for 4.0.x restoring.
-		$current_array['messages']['restricted_access']  = __( "You can't perform this action", 'wordpress-popup' );
-		$current_array['messages']['restore_40x_failed'] = __( "The restore failed. It could be that there's no data to restore. Please check the logs.", 'wordpress-popup' );
+		$current_array['messages']['restricted_access']  = __( "You can't perform this action", 'hustle' );
+		$current_array['messages']['restore_40x_failed'] = __( "The restore failed. It could be that there's no data to restore. Please check the logs.", 'hustle' );
+
+		$current_array['settings_palettes_action_nonce'] = wp_create_nonce( 'hustle_palette_action' );
+
+		$current_array['palettes'] = Hustle_Palettes_Helper::get_all_palettes();
 
 		$saved_id = filter_input( INPUT_GET, 'saved-id', FILTER_SANITIZE_STRING );
 		if ( $saved_id ) {
 
-			$saved_palettes = Hustle_Module_Model::get_all_palettes_slug_and_name();
+			$saved_palettes = Hustle_Palettes_Helper::get_all_palettes_slug_and_name();
 			if ( ! empty( $saved_palettes[ $saved_id ] ) ) {
 
 				$saved_name = '<span style="color:#333;"><strong>' . $saved_palettes[ $saved_id ] . '</strong></span>';
 				/* translators: %s: palette name */
-				$current_array['messages']['palette_saved'] = sprintf( __( '%s - Palette saved successfully.', 'wordpress-popup' ), $saved_name );
+				$current_array['messages']['palette_saved'] = sprintf( __( '%s - Palette saved successfully.', 'hustle' ), $saved_name );
 			}
 		}
 
@@ -111,7 +118,7 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 
 			$deleted_name = '<span style="color:#333;"><strong>' . $deleted_name . '</strong></span>';
 			/* translators: %s: palette name */
-			$current_array['messages']['palette_deleted'] = sprintf( __( '%s - Palette deleted successfully.', 'wordpress-popup' ), $deleted_name );
+			$current_array['messages']['palette_deleted'] = sprintf( __( '%s - Palette deleted successfully.', 'hustle' ), $deleted_name );
 		}
 
 		$palettes = array();
@@ -124,7 +131,26 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 		$current_array['current']                        = $palettes;
 		$current_array['current']['save_settings_nonce'] = wp_create_nonce( 'hustle_settings_save' );
 
+		$current_array['messages']['generic_ajax_error'] = __( 'Something went wrong with the request. Please reload the page and try again.', 'hustle' );
+		$current_array['messages']['settings_saved']     = __( 'Settings saved.', 'hustle' );
+		$current_array['messages']['settings_was_reset'] = '<label class="wpmudev-label--notice"><span>' . __( 'Plugin was successfully reset.', 'hustle' ) . '</span></label>';
+
 		return $current_array;
+	}
+
+	/**
+	 * Removing all MCE external plugins which often break our pages
+	 *
+	 * @since 3.0.8
+	 * @param array $external_plugins External plugins.
+	 * @return array
+	 */
+	public function remove_all_mce_external_plugins( $external_plugins ) {
+
+		remove_all_filters( 'mce_external_plugins' );
+		$external_plugins = array();
+
+		return $external_plugins;
 	}
 
 	/**
@@ -137,18 +163,18 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 	 */
 	private function trigger_restore_40x_visibility() {
 
-		$error_base_args = [
+		$error_base_args = array(
 			'page'        => $this->page,
 			'section'     => 'data',
 			'show-notice' => 'error',
-		];
+		);
 
 		try {
 
 			// Checking nonce and capabilities.
 			$nonce        = filter_input( INPUT_GET, 'nonce', FILTER_SANITIZE_STRING );
 			$valid_nonce  = wp_verify_nonce( $nonce, 'hustle-restore-40x-visibility' );
-			$user_allowed = Opt_In_Utils::is_user_allowed( 'hustle_edit_settings' );
+			$user_allowed = current_user_can( 'hustle_edit_settings' );
 
 			if ( ! $valid_nonce || ! $user_allowed ) {
 				$error_base_args['notice'] = 'restricted_access';
@@ -185,47 +211,4 @@ class Hustle_Settings_Page extends Hustle_Admin_Page_Abstract {
 			}
 		}
 	}
-
-		/**
-		 * Handle SUI wrapper container classes.
-		 *
-		 * @since 4.0.06
-		 */
-    public function sui_wrap_class( $classes ) {
-        if ( is_string( $classes ) ) {
-            $classes = array( $classes );
-        }
-        if ( ! is_array( $classes ) ) {
-            $classes = array();
-        }
-        $classes[] = 'sui-wrap';
-        $classes[] = 'sui-wrap-hustle';
-        /**
-         * Add high contrast mode.
-         */
-        $accessibility = Hustle_Settings_Admin::get_hustle_settings( 'accessibility' );
-        $is_high_contrast_mode = !empty( $accessibility['accessibility_color'] );
-        if ( $is_high_contrast_mode ) {
-            $classes[] = 'sui-color-accessible';
-        }
-        /**
-         * Set hide branding
-         *
-         * @since 4.0.0
-         */
-        $hide_branding = apply_filters( 'wpmudev_branding_hide_branding', false );
-        if ( $hide_branding ) {
-            $classes[] = 'no-hustle';
-        }
-        /**
-         * hero image
-         *
-         * @since 4.0.0
-         */
-        $image = apply_filters( 'wpmudev_branding_hero_image', 'hustle-default' );
-        if ( empty( $image ) ) {
-            $classes[] = 'no-hustle-hero';
-        }
-        return $classes;
-    }
 }

@@ -1,18 +1,27 @@
 <?php
-$capitalize_singular = esc_html__( 'Pop-up', 'wordpress-popup' );
-$capitalize_plural   = esc_html__( 'Pop-ups', 'wordpress-popup' );
-$smallcaps_singular  = esc_html__( 'pop-up', 'wordpress-popup' );
-$smallcaps_plural    = esc_html__( 'pop-ups', 'wordpress-popup' );
+/**
+ * Social sharing widget in dashboard.
+ *
+ * @var Opt_In $this
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
 
-self::static_render(
+$capitalize_singular = esc_html__( 'Pop-up', 'hustle' );
+$capitalize_plural   = esc_html__( 'Pop-ups', 'hustle' );
+$smallcaps_singular  = esc_html__( 'pop-up', 'hustle' );
+$smallcaps_plural    = esc_html__( 'pop-ups', 'hustle' );
+
+$this->render(
 	'admin/dashboard/templates/widget-modules',
 	array(
-		'modules'     => $popups,
-		'widget_name' => $capitalize_plural,
-		'widget_type' => Hustle_Module_Model::POPUP_MODULE,
-		'capability'  => $capability,
-		'description' => esc_html__( 'Pop-ups show up over your page content automatically and can be used to highlight promotions and gain email subscribers.', 'wordpress-popup' ),
-		'smallcaps_singular'	=> $smallcaps_singular,
-		'capitalize_singular'	=> $capitalize_singular,
+		'modules'             => $popups,
+		'widget_name'         => $capitalize_plural,
+		'widget_type'         => Hustle_Module_Model::POPUP_MODULE,
+		'capability'          => $capability,
+		'description'         => esc_html__( 'Pop-ups show up over your page content automatically and can be used to highlight promotions and gain email subscribers.', 'hustle' ),
+		'smallcaps_singular'  => $smallcaps_singular,
+		'capitalize_singular' => $capitalize_singular,
 	)
 );

@@ -1,7 +1,7 @@
 <?php
 
 class Opt_In_WPMUDEV_API {
-	const DOMAIN = 'https://premium.wpmudev.org';
+	const DOMAIN       = 'https://premium.wpmudev.org';
 	const REDIRECT_URI = 'https://premium.wpmudev.org/api/hustle/v1/provider';
 
 	/**
@@ -25,7 +25,9 @@ class Opt_In_WPMUDEV_API {
 			$nonce = wp_generate_password( 40, false, false );
 
 			if ( is_multisite() ) {
-				update_option( $this->nonce_option_name, $nonce ); } else { 				update_option( $this->nonce_option_name, $nonce ); }
+				update_option( $this->nonce_option_name, $nonce );
+			} else {
+				update_option( $this->nonce_option_name, $nonce ); }
 		}
 
 		return $nonce;
@@ -43,13 +45,16 @@ class Opt_In_WPMUDEV_API {
 	}
 
 	public function _get_redirect_uri( $provider, $action, $params = array(), $migration = 0 ) {
-		$params = wp_parse_args( $params, array(
-			'action' => $action,
-			'provider' => $provider,
-			'wpnonce' => $this->get_nonce_value(),
-			'migrate' => true === $migration ? 1 : 0,
-			'redirect' => site_url( '/' ),
-		) );
+		$params = wp_parse_args(
+			$params,
+			array(
+				'action'   => $action,
+				'provider' => $provider,
+				'wpnonce'  => $this->get_nonce_value(),
+				'migrate'  => true === $migration ? 1 : 0,
+				'redirect' => site_url( '/' ),
+			)
+		);
 
 		return add_query_arg( $params, self::REDIRECT_URI );
 	}
@@ -60,8 +65,8 @@ class Opt_In_WPMUDEV_API {
 	 * @return bool
 	 */
 	public function validate_callback_request( $provider ) {
-		$wpnonce = filter_input( INPUT_GET, 'wpnonce', FILTER_SANITIZE_STRING );
-		$domain = filter_input( INPUT_GET, 'domain', FILTER_VALIDATE_URL );
+		$wpnonce        = filter_input( INPUT_GET, 'wpnonce', FILTER_SANITIZE_STRING );
+		$domain         = filter_input( INPUT_GET, 'domain', FILTER_VALIDATE_URL );
 		$provider_input = filter_input( INPUT_GET, 'provider' );
 
 		return ! empty( $wpnonce ) && $this->verify_nonce( $wpnonce )
@@ -81,13 +86,13 @@ class Opt_In_WPMUDEV_API {
 		$html .= sprintf( '<p>%s</p>', $message );
 
 		if ( ! empty( $retry_url ) ) {
-			$html .= sprintf( '<a href="%s" class="button button-large">%s</a>', esc_url( $retry_url ), __( 'Retry', 'wordpress-popup' ) ); }
+			$html .= sprintf( '<a href="%s" class="button button-large">%s</a>', esc_url( $retry_url ), __( 'Retry', 'hustle' ) ); }
 
 		if ( ! empty( $cancel_url ) ) {
-			$html .= sprintf( ' <a href="%s" class="button button-large">%s</a>', esc_url( $cancel_url ), __( 'Cancel', 'wordpress-popup' ) ); }
+			$html .= sprintf( ' <a href="%s" class="button button-large">%s</a>', esc_url( $cancel_url ), __( 'Cancel', 'hustle' ) ); }
 
 		$html = sprintf( '<div style="text-align: center;">%s</div>', $html );
 
-		wp_die( esc_html( $html ), esc_html__( 'Hustle failure notice.', 'wordpress-popup' ), 403 );
+		wp_die( esc_html( $html ), esc_html__( 'Hustle failure notice.', 'hustle' ), 403 );
 	}
 }

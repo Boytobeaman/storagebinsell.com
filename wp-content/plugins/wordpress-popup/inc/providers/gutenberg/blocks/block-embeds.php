@@ -37,8 +37,8 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 	public function render_block( $properties = array() ) {
 		$css_class = isset( $properties['css_class'] ) ? $properties['css_class'] : '';
 
-		if ( isset( $properties['id'] ) ) {
-			return '[wd_hustle id="' . $properties['id'] . '" type="embedded" css_class="' . $css_class . '"/]';
+		if ( isset( $properties['module_id'] ) ) {
+			return '[wd_hustle id="' . $properties['module_id'] . '" type="embedded" css_class="' . $css_class . '"/]';
 		}
 	}
 
@@ -65,11 +65,11 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 			'hustle-block-embeds',
 			'hustle_embed_data',
 			array(
-				'modules' => $this->get_modules(),
-				'admin_url' => admin_url( 'admin.php' ),
-				'nonce' => wp_create_nonce( 'hustle_gutenberg_get_module' ),
+				'modules'       => $this->get_modules(),
+				'admin_url'     => admin_url( 'admin.php' ),
+				'nonce'         => wp_create_nonce( 'hustle_gutenberg_get_module' ),
 				'shortcode_tag' => Hustle_Module_Front::SHORTCODE,
-				'l10n' => $this->localize(),
+				'l10n'          => $this->localize(),
 			)
 		);
 
@@ -112,14 +112,14 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 
 	private function localize() {
 		return array(
-			'name' => esc_html__( 'Name', 'wordpress-popup' ),
-			'additional_css_classes' => esc_html__( 'Additional CSS Classes', 'wordpress-popup' ),
-			'advanced' => esc_html__( 'Advanced', 'wordpress-popup' ),
-			'module' => esc_html__( 'Module', 'wordpress-popup' ),
-			'customize_module' => esc_html__( 'Customize embed', 'wordpress-popup' ),
-			'rendering' => esc_html__( 'Rendering...', 'wordpress-popup' ),
-			'block_name' => esc_html__( 'Embeds', 'wordpress-popup' ),
-			'block_description' => esc_html__( 'Display your Hustle Embed module in this block.', 'wordpress-popup' ),
+			'name'                   => esc_html__( 'Name', 'hustle' ),
+			'additional_css_classes' => esc_html__( 'Additional CSS Classes', 'hustle' ),
+			'advanced'               => esc_html__( 'Advanced', 'hustle' ),
+			'module'                 => esc_html__( 'Module', 'hustle' ),
+			'customize_module'       => esc_html__( 'Customize embed', 'hustle' ),
+			'rendering'              => esc_html__( 'Rendering...', 'hustle' ),
+			'block_name'             => esc_html__( 'Embeds', 'hustle' ),
+			'block_description'      => esc_html__( 'Display your Hustle Embed module in this block.', 'hustle' ),
 		);
 	}
 
@@ -139,7 +139,7 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 			// Check if the module has a recaptcha field.
 			if ( isset( $fields['recaptcha'] ) ) {
 
-				$this->dependencies['recaptcha'] = [];
+				$this->dependencies['recaptcha'] = array();
 
 				// Set the language of the first module to require recaptcha as the lang for the script.
 				if ( ! empty( $fields['recaptcha']['recaptcha_language'] ) && 'automatic' !== $fields['recaptcha']['recaptcha_language'] ) {

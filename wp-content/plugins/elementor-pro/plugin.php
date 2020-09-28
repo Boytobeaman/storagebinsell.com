@@ -2,11 +2,14 @@
 namespace ElementorPro;
 
 use ElementorPro\Core\Admin\Admin;
+use ElementorPro\Core\App\App;
 use ElementorPro\Core\Connect;
 use Elementor\Core\Responsive\Files\Frontend as FrontendFile;
 use Elementor\Core\Responsive\Responsive;
 use Elementor\Utils;
 use ElementorPro\Core\Editor\Editor;
+use ElementorPro\Core\Modules_Manager;
+use ElementorPro\Core\Preview\Preview;
 use ElementorPro\Core\Upgrade\Manager as UpgradeManager;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +27,7 @@ class Plugin {
 	private static $_instance;
 
 	/**
-	 * @var Manager
+	 * @var Modules_Manager
 	 */
 	public $modules_manager;
 
@@ -39,9 +42,19 @@ class Plugin {
 	public $editor;
 
 	/**
+	 * @var Preview
+	 */
+	public $preview;
+
+	/**
 	 * @var Admin
 	 */
 	public $admin;
+
+	/**
+	 * @var App
+	 */
+	public $app;
 
 	/**
 	 * @var License\Admin
@@ -53,17 +66,6 @@ class Plugin {
 		'ElementorPro\Modules\PanelPostsControl\Controls\Group_Control_Posts' => 'ElementorPro\Modules\QueryControl\Controls\Group_Control_Posts',
 		'ElementorPro\Modules\PanelPostsControl\Controls\Query' => 'ElementorPro\Modules\QueryControl\Controls\Query',
 	];
-
-	/**
-	 * @deprecated since 1.1.0 Use `ELEMENTOR_PRO_VERSION` instead
-	 *
-	 * @return string
-	 */
-	public function get_version() {
-		_deprecated_function( __METHOD__, '1.1.0' );
-
-		return ELEMENTOR_PRO_VERSION;
-	}
 
 	/**
 	 * Throw error on object clone
@@ -107,10 +109,6 @@ class Plugin {
 		}
 
 		return self::$_instance;
-	}
-
-	private function includes() {
-		require ELEMENTOR_PRO_PATH . 'includes/modules-manager.php';
 	}
 
 	public function autoload( $class ) {
@@ -230,20 +228,24 @@ class Plugin {
 		);
 
 		wp_register_script(
-			'social-share',
-			ELEMENTOR_PRO_URL . 'assets/lib/social-share/social-share' . $suffix . '.js',
-			[
-				'jquery',
-			],
-			'0.2.17',
-			true
-		);
-
-		wp_register_script(
 			'elementor-sticky',
 			ELEMENTOR_PRO_URL . 'assets/lib/sticky/jquery.sticky' . $suffix . '.js',
 			[
 				'jquery',
+			],
+			ELEMENTOR_PRO_VERSION,
+			true
+		);
+	}
+
+	public function register_preview_scripts() {
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+		wp_enqueue_script(
+			'elementor-pro-preview',
+			ELEMENTOR_PRO_URL . 'assets/js/preview' . $suffix . '.js',
+			[
+				'elementor-frontend',
 			],
 			ELEMENTOR_PRO_VERSION,
 			true
@@ -263,7 +265,7 @@ class Plugin {
 	}
 
 	public function on_elementor_init() {
-		$this->modules_manager = new Manager();
+		$this->modules_manager = new Modules_Manager();
 
 		/** TODO: BC for Elementor v2.4.0 */
 		if ( class_exists( '\Elementor\Core\Upgrade\Manager' ) ) {
@@ -296,6 +298,7 @@ class Plugin {
 		add_action( 'elementor/init', [ $this, 'on_elementor_init' ] );
 
 		add_action( 'elementor/frontend/before_register_scripts', [ $this, 'register_frontend_scripts' ] );
+		add_action( 'elementor/preview/enqueue_scripts', [ $this, 'register_preview_scripts' ] );
 
 		add_action( 'elementor/frontend/before_enqueue_scripts', [ $this, 'enqueue_frontend_scripts' ] );
 		add_action( 'elementor/frontend/after_enqueue_styles', [ $this, 'enqueue_styles' ] );
@@ -310,13 +313,15 @@ class Plugin {
 	private function __construct() {
 		spl_autoload_register( [ $this, 'autoload' ] );
 
-		$this->includes();
-
 		new Connect\Manager();
 
 		$this->setup_hooks();
 
 		$this->editor = new Editor();
+
+		$this->preview = new Preview();
+
+		$this->app = new App();
 
 		if ( is_admin() ) {
 			$this->admin = new Admin();

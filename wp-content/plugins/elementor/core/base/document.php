@@ -11,6 +11,7 @@ use Elementor\User;
 use Elementor\Core\Settings\Manager as SettingsManager;
 use Elementor\Utils;
 use Elementor\Widget_Base;
+use Elementor\Core\Settings\Page\Manager as PageManager;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
@@ -34,6 +35,11 @@ abstract class Document extends Controls_Stack {
 	const PAGE_META_KEY = '_elementor_page_settings';
 
 	private $main_id;
+
+	/**
+	 * @var bool
+	 */
+	private $is_saving = false;
 
 	private static $properties = [];
 
@@ -75,6 +81,7 @@ abstract class Document extends Controls_Stack {
 			'is_editable' => true,
 			'edit_capability' => '',
 			'show_in_finder' => true,
+			'show_on_admin_bar' => true,
 			'support_kit' => false,
 		];
 	}
@@ -85,11 +92,17 @@ abstract class Document extends Controls_Stack {
 	 * @static
 	 */
 	public static function get_editor_panel_config() {
+		$default_route = 'panel/elements/categories';
+
+		if ( ! Plugin::instance()->role_manager->user_can( 'design' ) ) {
+			$default_route = 'panel/page-settings/settings';
+		}
+
 		return [
 			'title' => static::get_title(), // JS Container title.
 			'widgets_settings' => [],
 			'elements_categories' => static::get_editor_panel_categories(),
-			'default_route' => 'panel/elements/categories',
+			'default_route' => $default_route,
 			'has_elements' => static::get_property( 'has_elements' ),
 			'support_kit' => static::get_property( 'support_kit' ),
 			'messages' => [
@@ -255,7 +268,7 @@ abstract class Document extends Controls_Stack {
 			$attributes['class'] .= ' elementor-bc-flex-widget';
 		}
 
-		if ( Plugin::$instance->preview->is_preview_mode() ) {
+		if ( Plugin::$instance->preview->is_preview() ) {
 			$attributes['data-elementor-title'] = static::get_title();
 		} else {
 			$attributes['data-elementor-settings'] = wp_json_encode( $this->get_frontend_settings() );
@@ -270,9 +283,15 @@ abstract class Document extends Controls_Stack {
 	 */
 	public function get_wp_preview_url() {
 		$main_post_id = $this->get_main_id();
+		$document = $this;
+
+		// Ajax request from editor.
+		if ( ! empty( $_POST['initial_document_id'] ) ) {
+			$document = Plugin::$instance->documents->get( $_POST['initial_document_id'] );
+		}
 
 		$url = get_preview_post_link(
-			$main_post_id,
+			$document->get_main_id(),
 			[
 				'preview_id' => $main_post_id,
 				'preview_nonce' => wp_create_nonce( 'post_preview_' . $main_post_id ),
@@ -512,6 +531,8 @@ abstract class Document extends Controls_Stack {
 			return false;
 		}
 
+		$this->set_is_saving( true );
+
 		/**
 		 * Before document save.
 		 *
@@ -567,7 +588,28 @@ abstract class Document extends Controls_Stack {
 		 */
 		do_action( 'elementor/document/after_save', $this, $data );
 
+		$this->set_is_saving( false );
+
 		return true;
+	}
+
+	/**
+	 * @param array $new_settings
+	 *
+	 * @return static
+	 */
+	public function update_settings( array $new_settings ) {
+		$document_settings = $this->get_meta( PageManager::META_KEY );
+
+		if ( ! $document_settings ) {
+			$document_settings = [];
+		}
+
+		$this->save_settings(
+			array_replace_recursive( $document_settings, $new_settings )
+		);
+
+		return $this;
 	}
 
 	/**
@@ -813,13 +855,20 @@ abstract class Document extends Controls_Stack {
 		if ( ! $elements_data ) {
 			$elements_data = $this->get_elements_data();
 		}
+
+		$is_legacy_mode_active = Plugin::instance()->get_legacy_mode( 'elementWrappers' );
+
 		?>
 		<div <?php echo Utils::render_html_attributes( $this->get_container_attributes() ); ?>>
+			<?php if ( $is_legacy_mode_active ) { ?>
 			<div class="elementor-inner">
+			<?php } ?>
 				<div class="elementor-section-wrap">
 					<?php $this->print_elements( $elements_data ); ?>
 				</div>
+			<?php if ( $is_legacy_mode_active ) { ?>
 			</div>
+			<?php } ?>
 		</div>
 		<?php
 	}
@@ -969,17 +1018,6 @@ abstract class Document extends Controls_Stack {
 	}
 
 	/**
-	 * @since 2.0.0
-	 * @access public
-	 * @deprecated 2.2.0 Use `Document::save_template_type()`.
-	 */
-	public function save_type() {
-		_deprecated_function( __METHOD__, '2.2.0', __CLASS__ . '::save_template_type()' );
-
-		$this->save_template_type();
-	}
-
-	/**
 	 * @since 2.3.0
 	 * @access public
 	 */
@@ -1097,6 +1135,25 @@ abstract class Document extends Controls_Stack {
 		}
 
 		return $last_edited;
+	}
+
+
+	/**
+	 * @return bool
+	 */
+	public function is_saving() {
+		return $this->is_saving;
+	}
+
+	/**
+	 * @param $is_saving
+	 *
+	 * @return $this
+	 */
+	public function set_is_saving( $is_saving ) {
+		$this->is_saving = $is_saving;
+
+		return $this;
 	}
 
 	/**

@@ -4,7 +4,6 @@
  * Handle the email lists.
  *
  * @since 4.0
- *
  */
 class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
@@ -26,6 +25,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 	/**
 	 * Current module_id
+	 *
 	 * @since 4.0
 	 * @var int
 	 */
@@ -103,9 +103,9 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 		$this->page = 'hustle_entries';
 
-		$this->page_title = __( 'Hustle Email Lists', 'wordpress-popup' );
+		$this->page_title = __( 'Hustle Email Lists', 'hustle' );
 
-		$this->page_menu_title = __( 'Email Lists', 'wordpress-popup' );
+		$this->page_menu_title = __( 'Email Lists', 'hustle' );
 
 		$this->page_capability = 'hustle_access_emails';
 
@@ -120,8 +120,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 */
 	public function get_page_template_args() {
 
-		$accessibility = Hustle_Settings_Admin::get_hustle_settings( 'accessibility' );
-		$types = $this->get_module_types();
+		$types  = $this->get_module_types();
 		$module = $this->get_module_model();
 
 		$filter_types = array(
@@ -135,20 +134,18 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			$is_filtered = $is_filtered || filter_input( INPUT_GET, $type );
 		}
 		if ( $module && $module->active ) {
-			$integrations = $module->get_integrations_settings()->to_array();
+			$integrations  = $module->get_integrations_settings()->to_array();
 			$no_local_list = false === strpos( $integrations['active_integrations'], 'local_list' );
 		} else {
 			$no_local_list = false;
 		}
 
 		return array(
-			'admin'              => $this,
 			'module'             => $module,
 			'entries'            => $this->get_entries(),
 			'global_entries'     => Hustle_Entry_Model::global_count_entries(),
-			'module_name'        => !empty( $module->module_type ) && isset( $types[ $module->module_type ] ) ? $types[ $module->module_type ] : '',
+			'module_name'        => ! empty( $module->module_type ) && isset( $types[ $module->module_type ] ) ? $types[ $module->module_type ] : '',
 			'is_module_selected' => (bool) $this->get_current_module_id(),
-			'accessibility'      => $accessibility,
 			'is_filtered'        => $is_filtered,
 			'no_local_list'      => $no_local_list,
 		);
@@ -156,6 +153,63 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 	public function run_action_on_page_load() {
 		$this->before_render();
+
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+	}
+
+	/**
+	 * Enqueue scripts for the submissions page.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_scripts() {
+		wp_enqueue_script(
+			'hustle-entries-moment',
+			Opt_In::$plugin_url . 'assets/js/vendor/moment.min.js',
+			array( 'jquery' ),
+			Opt_In::VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'hustle-entries-datepicker-range',
+			Opt_In::$plugin_url . 'assets/js/vendor/daterangepicker.min.js',
+			array( 'jquery', 'hustle-entries-moment' ),
+			'3.0.5',
+			true
+		);
+	}
+
+	/**
+	 * Register the js variables to be localized for this page.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param array $current_array The already registered js variables.
+	 * @return array
+	 */
+	public function register_current_json( $current_array ) {
+
+		// These labels are used in getDaterangepickerRanges(), entries.js.
+		// These keys must match the keys from there.
+		$datepicker_ranges = array(
+			'today'            => esc_html__( 'Today', 'hustle' ),
+			'yesterday'        => esc_html__( 'Yesterday', 'hustle' ),
+			'last_seven_days'  => esc_html__( 'Last 7 Days', 'hustle' ),
+			'last_thirty_days' => esc_html__( 'Last 30 Days', 'hustle' ),
+			'this_month'       => esc_html__( 'This Month', 'hustle' ),
+			'last_month'       => esc_html__( 'Last Month', 'hustle' ),
+		);
+
+		$current_array['daterangepicker'] = array(
+			'daysOfWeek' => Opt_In_Utils::get_short_days_names(),
+			'monthNames' => Opt_In_Utils::get_months(),
+			'ranges'     => $datepicker_ranges,
+		);
+
+		return $current_array;
 	}
 
 	/**
@@ -169,7 +223,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			'module_id'   => 0,
 		);
 
-		$this->screen_params = array_merge( $screen_params, $_REQUEST );//WPCS CSRF ok.
+		$this->screen_params = array_merge( $screen_params, $_REQUEST );// WPCS CSRF ok.
 	}
 
 	/**
@@ -185,6 +239,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 	/**
 	 * Get the module types for the entries page.
+	 *
 	 * @todo make the types dynamic.
 	 *
 	 * @since 4.0
@@ -193,9 +248,9 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 */
 	public function get_module_types() {
 		$module_types = array(
-			'popup' => __( 'Pop-up', 'wordpress-popup' ),
-			'embedded' => __( 'Embed', 'wordpress-popup' ),
-			'slidein' => __( 'Slide-in', 'wordpress-popup' ),
+			'popup'    => __( 'Pop-up', 'hustle' ),
+			'embedded' => __( 'Embed', 'hustle' ),
+			'slidein'  => __( 'Slide-in', 'hustle' ),
 		);
 
 		return $module_types;
@@ -241,12 +296,12 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		$current_type = $this->get_current_module_type();
 		$empty_option = isset( $module_types[ $current_type ] ) ? $module_types[ $current_type ] : $module_types['popup'];
 
-		$html .= '<option value="" ' . selected( 0, $this->get_current_module_id(), false ) . '>'. __( 'Choose', 'wordpress-popup' ) . ' ' . $empty_option . '</option>';
+		$html .= '<option value="" ' . selected( 0, $this->get_current_module_id(), false ) . '>' . __( 'Choose', 'hustle' ) . ' ' . $empty_option . '</option>';
 
 		foreach ( $modules as $module ) {
 
 			$title = ! empty( $module->module_name ) ? $module->module_name : $module->module_id;
-			$html  .= '<option value="' . $module->module_id . '" ' . selected( $module->module_id, $this->get_current_module_id(), false ) . '>' . $title . '</option>';
+			$html .= '<option value="' . $module->module_id . '" ' . selected( $module->module_id, $this->get_current_module_id(), false ) . '>' . $title . '</option>';
 		}
 
 		$html .= '</select>';
@@ -264,12 +319,12 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	public function get_modules() {
 		$module_types = $this->get_module_types();
 		$current_type = $this->get_current_module_type();
-		$module_type = isset( $module_types[ $current_type ] ) ? $current_type : 'popup';
-		$args = array(
+		$module_type  = isset( $module_types[ $current_type ] ) ? $current_type : 'popup';
+		$args         = array(
 			'module_type' => $module_type,
 			'module_mode' => 'optin',
 		);
-		$modules = Hustle_Module_Collection::instance()->get_all( null, $args );
+		$modules      = Hustle_Module_Collection::instance()->get_all( null, $args );
 
 		return $modules;
 	}
@@ -327,7 +382,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		return $this->screen_params['module_id'];
 	}
 
-	//====================
+	// ====================
 
 
 	/**
@@ -376,14 +431,15 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		$this->parse_filters();
 		$this->parse_order();
 
-		$this->per_page = Hustle_Settings_Admin::get_per_page( 'submission' );
-		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0; // WPCS: CSRF OK
+		$this->per_page    = Hustle_Settings_Admin::get_per_page( 'submission' );
+		$pagenum           = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0; // WPCS: CSRF OK
 		$this->page_number = max( 1, $pagenum );
 
-		$module_id = (int) $this->module_id;
+		$module_id    = (int) $this->module_id;
 		$module_model = $this->module;
 		/**
 		 * Fires on custom form page entries render before request and result processed
+		 *
 		 * @since 4.0
 		 */
 		do_action( 'hustle_admin_page_entries', $module_id, $module_model, $pagenum );
@@ -409,7 +465,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			return;
 		}
 
-		if ( ! Opt_In_Utils::is_user_allowed( 'hustle_access_emails' ) ) {
+		if ( ! current_user_can( 'hustle_access_emails' ) ) {
 			return;
 		}
 
@@ -450,19 +506,19 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	private function prepare_results() {
 
 		if ( is_object( $this->module ) ) {
-			$paged = $this->page_number;
+			$paged    = $this->page_number;
 			$per_page = $this->per_page;
-			$offset = ( $paged - 1 ) * $per_page;
+			$offset   = ( $paged - 1 ) * $per_page;
 
-			$this->module_id = $this->module->module_id;
+			$this->module_id     = $this->module->module_id;
 			$this->total_entries = Hustle_Entry_Model::count_entries( $this->module_id );
 
 			$args = array(
-				'module_id'  => $this->module_id,
-				'per_page' => $per_page,
-				'offset'   => $offset,
-				'order_by' => 'entries.date_created',
-				'order'    => 'ASC',
+				'module_id' => $this->module_id,
+				'per_page'  => $per_page,
+				'offset'    => $offset,
+				'order_by'  => 'entries.date_created',
+				'order'     => 'ASC',
 			);
 
 			$args = wp_parse_args( $this->filters, $args );
@@ -470,7 +526,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 			$count = 0;
 
-			$this->entries = Hustle_Entry_Model::query_entries( $args, $count );
+			$this->entries                = Hustle_Entry_Model::query_entries( $args, $count );
 			$this->filtered_total_entries = $count;
 		}
 	}
@@ -519,8 +575,8 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		 */
 		$entries_iterator = array();
 
-		$total_colspan = 5; // Colspan for ID + Date Submitted + Active Integrations + Email + Accordion chevron.
-		$fields_mappers         = $this->get_fields_mappers();
+		$total_colspan  = 5; // Colspan for ID + Date Submitted + Active Integrations + Email + Accordion chevron.
+		$fields_mappers = $this->get_fields_mappers();
 
 		// Start from 4, since first four are ID, Date, Active Integrations, and Email.
 		$fields_left = count( $fields_mappers ) - 4;
@@ -536,17 +592,17 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		foreach ( $this->entries as $entry ) {
 			/**@var Hustle_Entry_Model $entry */
 
-			//create placeholder
+			// create placeholder
 			$iterator = array(
 				'id'       => $numerator_id,
 				'entry_id' => $entry->entry_id,
 				'summary'  => array(),
 				'detail'   => array(),
-				'addons' => array(),
+				'addons'   => array(),
 			);
 
 			$iterator['summary']['num_fields_left'] = $fields_left;
-			$iterator['summary']['items'] = array();
+			$iterator['summary']['items']           = array();
 
 			$iterator['detail']['colspan'] = $total_colspan;
 			$iterator['detail']['items']   = array();
@@ -556,7 +612,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			foreach ( $headers as $header ) {
 
 				$colspan = 2;
-				$class = '';
+				$class   = '';
 
 				if ( isset( $header['type'] ) ) {
 
@@ -569,7 +625,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 					} elseif ( 'entry_time_created' === $header['type'] ) {
 						$colspan = 3;
-						$class = 'hui-column-date';
+						$class   = 'hui-column-date';
 
 					} elseif ( 'entry_integrations' === $header['type'] ) {
 						$class = 'hui-column-apps';
@@ -582,7 +638,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 				$summary_items[] = array(
 					'colspan' => $colspan,
 					'value'   => $value,
-					'class' => $class,
+					'class'   => $class,
 				);
 			}
 
@@ -606,20 +662,20 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 			}
 
-			//Additional render for addons
+			// Additional render for addons
 			$addons_detail_items = $this->attach_addon_on_render_entry( $entry );
-			//$detail_items        = array_merge( $detail_items, $addons_detail_items );
+			// $detail_items        = array_merge( $detail_items, $addons_detail_items );
 
 			$addons = array();
 			foreach ( $addons_detail_items as $provider_meta ) {
 				foreach ( $provider_meta as $meta ) {
 					$addons[] = array(
 						'summary' => array(
-							'name' => $meta['name'],
-							'icon' => $meta['icon'],
+							'name'      => $meta['name'],
+							'icon'      => $meta['icon'],
 							'data_sent' => $meta['data_sent'],
 						),
-						'detail' => $meta['sub_entries'],
+						'detail'  => $meta['sub_entries'],
 					);
 				}
 			}
@@ -652,35 +708,35 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 
 	private function build_fields_mappers() {
-		$module = $this->module;
-		$fields = $module->get_form_fields();
+		$module              = $this->module;
+		$fields              = $module->get_form_fields();
 		$ignored_field_types = Hustle_Entry_Model::ignored_fields();
 
 		$mappers = array(
 			array(
 				// read model's property
 				'property' => 'entry_id', // must be on entries
-				'label'    => __( 'ID', 'wordpress-popup' ),
+				'label'    => __( 'ID', 'hustle' ),
 				'type'     => 'entry_entry_id',
 			),
 			array(
 				// read model's property
 				'property' => 'time_created', // must be on entries
-				'label'    => __( 'Date Submitted', 'wordpress-popup' ),
+				'label'    => __( 'Date Submitted', 'hustle' ),
 				'type'     => 'entry_time_created',
 				'class'    => 'hui-column-date',
 			),
 			array(
 				// read entry meta
 				'meta_key' => 'active_integrations',
-				'label'    => __( 'Active Integrations', 'wordpress-popup' ),
+				'label'    => __( 'Active Integrations', 'hustle' ),
 				'type'     => 'entry_integrations',
-				'class'	   => 'hui-column-apps',
+				'class'    => 'hui-column-apps',
 			),
 			array(
 				// required meta key
 				'meta_key' => 'email', // must be on entries
-				'label'    => __( 'Email', 'wordpress-popup' ),
+				'label'    => __( 'Email', 'hustle' ),
 				'type'     => 'email',
 			),
 		);
@@ -693,11 +749,11 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 				continue;
 			}
 
-			//if ( ! empty( $visible_fields ) ) {
-			//	if ( ! in_array( $field->slug, $visible_fields, true ) ) {
-			//		continue;
-			//	}
-			//}
+			// if ( ! empty( $visible_fields ) ) {
+			// if ( ! in_array( $field->slug, $visible_fields, true ) ) {
+			// continue;
+			// }
+			// }
 
 			// base mapper for every field
 			$mapper             = array();
@@ -718,9 +774,9 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 *
 	 * @param Hustle_Entry_Model $entry
 	 * @param                             $mapper
-	 * @param string                      $sub_meta_key
-	 * @param bool                        $allow_html
-	 * @param int                         $truncate
+	 * @param string             $sub_meta_key
+	 * @param bool               $allow_html
+	 * @param int                $truncate
 	 *
 	 * @return string
 	 */
@@ -770,7 +826,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 				$addon_additional_items = $form_hooks->on_render_entry( $entry_model, $meta_data );
 				$addon_additional_items = self::format_addon_additional_items( $addon_additional_items );
 
-				//$additonal_items = array_merge( $additonal_items, $addon_additional_items );
+				// $additonal_items = array_merge( $additonal_items, $addon_additional_items );
 				$additonal_items[] = $addon_additional_items;
 			} catch ( Exception $e ) {
 				Opt_In_Utils::maybe_log( $registered_addon->get_slug(), 'failed to on_render_entry', $e->getMessage() );
@@ -796,7 +852,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 * @return mixed
 	 */
 	private static function format_addon_additional_items( $addon_additional_items ) {
-		//to `name` and `value` basis
+		// to `name` and `value` basis
 		$formatted_additional_items = array();
 
 		if ( ! is_array( $addon_additional_items ) ) {
@@ -808,9 +864,9 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 				continue;
 			}
 			// Make sure label and value exist, without it, it will display an empty row, so leave it.
-			//if ( ! isset( $additional_item['label'] ) || ! isset( $additional_item['value'] ) ) {
-			//	continue;
-			//}
+			// if ( ! isset( $additional_item['label'] ) || ! isset( $additional_item['value'] ) ) {
+			// continue;
+			// }
 
 			$sub_entries = array();
 
@@ -828,16 +884,16 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 				}
 			}
 
-			//$formatted_additional_items[] = array(
-			//	'label'       => $additional_item['label'],
-			//	'value'       => $additional_item['value'],
-			//	'sub_entries' => $sub_entries,
-			//);
+			// $formatted_additional_items[] = array(
+			// 'label'       => $additional_item['label'],
+			// 'value'       => $additional_item['value'],
+			// 'sub_entries' => $sub_entries,
+			// );
 
 			$formatted_additional_items[] = array(
-				'name'       => $additional_item['name'],
-				'icon' => $additional_item['icon'],
-				'data_sent'       => $additional_item['data_sent'],
+				'name'        => $additional_item['name'],
+				'icon'        => $additional_item['icon'],
+				'data_sent'   => $additional_item['data_sent'],
 				'sub_entries' => $sub_entries,
 			);
 		}
@@ -879,8 +935,8 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 */
 	protected function parse_filters() {
 		$request_data = $_REQUEST;// WPCS CSRF ok.
-		$data_range = isset( $request_data['date_range'] ) ? sanitize_text_field( $request_data['date_range'] ) : '';
-		$search = isset( $request_data['search_email'] ) ? sanitize_text_field( $request_data['search_email'] ) : '';
+		$data_range   = isset( $request_data['date_range'] ) ? sanitize_text_field( $request_data['date_range'] ) : '';
+		$search       = isset( $request_data['search_email'] ) ? sanitize_text_field( $request_data['search_email'] ) : '';
 
 		$filters = array();
 		if ( ! empty( $data_range ) ) {
@@ -942,7 +998,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 * @since 4.0
 	 * @return bool
 	 */
-	//protected function is_filter_box_enabled() {
+	// protected function is_filter_box_enabled() {
 	public function is_filter_box_enabled() {
 		return ( ! empty( $this->filters ) && ! empty( $this->order ) );
 	}
@@ -974,7 +1030,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 	 */
 	private function export() {
 
-		$action  = filter_input( INPUT_POST, 'hustle_action', FILTER_SANITIZE_STRING );
+		$action = filter_input( INPUT_POST, 'hustle_action', FILTER_SANITIZE_STRING );
 		if ( 'export_listing' !== $action ) {
 			return;
 		}
@@ -983,7 +1039,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			return;
 		}
 
-		if ( ! Opt_In_Utils::is_user_allowed( 'hustle_access_emails' ) ) {
+		if ( ! current_user_can( 'hustle_access_emails' ) ) {
 			return;
 		}
 
@@ -992,7 +1048,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 			return;
 		}
 
-		$module = Hustle_Module_Model::instance()->get( $id );
+		$module   = Hustle_Module_Model::instance()->get( $id );
 		$filename = sprintf(
 			'hustle-%s-%s-%s-%s-emails.csv',
 			$module->module_type,
@@ -1021,8 +1077,13 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		// print BOM Char for Excel Compatible
 		echo chr( 239 ) . chr( 187 ) . chr( 191 );// wpcs xss ok. excel generated content
 
-		// Send the generated csv lines to the browser
-		fpassthru( $fp );
+		// Send the generated csv lines to the browser.
+		if ( function_exists( 'fpassthru' ) ) {
+			fpassthru( $fp );
+		} elseif ( function_exists( 'stream_get_contents' ) ) {
+			echo stream_get_contents( $fp ); // phpcs:ignore xss ok.
+		}
+
 		exit();
 
 	}
@@ -1039,12 +1100,12 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 
 		$headers[] = array(
 			'meta_key' => 'hustle_ip',
-			'label' => 'IP',
-			'type' => 'ip',
+			'label'    => 'IP',
+			'type'     => 'ip',
 		);
 
 		$header_labels = wp_list_pluck( $headers, 'label' );
-		$entries = array( $header_labels );
+		$entries       = array( $header_labels );
 
 		$all_entries = Hustle_Entry_Model::get_entries( $this->module_id );
 
@@ -1065,7 +1126,7 @@ class Hustle_Entries_Admin extends Hustle_Admin_Page_Abstract {
 		return $entries;
 	}
 
-	//====================
+	// ====================
 
 	/**
 	 * Format csv fields.

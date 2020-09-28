@@ -1,7 +1,6 @@
 <?php
 namespace ElementorPro\Modules\Forms\Classes;
 
-use Elementor\Utils;
 use ElementorPro\Modules\Forms\Module;
 use ElementorPro\Plugin;
 
@@ -36,7 +35,7 @@ class Ajax_Handler {
 	public static function get_default_messages() {
 		return [
 			self::SUCCESS => __( 'The form was sent successfully.', 'elementor-pro' ),
-			self::ERROR => __( 'An error occured.', 'elementor-pro' ),
+			self::ERROR => __( 'An error occurred.', 'elementor-pro' ),
 			self::FIELD_REQUIRED => __( 'This field is required.', 'elementor-pro' ),
 			self::INVALID_FORM => __( 'There\'s something wrong. The form is invalid.', 'elementor-pro' ),
 			self::SERVER_ERROR => __( 'Server error. Form not sent.', 'elementor-pro' ),
@@ -58,10 +57,18 @@ class Ajax_Handler {
 	}
 
 	public function ajax_send_form() {
+		// $post_id that holds the form settings.
 		$post_id = $_POST['post_id'];
 
+		// $queried_id the post for dynamic values data.
+		if ( isset( $_POST['queried_id'] ) ) {
+			$queried_id = $_POST['queried_id'];
+		} else {
+			$queried_id = $post_id;
+		}
+
 		// Make the post as global post for dynamic values.
-		Plugin::elementor()->db->switch_to_post( $post_id );
+		Plugin::elementor()->db->switch_to_post( $queried_id );
 
 		$form_id = $_POST['form_id'];
 

@@ -3,8 +3,8 @@ Contributors: futtta, optimizingmatters
 Tags: youtube, video, performance, gdpr, lazy load
 Donate link: http://blog.futtta.be/2013/10/21/do-not-donate-to-me/
 Requires at least: 4.0
-Tested up to: 5.3
-Stable tag: 1.7.11
+Tested up to: 5.5
+Stable tag: 1.7.13
 
 High performance YouTube video, playlist and audio-only embeds which don't slow down your blog and offer optimal accessibility.
 
@@ -22,9 +22,9 @@ The plugin picks up on normal YouTube links, taking over from WordPress core's o
 * httpv://www.youtube.com/watch?v=_SQkWbRublY?start=20&showinfo=0 (video player, start playing at 20 seconds and don't show title)
 
 Or using shortcodes:
-`[lyte id="_SQkWbRublY" /]`
-`[lyte id="_SQkWbRublY" audio="true" /]`
-`[lyte id="A486E741B25F8E00" playlist="true" /]`
+    [lyte id='_SQkWbRublY' /]
+    [lyte id='_SQkWbRublY' audio='true' /]
+    [lyte id='A486E741B25F8E00' playlist='true' /]
 
 WP YouTube Lyte has been written with optimal performance as primary goal, but has been tested for maximum browser-compatibility (iPad included) while keeping an eye on accessibility. Starting with version 1.2.0 lyte embeds are fully responsive and can automatically embed [videoObject microdata](http://support.google.com/webmasters/bin/answer.py?hl=en&answer=2413309) as well. The plugin is fully multi-language, with support for Catalan, Dutch, English, French, German, Hebrew, Romanian, Spanish and Slovene.
 
@@ -134,6 +134,15 @@ Just tell me, I like the feedback! Use the [Contact-page on my blog](http://blog
 * [Rate my plugin on wordpress.org](http://wordpress.org/extend/plugins/wp-youtube-lyte/)
 
 == Changelog ==
+
+= 1.7.13 =
+* fix regression causing HTML comments to break
+
+= 1.7.12 =
+* fix for dash becoming double dash
+* move lyteThumbs.php to lyteCache.php because security solutions generally are traumatized by all things thumbs
+* add expiry for cached thumbnails (3 days) to ensure they are updated if the original image got changed
+* some other smaller changes, see https://github.com/futtta/wp-youtube-lyte/commits/main
 
 = 1.7.11 =
 * fix playlist that got broken due to the priority change (from 4 to 10)

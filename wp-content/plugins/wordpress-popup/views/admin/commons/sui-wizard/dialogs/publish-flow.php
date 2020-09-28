@@ -1,60 +1,64 @@
 <?php
-$image_1x = self::$plugin_url . 'assets/images/hustle-summary.png';
-$image_2x = self::$plugin_url . 'assets/images/hustle-summary@2x.png';
-?>
+/**
+ * Modal that shows up after publishing a module.
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
 
-<div
-	id="hustle-dialog--publish-flow"
-	class="sui-dialog sui-dialog-sm sui-dialog-alt"
-	tabindex="-1"
-	aria-hidden="true"
->
+ob_start();
 
-	<div class="sui-dialog-overlay sui-fade-out"></div>
+/* translators: module type in small caps and in singular */
+$notice_message = sprintf( esc_html__( 'Note that once the schedule is over, your visitors will stop seeing this %s' ), esc_html( $smallcaps_singular ) );
+$notice_options = array(
+	array(
+		'id'         => 'hustle-published-notice-with-schedule-end',
+		'type'       => 'inline_notice',
+		'icon'       => 'info',
+		'value'      => $notice_message,
+		'attributes' => array(
+			'style' => 'display: none;',
+		),
+	),
+);
+$this->get_html_for_options( $notice_options );
 
-	<div
-		role="dialog"
-		class="sui-dialog-content sui-bounce-out"
-		aria-labelledby="dialogTitle"
-		aria-describedby="dialogDescription"
-	>
+$body_content = ob_get_clean();
 
-		<div
-			class="sui-box"
-			role="document"
-			data-loading-icon="loader"
-			data-loading-title="<?php printf( esc_html__( 'Publishing %s', 'wordpress-popup' ), esc_html( $capitalize_singular ) ); ?>"
-			data-loading-desc="<?php printf( esc_html__( 'Great work! Please hold tight a few moments while we publish your %s to the world.', 'wordpress-popup' ), esc_html( $smallcaps_singular ) ); ?>"
-			data-ready-icon="check"
-			data-ready-title="<?php esc_html_e( 'Ready to go!', 'wordpress-popup' ); ?>"
-			data-ready-desc="<?php printf( esc_html__( 'Your %s is now published and will start appearing on your site based on the visibility conditions you’ve defined.', 'wordpress-popup' ), esc_html( $smallcaps_singular ) ); ?>"
-		>
+$attributes = array(
+	'modal_id'        => 'publish-flow',
+	'has_description' => true,
+	'modal_size'      => 'sm',
+	'sui_box_attr'    => array(
+		/* translators: module type capitalized and in singular */
+		'data-loading-title'  => sprintf( __( 'Publishing %s', 'hustle' ), esc_html( $capitalize_singular ) ),
+		'data-loading-icon'   => 'loader',
+		/* translators: module type in small caps and in singular */
+		'data-loading-desc'   => sprintf( __( 'Great work! Please hold tight a few moments while we publish your %s to the world.', 'hustle' ), esc_html( $smallcaps_singular ) ),
+		'data-ready-icon'     => 'check',
+		'data-ready-title'    => __( 'Ready to go!', 'hustle' ),
+		/* translators: module type in small caps and in singular */
+		'data-ready-desc'     => sprintf( __( 'Your %s is now published and will start appearing on your site based on the visibility conditions you’ve defined.', 'hustle' ), esc_html( $smallcaps_singular ) ),
+		/* translators: module type in small caps and in singular */
+		'data-ready-desc-alt' => sprintf( __( 'Your %s is now published and will start appearing on your site based on the visibility conditions you’ve defined and the schedule you have set.', 'hustle' ), esc_html( $smallcaps_singular ) ),
+	),
+	'header'          => array(
+		'classes'       => 'sui-flatten sui-content-center sui-spacing-top--60',
+		'title'         => '',
+		'title_classes' => 'sui-lg',
+	),
+	'body'            => array(
+		'classes'     => 'sui-content-center sui-spacing-top--20',
+		'content'     => $body_content,
+		'description' => ' ', // We'll fill this via js according to some selected settings.
+	),
+);
 
-			<div class="sui-box-header sui-block-content-center">
+if ( ! $this->is_branding_hidden ) {
+	$image_1x = self::$plugin_url . 'assets/images/hustle-summary.png';
+	$image_2x = self::$plugin_url . 'assets/images/hustle-summary@2x.png';
 
-				<i id="dialogIcon" class="sui-lg" aria-hidden="true"></i>
+	$attributes['after_body_content'] = Opt_In_Utils::render_image_markup( $image_1x, $image_2x, 'sui-image sui-image-center', 'auto', '120px' );
+}
 
-				<h3 id="dialogTitle" class="sui-box-title"></h3>
-
-				<button
-					class="sui-dialog-close"
-					style="display: none;"
-				>
-					<span class="sui-screen-reader-text"><?php esc_html_e( 'Close this dialog window', 'wordpress-popup' ); ?></span>
-				</button>
-
-			</div>
-
-			<div class="sui-box-body sui-box-body-slim sui-block-content-center">
-
-				<p id="dialogDescription" class="sui-description"></p>
-
-			</div>
-
-			<?php echo Opt_In_Utils::render_image_markup( esc_url( $image_1x ), esc_url( $image_2x ), 'sui-image sui-image-center', 'auto', '120px' ); // WPCS: XSS ok. ?>
-
-		</div>
-
-	</div>
-
-</div>
+$this->render_modal( $attributes );

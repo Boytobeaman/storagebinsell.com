@@ -36,7 +36,7 @@ class Hustle_GHBlock_Popup_Trigger extends Hustle_GHBlock_Abstract {
 	 */
 	public function render_block( $properties = array() ) {
 
-		$content = isset( $properties['content'] ) ? $properties['content'] : __( 'Click here', 'wordpress-popup' );
+		$content   = isset( $properties['content'] ) ? $properties['content'] : __( 'Click here', 'hustle' );
 		$css_class = isset( $properties['css_class'] ) ? $properties['css_class'] : '';
 
 		if ( isset( $properties['id'] ) ) {
@@ -64,13 +64,13 @@ class Hustle_GHBlock_Popup_Trigger extends Hustle_GHBlock_Abstract {
 			'hustle-block-popup-trigger',
 			'hustle_popup_trigger_data',
 			array(
-				'wizard_page' => Hustle_Module_Admin::POPUP_WIZARD_PAGE,
-				'modules' => $this->get_modules(),
-				'admin_url' => admin_url( 'admin.php' ),
-				'nonce' => wp_create_nonce( 'hustle_gutenberg_get_module' ),
+				'wizard_page'   => Hustle_Module_Admin::POPUP_WIZARD_PAGE,
+				'modules'       => $this->get_modules(),
+				'admin_url'     => admin_url( 'admin.php' ),
+				'nonce'         => wp_create_nonce( 'hustle_gutenberg_get_module' ),
 				'shortcode_tag' => Hustle_Module_Front::SHORTCODE,
-				'text_domain' => 'wordpress-popup',
-				'l10n' => $this->localize(),
+				'text_domain'   => 'hustle',
+				'l10n'          => $this->localize(),
 			)
 		);
 	}
@@ -82,18 +82,18 @@ class Hustle_GHBlock_Popup_Trigger extends Hustle_GHBlock_Abstract {
 
 	private function localize() {
 		return array(
-			'module' => esc_html__( 'Module', 'wordpress-popup' ),
-			'additional_css_classes' => esc_html__( 'Additional CSS Classes', 'wordpress-popup' ),
-			'click_here' => esc_html__( 'Click here', 'wordpress-popup' ),
-			'content_here' => esc_html__( 'Add the clickable text that will trigger the module.', 'wordpress-popup' ),
-			'advanced' => esc_html__( 'Advanced', 'wordpress-popup' ),
-			'trigger_content' => esc_html__( 'Trigger Content', 'wordpress-popup' ),
-			'name' => esc_html__( 'Name', 'wordpress-popup' ),
-			'customize_module' => esc_html__( 'Customize Popup', 'wordpress-popup' ),
-			'rendering' => esc_html__( 'Rendering...', 'wordpress-popup' ), //Unused
-			'block_name' => esc_html__( 'Popup Trigger', 'wordpress-popup' ),
-			'block_description' => esc_html__( 'Embed the trigger button for a popup module.', 'wordpress-popup' ),
-			'block_more_description' => esc_html__( 'Note: the Trigger property of the Popup should be set to Click to embed the trigger button for the module.', 'wordpress-popup' ),
+			'module'                 => esc_html__( 'Module', 'hustle' ),
+			'additional_css_classes' => esc_html__( 'Additional CSS Classes', 'hustle' ),
+			'click_here'             => esc_html__( 'Click here', 'hustle' ),
+			'content_here'           => esc_html__( 'Add the clickable text that will trigger the module.', 'hustle' ),
+			'advanced'               => esc_html__( 'Advanced', 'hustle' ),
+			'trigger_content'        => esc_html__( 'Trigger Content', 'hustle' ),
+			'name'                   => esc_html__( 'Name', 'hustle' ),
+			'customize_module'       => esc_html__( 'Customize Popup', 'hustle' ),
+			'rendering'              => esc_html__( 'Rendering...', 'hustle' ), // Unused
+			'block_name'             => esc_html__( 'Popup Trigger', 'hustle' ),
+			'block_description'      => esc_html__( 'Embed the trigger button for a popup module.', 'hustle' ),
+			'block_more_description' => esc_html__( 'Note: the Trigger property of the Popup should be set to Click to embed the trigger button for the module.', 'hustle' ),
 		);
 	}
 }

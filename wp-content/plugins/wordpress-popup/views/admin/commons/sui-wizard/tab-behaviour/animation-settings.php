@@ -1,329 +1,333 @@
-<?php if (
-	( isset( $entrance_animation ) && true === $entrance_animation ) &&
-	( isset( $exit_animation ) && true === $exit_animation )
-) {
-	$column_class = 'sui-col-md-6';
-} else {
-	$column_class = 'sui-col';
-} ?>
+<?php
+/**
+ * Triggers section.
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
+
+$is_popup     = Hustle_Module_Model::POPUP_MODULE === $module_type;
+$column_class = $is_popup ? 'sui-col-md-6' : 'sui-col';
+$animation_in = $settings['animation_in'];
+?>
 
 <div class="sui-box-settings-row">
 
 	<div class="sui-box-settings-col-1">
-		<span class="sui-settings-label"><?php esc_html_e( 'Animation Settings', 'wordpress-popup' ); ?></span>
-		<span class="sui-description"><?php printf( esc_html__( 'Choose how you want your %s to animate on entrance & exit.', 'wordpress-popup' ), esc_html( $smallcaps_singular ) ); ?></span>
+		<span class="sui-settings-label"><?php esc_html_e( 'Animation Settings', 'hustle' ); ?></span>
+		<?php /* translators: module type in small caps and in singular */ ?>
+		<span class="sui-description"><?php printf( esc_html__( 'Choose how you want your %s to animate on entrance & exit.', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></span>
 	</div>
 
 	<div class="sui-box-settings-col-2">
 
 		<div class="sui-row">
 
-			<?php if ( isset( $entrance_animation ) && true === $entrance_animation ) { ?>
+			<div class="<?php echo esc_attr( $column_class ); ?>">
 
-				<div class="<?php echo esc_attr( $column_class ); ?>">
+				<div class="sui-form-field">
 
-					<div class="sui-form-field">
+					<?php /* translators: module type capitalized and in singular */ ?>
+					<label class="sui-label"><?php printf( esc_html__( '%s entrance animation', 'hustle' ), esc_html( $capitalize_singular ) ); ?></label>
 
-						<label class="sui-label"><?php printf( esc_html__( '%s entrance animation', 'wordpress-popup' ), esc_html( $capitalize_singular ) ); ?></label>
+					<select class="sui-select" name="animation_in" data-attribute="animation_in">
 
-						<select class="sui-select" name="animation_in" data-attribute="animation_in">
+						<option value="no_animation"
+							<?php selected( ( 'no_animation' === $animation_in || '' === $animation_in ) ); ?>>
+							<?php esc_attr_e( 'No Animation', 'hustle' ); ?>
+						</option>
 
-							<option value="no_animation"
-								{{ _.selected( ( 'no_animation' === animation_in || '' === animation_in ), true) }}>
-								<?php esc_attr_e( "No Animation", 'wordpress-popup' ); ?>
-							</option>
+						<option value="bounceIn"
+							<?php selected( $animation_in, 'bounceIn' ); ?>>
+							<?php esc_attr_e( 'Bounce In', 'hustle' ); ?>
+						</option>
 
-							<option value="bounceIn"
-								{{ _.selected( ( 'bounceIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Bounce In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="bounceInUp"
+							<?php selected( $animation_in, 'bounceInUp' ); ?>>
+							<?php esc_attr_e( 'Bounce In Up', 'hustle' ); ?>
+						</option>
 
-							<option value="bounceInUp"
-								{{ _.selected( ( 'bounceInUp' === animation_in ), true) }}>
-								<?php esc_attr_e( "Bounce In Up", 'wordpress-popup' ); ?>
-							</option>
+						<option value="bounceInRight"
+							<?php selected( $animation_in, 'bounceInRight' ); ?>>
+							<?php esc_attr_e( 'Bounce In Right', 'hustle' ); ?>
+						</option>
 
-							<option value="bounceInRight"
-								{{ _.selected( ( 'bounceInRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Bounce In Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="bounceInDown"
+							<?php selected( $animation_in, 'bounceInDown' ); ?>>
+							<?php esc_attr_e( 'Bounce In Down', 'hustle' ); ?>
+						</option>
 
-							<option value="bounceInDown"
-								{{ _.selected( ( 'bounceInDown' === animation_in ), true) }}>
-								<?php esc_attr_e( "Bounce In Down", 'wordpress-popup' ); ?>
-							</option>
+						<option value="bounceInLeft"
+							<?php selected( $animation_in, 'bounceInLeft' ); ?>>
+							<?php esc_attr_e( 'Bounce In Left', 'hustle' ); ?>
+						</option>
 
-							<option value="bounceInLeft"
-								{{ _.selected( ( 'bounceInLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Bounce In Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="fadeIn"
+							<?php selected( $animation_in, 'fadeIn' ); ?>>
+							<?php esc_attr_e( 'Fade In', 'hustle' ); ?>
+						</option>
 
-							<option value="fadeIn"
-								{{ _.selected( ( 'fadeIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Fade In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="fadeInUp"
+							<?php selected( $animation_in, 'fadeInUp' ); ?>>
+							<?php esc_attr_e( 'Fade In Up', 'hustle' ); ?>
+						</option>
 
-							<option value="fadeInUp"
-								{{ _.selected( ( 'fadeInUp' === animation_in ), true) }}>
-								<?php esc_attr_e( "Fade In Up", 'wordpress-popup' ); ?>
-							</option>
+						<option value="fadeInRight"
+							<?php selected( $animation_in, 'fadeInRight' ); ?>>
+							<?php esc_attr_e( 'Fade In Right', 'hustle' ); ?>
+						</option>
 
-							<option value="fadeInRight"
-								{{ _.selected( ( 'fadeInRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Fade In Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="fadeInDown"
+							<?php selected( $animation_in, 'fadeInDown' ); ?>>
+							<?php esc_attr_e( 'Fade In Down', 'hustle' ); ?>
+						</option>
 
-							<option value="fadeInDown"
-								{{ _.selected( ( 'fadeInDown' === animation_in ), true) }}>
-								<?php esc_attr_e( "Fade In Down", 'wordpress-popup' ); ?>
-							</option>
+						<option value="fadeInLeft"
+							<?php selected( $animation_in, 'fadeInLeft' ); ?>>
+							<?php esc_attr_e( 'Fade In Left', 'hustle' ); ?>
+						</option>
 
-							<option value="fadeInLeft"
-								{{ _.selected( ( 'fadeInLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Fade In Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rotateIn"
+							<?php selected( $animation_in, 'rotateIn' ); ?>>
+							<?php esc_attr_e( 'Rotate In', 'hustle' ); ?>
+						</option>
 
-							<option value="rotateIn"
-								{{ _.selected( ( 'rotateIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Rotate In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rotateInDownLeft"
+							<?php selected( $animation_in, 'rotateInDownLeft' ); ?>>
+							<?php esc_attr_e( 'Rotate In Down Left', 'hustle' ); ?>
+						</option>
 
-							<option value="rotateInDownLeft"
-								{{ _.selected( ( 'rotateInDownLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Rotate In Down Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rotateInDownRight"
+							<?php selected( $animation_in, 'rotateInDownRight' ); ?>>
+							<?php esc_attr_e( 'Rotate In Down Right', 'hustle' ); ?>
+						</option>
 
-							<option value="rotateInDownRight"
-								{{ _.selected( ( 'rotateInDownRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Rotate In Down Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rotateInUpLeft"
+							<?php selected( $animation_in, 'rotateInUpLeft' ); ?>>
+							<?php esc_attr_e( 'Rotate In Up Left', 'hustle' ); ?>
+						</option>
 
-							<option value="rotateInUpLeft"
-								{{ _.selected( ( 'rotateInUpLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Rotate In Up Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rotateInUpRight"
+							<?php selected( $animation_in, 'rotateInUpRight' ); ?>>
+							<?php esc_attr_e( 'Rotate In Up Right', 'hustle' ); ?>
+						</option>
 
-							<option value="rotateInUpRight"
-								{{ _.selected( ( 'rotateInUpRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Rotate In Up Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="slideInUp"
+							<?php selected( $animation_in, 'slideInUp' ); ?>>
+							<?php esc_attr_e( 'Slide In Up', 'hustle' ); ?>
+						</option>
 
-							<option value="slideInUp"
-								{{ _.selected( ( 'slideInUp' === animation_in ), true) }}>
-								<?php esc_attr_e( "Slide In Up", 'wordpress-popup' ); ?>
-							</option>
+						<option value="slideInRight"
+							<?php selected( $animation_in, 'slideInRight' ); ?>>
+							<?php esc_attr_e( 'Slide In Right', 'hustle' ); ?>
+						</option>
 
-							<option value="slideInRight"
-								{{ _.selected( ( 'slideInRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Slide In Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="slideInDown"
+							<?php selected( $animation_in, 'slideInDown' ); ?>>
+							<?php esc_attr_e( 'Slide In Down', 'hustle' ); ?>
+						</option>
 
-							<option value="slideInDown"
-								{{ _.selected( ( 'slideInDown' === animation_in ), true) }}>
-								<?php esc_attr_e( "Slide In Down", 'wordpress-popup' ); ?>
-							</option>
+						<option value="slideInLeft"
+							<?php selected( $animation_in, 'slideInLeft' ); ?>>
+							<?php esc_attr_e( 'Slide In Left', 'hustle' ); ?>
+						</option>
 
-							<option value="slideInLeft"
-								{{ _.selected( ( 'slideInLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Slide In Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="zoomIn"
+							<?php selected( $animation_in, 'zoomIn' ); ?>>
+							<?php esc_attr_e( 'Zoom In', 'hustle' ); ?>
+						</option>
 
-							<option value="zoomIn"
-								{{ _.selected( ( 'zoomIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Zoom In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="zoomInUp"
+							<?php selected( $animation_in, 'zoomInUp' ); ?>>
+							<?php esc_attr_e( 'Zoom In Up', 'hustle' ); ?>
+						</option>
 
-							<option value="zoomInUp"
-								{{ _.selected( ( 'zoomInUp' === animation_in ), true) }}>
-								<?php esc_attr_e( "Zoom In Up", 'wordpress-popup' ); ?>
-							</option>
+						<option value="zoomInRight"
+							<?php selected( $animation_in, 'zoomInRight' ); ?>>
+							<?php esc_attr_e( 'Zoom In Right', 'hustle' ); ?>
+						</option>
 
-							<option value="zoomInRight"
-								{{ _.selected( ( 'zoomInRight' === animation_in ), true) }}>
-								<?php esc_attr_e( "Zoom In Right", 'wordpress-popup' ); ?>
-							</option>
+						<option value="zoomInDown"
+							<?php selected( $animation_in, 'zoomInDown' ); ?>>
+							<?php esc_attr_e( 'Zoom In Down', 'hustle' ); ?>
+						</option>
 
-							<option value="zoomInDown"
-								{{ _.selected( ( 'zoomInDown' === animation_in ), true) }}>
-								<?php esc_attr_e( "Zoom In Down", 'wordpress-popup' ); ?>
-							</option>
+						<option value="zoomInLeft"
+							<?php selected( $animation_in, 'zoomInLeft' ); ?>>
+							<?php esc_attr_e( 'Zoom In Left', 'hustle' ); ?>
+						</option>
 
-							<option value="zoomInLeft"
-								{{ _.selected( ( 'zoomInLeft' === animation_in ), true) }}>
-								<?php esc_attr_e( "Zoom In Left", 'wordpress-popup' ); ?>
-							</option>
+						<option value="rollIn"
+							<?php selected( $animation_in, 'rollIn' ); ?>>
+							<?php esc_attr_e( 'Roll In', 'hustle' ); ?>
+						</option>
 
-							<option value="rollIn"
-								{{ _.selected( ( 'rollIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Roll In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="lightSpeedIn"
+							<?php selected( $animation_in, 'lightSpeedIn' ); ?>>
+							<?php esc_attr_e( 'Light Speed In', 'hustle' ); ?>
+						</option>
 
-							<option value="lightSpeedIn"
-								{{ _.selected( ( 'lightSpeedIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Light Speed In", 'wordpress-popup' ); ?>
-							</option>
+						<option value="newspaperIn"
+							<?php selected( $animation_in, 'newspaperIn' ); ?>>
+							<?php esc_attr_e( 'Newspaper In', 'hustle' ); ?>
+						</option>
 
-							<option value="newspaperIn"
-								{{ _.selected( ( 'newspaperIn' === animation_in ), true) }}>
-								<?php esc_attr_e( "Newspaper In", 'wordpress-popup' ); ?>
-							</option>
-
-						</select>
-
-					</div>
+					</select>
 
 				</div>
 
-			<?php } ?>
+			</div>
 
-			<?php if ( isset( $exit_animation ) && true === $exit_animation ) { ?>
+			<?php if ( $is_popup ) : ?>
+				<?php $animation_out = $settings['animation_out']; ?>
 
 				<div class="<?php echo esc_attr( $column_class ); ?>">
 
 					<div class="sui-form-field">
 
-						<label class="sui-label"><?php printf( esc_html__( '%s exit animation', 'wordpress-popup' ), esc_html( $capitalize_singular ) ); ?></label>
+						<?php /* translators: module type capitalized and in singular */ ?>
+						<label class="sui-label"><?php printf( esc_html__( '%s exit animation', 'hustle' ), esc_html( $capitalize_singular ) ); ?></label>
 
 						<select class="sui-select" data-attribute="animation_out">
 
 							<option value="no_animation"
-								{{ _.selected( ( 'no_animation' === animation_out || '' === animation_out ), true) }}>
-								<?php esc_attr_e( "No Animation", 'wordpress-popup' ); ?>
+								<?php selected( ( 'no_animation' === $animation_out || '' === $animation_out ) ); ?>>
+								<?php esc_attr_e( 'No Animation', 'hustle' ); ?>
 							</option>
 
 							<option value="bounceOut"
-								{{ _.selected( ( 'bounceOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Bounce Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'bounceOut' ); ?>>
+								<?php esc_attr_e( 'Bounce Out', 'hustle' ); ?>
 							</option>
 
 							<option value="bounceOutUp"
-								{{ _.selected( ( 'bounceOutUp' === animation_out ), true) }}>
-								<?php esc_attr_e( "Bounce Out Up", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'bounceOutUp' ); ?>>
+								<?php esc_attr_e( 'Bounce Out Up', 'hustle' ); ?>
 							</option>
 
 							<option value="bounceOutRight"
-								{{ _.selected( ( 'bounceOutRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Bounce Out Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'bounceOutRight' ); ?>>
+								<?php esc_attr_e( 'Bounce Out Right', 'hustle' ); ?>
 							</option>
 
 							<option value="bounceOutDown"
-								{{ _.selected( ( 'bounceOutDown' === animation_out ), true) }}>
-								<?php esc_attr_e( "Bounce Out Down", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'bounceOutDown' ); ?>>
+								<?php esc_attr_e( 'Bounce Out Down', 'hustle' ); ?>
 							</option>
 
 							<option value="bounceOutLeft"
-								{{ _.selected( ( 'bounceOutLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Bounce Out Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'bounceOutLeft' ); ?>>
+								<?php esc_attr_e( 'Bounce Out Left', 'hustle' ); ?>
 							</option>
 
 							<option value="fadeOut"
-								{{ _.selected( ( 'fadeOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Fade Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'fadeOut' ); ?>>
+								<?php esc_attr_e( 'Fade Out', 'hustle' ); ?>
 							</option>
 
 							<option value="fadeOutUp"
-								{{ _.selected( ( 'fadeOutUp' === animation_out ), true) }}>
-								<?php esc_attr_e( "Fade Out Up", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'fadeOutUp' ); ?>>
+								<?php esc_attr_e( 'Fade Out Up', 'hustle' ); ?>
 							</option>
 
 							<option value="fadeOutRight"
-								{{ _.selected( ( 'fadeOutRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Fade Out Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'fadeOutRight' ); ?>>
+								<?php esc_attr_e( 'Fade Out Right', 'hustle' ); ?>
 							</option>
 
 							<option value="fadeOutDown"
-								{{ _.selected( ( 'fadeOutDown' === animation_out ), true) }}>
-								<?php esc_attr_e( "Fade Out Down", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'fadeOutDown' ); ?>>
+								<?php esc_attr_e( 'Fade Out Down', 'hustle' ); ?>
 							</option>
 
 							<option value="fadeOutLeft"
-								{{ _.selected( ( 'fadeOutLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Fade Out Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'fadeOutLeft' ); ?>>
+								<?php esc_attr_e( 'Fade Out Left', 'hustle' ); ?>
 							</option>
 
 							<option value="rotateOut"
-								{{ _.selected( ( 'rotateOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Rotate Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rotateOut' ); ?>>
+								<?php esc_attr_e( 'Rotate Out', 'hustle' ); ?>
 							</option>
 
 							<option value="rotateOutUpLeft"
-								{{ _.selected( ( 'rotateOutUpLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Rotate Out Up Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rotateOutUpLeft' ); ?>>
+								<?php esc_attr_e( 'Rotate Out Up Left', 'hustle' ); ?>
 							</option>
 
 							<option value="rotateOutUpRight"
-								{{ _.selected( ( 'rotateOutUpRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Rotate Out Up Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rotateOutUpRight' ); ?>>
+								<?php esc_attr_e( 'Rotate Out Up Right', 'hustle' ); ?>
 							</option>
 
 							<option value="rotateOutDownLeft"
-								{{ _.selected( ( 'rotateOutDownLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Rotate Out Down Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rotateOutDownLeft' ); ?>>
+								<?php esc_attr_e( 'Rotate Out Down Left', 'hustle' ); ?>
 							</option>
 
 							<option value="rotateOutDownRight"
-								{{ _.selected( ( 'rotateOutDownRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Rotate Out Down Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rotateOutDownRight' ); ?>>
+								<?php esc_attr_e( 'Rotate Out Down Right', 'hustle' ); ?>
 							</option>
 
 							<option value="slideOutUp"
-								{{ _.selected( ( 'slideOutUp' === animation_out ), true) }}>
-								<?php esc_attr_e( "Slide Out Up", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'slideOutUp' ); ?>>
+								<?php esc_attr_e( 'Slide Out Up', 'hustle' ); ?>
 							</option>
 
 							<option value="slideOutRight"
-								{{ _.selected( ( 'slideOutRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Slide Out Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'slideOutRight' ); ?>>
+								<?php esc_attr_e( 'Slide Out Right', 'hustle' ); ?>
 							</option>
 
 							<option value="slideOutDown"
-								{{ _.selected( ( 'slideOutDown' === animation_out ), true) }}>
-								<?php esc_attr_e( "Slide Out Down", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'slideOutDown' ); ?>>
+								<?php esc_attr_e( 'Slide Out Down', 'hustle' ); ?>
 							</option>
 
 							<option value="slideOutLeft"
-								{{ _.selected( ( 'slideOutLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Slide Out Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'slideOutLeft' ); ?>>
+								<?php esc_attr_e( 'Slide Out Left', 'hustle' ); ?>
 							</option>
 
 							<option value="zoomOut"
-								{{ _.selected( ( 'zoomOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Zoom Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'zoomOut' ); ?>>
+								<?php esc_attr_e( 'Zoom Out', 'hustle' ); ?>
 							</option>
 
 							<option value="zoomOutUp"
-								{{ _.selected( ( 'zoomOutUp' === animation_out ), true) }}>
-								<?php esc_attr_e( "Zoom Out Up", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'zoomOutUp' ); ?>>
+								<?php esc_attr_e( 'Zoom Out Up', 'hustle' ); ?>
 							</option>
 
 							<option value="zoomOutRight"
-								{{ _.selected( ( 'zoomOutRight' === animation_out ), true) }}>
-								<?php esc_attr_e( "Zoom Out Right", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'zoomOutRight' ); ?>>
+								<?php esc_attr_e( 'Zoom Out Right', 'hustle' ); ?>
 							</option>
 
 							<option value="zoomOutDown"
-								{{ _.selected( ( 'zoomOutDown' === animation_out ), true) }}>
-								<?php esc_attr_e( "Zoom Out Down", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'zoomOutDown' ); ?>>
+								<?php esc_attr_e( 'Zoom Out Down', 'hustle' ); ?>
 							</option>
 
 							<option value="zoomOutLeft"
-								{{ _.selected( ( 'zoomOutLeft' === animation_out ), true) }}>
-								<?php esc_attr_e( "Zoom Out Left", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'zoomOutLeft' ); ?>>
+								<?php esc_attr_e( 'Zoom Out Left', 'hustle' ); ?>
 							</option>
 
 							<option value="rollOut"
-								{{ _.selected( ( 'rollOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Roll Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'rollOut' ); ?>>
+								<?php esc_attr_e( 'Roll Out', 'hustle' ); ?>
 							</option>
 
 							<option value="lightSpeedOut"
-								{{ _.selected( ( 'lightSpeedOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Light Speed Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'animation_out' ); ?>>
+								<?php esc_attr_e( 'Light Speed Out', 'hustle' ); ?>
 							</option>
 
 							<option value="newspaperOut"
-								{{ _.selected( ( 'newspaperOut' === animation_out ), true) }}>
-								<?php esc_attr_e( "Newspaper Out", 'wordpress-popup' ); ?>
+								<?php selected( $animation_out, 'newspaperOut' ); ?>>
+								<?php esc_attr_e( 'Newspaper Out', 'hustle' ); ?>
 							</option>
 
 						</select>
@@ -332,7 +336,7 @@
 
 				</div>
 
-			<?php } ?>
+			<?php endif; ?>
 
 		</div>
 

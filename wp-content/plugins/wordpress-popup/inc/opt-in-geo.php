@@ -16,17 +16,26 @@ class Opt_In_Geo {
 	const COUNTRY_IP_MAP = 'wpoi-county-id-map';
 
 	/**
+	 * Default GeoIP provider key
+	 *
+	 * @var DEFAULT_GEOIP_PROVIDER
+	 */
+	const DEFAULT_GEOIP_PROVIDER = 'geoplugin';
+
+	/**
 	 * Tries to get the public IP address of the current user.
 	 *
 	 * @return string The IP Address
 	 */
 	public static function get_user_ip() {
-		//check for bot
-		if( self::_is_crawler() ) return false;
+		// check for bot
+		if ( self::_is_crawler() ) {
+			return false;
+		}
 
 		$result = (object) array(
-			'ip' => $_SERVER['REMOTE_ADDR'],
-			'proxy' => false,
+			'ip'       => $_SERVER['REMOTE_ADDR'],
+			'proxy'    => false,
 			'proxy_ip' => '',
 		);
 
@@ -47,7 +56,7 @@ class Opt_In_Geo {
 		$forwarded = false;
 		foreach ( $ip_fields as $key ) {
 			if ( true === array_key_exists( $key, $_SERVER ) ) {
-				foreach ( explode( ',', $_SERVER[$key] ) as $ip ) {
+				foreach ( explode( ',', $_SERVER[ $key ] ) as $ip ) {
 					$ip = trim( $ip );
 
 					if ( false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
@@ -60,9 +69,9 @@ class Opt_In_Geo {
 
 		// If we found a different IP address than REMOTE_ADDR then it's a proxy!
 		if ( ! empty( $forwarded ) && $forwarded !== $result->ip ) {
-			$result->proxy = true;
+			$result->proxy    = true;
 			$result->proxy_ip = $result->ip;
-			$result->ip = $forwarded;
+			$result->ip       = $forwarded;
 		}
 
 		if ( $result->ip ) {
@@ -81,10 +90,12 @@ class Opt_In_Geo {
 	 */
 	public function get_user_country() {
 
-		//check for bot
-		if( self::_is_crawler() ) return false;
+		// check for bot
+		if ( self::_is_crawler() ) {
+			return false;
+		}
 
-		// Grab the users IP address		
+		// Grab the users IP address
 		$ip = self::get_user_ip();
 
 		// See if an add-on provides the country for us.
@@ -117,19 +128,6 @@ class Opt_In_Geo {
 				'type'  => 'text',
 			);
 
-			$geo_service['telize'] = (object) array(
-				'label' => 'Telize',
-				'url'   => 'http://www.telize.com/geoip/%ip%',
-				'type'  => 'json',
-				'field' => 'country_code',
-			);
-
-			$geo_service['nekudo'] = (object) array(
-				'label' => 'Free Geo IP',
-				'url'   => 'http://geoip.nekudo.com/api/json/%ip%',
-				'type'  => 'json',
-				'field' => array( 'country', 'code' ),
-			);
 			$geo_service['geoplugin'] = (object) array(
 				'label' => 'GeoPlugin',
 				'url'   => 'http://www.geoplugin.net/json.gp?ip=%ip%',
@@ -146,6 +144,30 @@ class Opt_In_Geo {
 		return $geo_service;
 	}
 
+	/**
+	 * Returns a list of deprecated geo ip-resolution services.
+	 *
+	 * @since 4.2.1
+	 * @return array List of deprecated webservices.
+	 */
+	private function get_deprecated_geo_services() {
+		$geo_service = array(
+			'telize',
+			'nekudo',
+		);
+
+		/**
+		 * Hook to filter the list of depracated geo ip-resolution services.
+		 *
+		 * @since 4.2.1
+		 *
+		 * @param array
+		 */
+		$geo_service = apply_filters( 'hustle_depracated_geo_services', $geo_service );
+
+		return $geo_service;
+	}
+
 
 	/**
 	 * Returns the lookup-service details
@@ -156,10 +178,10 @@ class Opt_In_Geo {
 		$service = false;
 		if ( null === $type ) {
 			$remote_ip_url = apply_filters( 'wpoi-remote-ip-url', '' );
-			if ( ! empty( $remote_ip_url )  ) {
+			if ( ! empty( $remote_ip_url ) ) {
 				$type = '';
 			} else {
-				$type = 'geoplugin';
+				$type = self::DEFAULT_GEOIP_PROVIDER;
 			}
 
 			/**
@@ -170,20 +192,44 @@ class Opt_In_Geo {
 
 		if ( empty( $type ) ) {
 			$service = (object) array(
-				'url' => $remote_ip_url,
+				'url'   => $remote_ip_url,
 				'label' => 'wp-config.php',
-				'type' => 'text',
+				'type'  => 'text',
 			);
-		} else if ( 'geo_db' === $type ) {
+		} elseif ( 'geo_db' === $type ) {
 			$service = (object) array(
-				'url' => 'db',
-				'label' => __( 'Local IP Lookup Table', 'wordpress-popup' ),
-				'type' => 'text',
+				'url'   => 'db',
+				'label' => __( 'Local IP Lookup Table', 'hustle' ),
+				'type'  => 'text',
 			);
 		} else {
-			$geo_service = $this->_get_geo_services();
+			$geo_service            = $this->_get_geo_services();
+			$deprecated_geo_service = $this->get_deprecated_geo_services();
 
-			$service = isset( $geo_service[ $type ] ) ? $geo_service[ $type ] : null;
+			if ( in_array( $type, $deprecated_geo_service, true ) ) {
+				$message = sprintf(
+					/* translators: %s: geoip provider name. */
+					__( 'GeoIP provider %s is no longer available. Switching to default.', 'hustle' ),
+					$type
+				);
+				_deprecated_argument( __FUNCTION__, '4.2.1', $message );
+
+				$service = $geo_service[ self::DEFAULT_GEOIP_PROVIDER ];
+			} else {
+				if ( isset( $geo_service[ $type ] ) ) {
+					$service = $geo_service[ $type ];
+				} else {
+					if ( WP_DEBUG ) {
+						$message = sprintf(
+							/* translators: %s: geoip provider name. */
+							__( 'GeoIP provider %s does not exist. Switching to default.', 'hustle' ),
+							$type
+						);
+						trigger_error( $message, E_USER_NOTICE );
+					}
+					$service = $geo_service[ self::DEFAULT_GEOIP_PROVIDER ];
+				}
+			}
 		}
 
 		return $service;
@@ -200,38 +246,43 @@ class Opt_In_Geo {
 		$country = false;
 
 		if ( is_object( $service ) && ! empty( $service->url ) ) {
-			$url = str_replace( '%ip%', $ip, $service->url );
+			$url      = str_replace( '%ip%', $ip, $service->url );
 			$response = wp_remote_get( $url );
-			$body = isset( $response['body'] ) ? $response['body'] : '' ;
-			if ( ! is_wp_error( $response )
-				&& 200 === (int) $response['response']['code']
-				&& 'XX' !== $response['body']
-				|| false !== ( $body = file_get_contents( $url ) ) // phpcs:ignore
-			) {
-				if ( 'text' === $service->type ) {
-					$country = trim( $body );
-				} else if ( 'json' === $service->type ) {
-					$data = (array) json_decode( $body );
-					if ( isset( $service->field ) ) {
-						if ( is_array( $service->field ) ) {
-							$keys = $service->field;
-							$value = $data;
-							while ( $a = array_shift( $keys ) ) { // phpcs:ignore
-								if ( is_array( $value ) ) {
-									if ( isset( $value[ $a ] ) ) {
-										$value = $value[ $a ];
+
+			if ( ! is_wp_error( $response ) ) {
+
+				$body = isset( $response['body'] ) ? $response['body'] : '';
+
+				if ( ! is_wp_error( $response )
+					&& 200 === (int) $response['response']['code']
+					&& 'XX' !== $response['body']
+					|| false !== ( $body = file_get_contents( $url ) ) // phpcs:ignore
+				) {
+					if ( 'text' === $service->type ) {
+						$country = trim( $body );
+					} elseif ( 'json' === $service->type ) {
+						$data = (array) json_decode( $body );
+						if ( isset( $service->field ) ) {
+							if ( is_array( $service->field ) ) {
+								$keys  = $service->field;
+								$value = $data;
+								while ( $a = array_shift( $keys ) ) { // phpcs:ignore
+									if ( is_array( $value ) ) {
+										if ( isset( $value[ $a ] ) ) {
+											$value = $value[ $a ];
+										}
+									} elseif ( is_object( $value ) ) {
+										if ( isset( $value->$a ) ) {
+											$value = $value->$a;
+										}
 									}
-								} else if ( is_object( $value ) ) {
-									if ( isset( $value->$a ) ) {
-										$value = $value->$a;
+									if ( is_string( $value ) ) {
+										$country = $value;
 									}
 								}
-								if ( is_string( $value ) ) {
-									$country = $value;
-								}
+							} else {
+								$country = isset( $data[ $service->field ] ) ? $data[ $service->field ] : null;
 							}
-						} else {
-							$country = isset( $data[ $service->field ] )? $data[ $service->field ] : null;
 						}
 					}
 				}
@@ -270,7 +321,7 @@ class Opt_In_Geo {
 	 */
 	private static function _is_crawler() {
 
-    	if ( isset( $_SERVER['HTTP_USER_AGENT'] ) && preg_match( '/bot|crawler|ia_archiver|mediapartners-google|80legs|wget|voyager|baiduspider|curl|yahoo!|slurp/i', $_SERVER['HTTP_USER_AGENT'] ) ) {
+		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) && preg_match( '/bot|crawler|ia_archiver|mediapartners-google|80legs|wget|voyager|baiduspider|curl|yahoo!|slurp/i', $_SERVER['HTTP_USER_AGENT'] ) ) {
 			return true;
 		}
 
@@ -284,12 +335,14 @@ class Opt_In_Geo {
 	 * @return string
 	 */
 	public function get_country_from_ip( $ip ) {
-		//check for bot
-		if( self::_is_crawler() ) return false;
-		
+		// check for bot
+		if ( self::_is_crawler() ) {
+			return false;
+		}
+
 		$ip = (string) $ip;
 
-		if ( '127.0.0.1' === $ip  ) {
+		if ( '127.0.0.1' === $ip ) {
 			return $this->_update_ip_county_map( $ip, 'localhost' ); }
 
 		$country_ip_map = $this->_get_ip_county_map();

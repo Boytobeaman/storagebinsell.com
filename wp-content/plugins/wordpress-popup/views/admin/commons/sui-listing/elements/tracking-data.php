@@ -1,6 +1,19 @@
+<?php
+/**
+ * Displays the wrapper, and the tracking chart/s in the listing page.
+ *
+ * This file handles whether to show a single or multiple charts on each module.
+ *
+ * @uses ./tracking-data-chart.php
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
+
+?>
 <?php if ( ! $multiple_charts ) : ?>
 
-	<?php self::static_render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
+	<?php $this->render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
 
 <?php else : ?>
 
@@ -8,7 +21,7 @@
 
 		<div data-tabs style="border-top: 1px solid #E6E6E6;">
 
-			<div class="active"><?php esc_html_e( 'Overall', 'wordpress-popup' ); ?></div>
+			<div class="active"><?php esc_html_e( 'Overall', 'hustle' ); ?></div>
 
 			<?php foreach ( $multiple_charts as $data ) { ?>
 
@@ -22,7 +35,7 @@
 
 			<div class="active">
 
-				<?php self::static_render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
+				<?php $this->render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
 
 			</div>
 
@@ -34,7 +47,7 @@
 
 				<div>
 
-					<?php self::static_render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
+					<?php $this->render( 'admin/commons/sui-listing/elements/tracking-data-chart', $render_arguments ); ?>
 
 				</div>
 

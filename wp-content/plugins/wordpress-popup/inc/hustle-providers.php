@@ -92,14 +92,16 @@ class Hustle_Providers {
 		 * Initiate standard default error messages
 		 */
 		$this->default_addon_error_messages = array(
-			'activate'             => __( 'Failed to activate addon', 'wordpress-popup' ),
-			'deactivate'           => __( 'Failed to deactivate addon', 'wordpress-popup' ),
-			'update_settings'      => __( 'Failed to update settings', 'wordpress-popup' ),
-			'update_form_settings' => __( 'Failed to update form settings', 'wordpress-popup' ),
+			'activate'             => __( 'Failed to activate addon', 'hustle' ),
+			'deactivate'           => __( 'Failed to deactivate addon', 'hustle' ),
+			'update_settings'      => __( 'Failed to update settings', 'hustle' ),
+			'update_form_settings' => __( 'Failed to update form settings', 'hustle' ),
 		);
 
 		// Only enable wp_ajax hooks
-		Hustle_Provider_Admin_Ajax::get_instance();
+		if ( wp_doing_ajax() ) {
+			Hustle_Provider_Admin_Ajax::get_instance();
+		}
 	}
 
 	/**
@@ -231,7 +233,6 @@ class Hustle_Providers {
 	 * -Doesn't have a _class property.
 	 * -Has the same slug of an existing provider.
 	 *
-	 *
 	 * @since 3.0.5
 	 * @param Hustle_Provider_Abstract $instance
 	 * @return Hustle_Provider_Abstract
@@ -240,7 +241,7 @@ class Hustle_Providers {
 	private function validate_provider_instance( Hustle_Provider_Abstract $instance ) {
 		/** @var Hustle_Provider_Abstract $provider_class */
 		$provider_class = $instance;
-		$class_name  = get_class( $instance );
+		$class_name     = get_class( $instance );
 
 		if ( ! $provider_class instanceof Hustle_Provider_Abstract ) {
 			throw new Exception( 'The provider ' . $class_name . ' is not instanceof Hustle_Provider_Abstract' );
@@ -248,7 +249,7 @@ class Hustle_Providers {
 		$slug    = $provider_class->get_slug();
 		$title   = $provider_class->get_title();
 		$version = $provider_class->get_version();
-		$class	 = $provider_class->get_class();
+		$class   = $provider_class->get_class();
 
 		if ( empty( $slug ) ) {
 			throw new Exception( 'The provider ' . $class_name . ' does not have the required _slug property.' );
@@ -308,17 +309,17 @@ class Hustle_Providers {
 		$addon = $this->get_provider( $slug );
 
 		if ( is_null( $addon ) ) {
-			$this->last_error_message = __( 'Provider not found', 'wordpress-popup' );
+			$this->last_error_message = __( 'Provider not found', 'hustle' );
 			return false;
 		}
 
 		if ( $this->addon_is_active( $slug ) ) {
-			$this->last_error_message = __( 'The provider is already active', 'wordpress-popup' );
+			$this->last_error_message = __( 'The provider is already active', 'hustle' );
 			return false;
 		}
 
 		if ( ! $addon->is_activable() ) {
-			$this->last_error_message = __( 'The provider is not activable', 'wordpress-popup' );
+			$this->last_error_message = __( 'The provider is not activable', 'hustle' );
 			return false;
 		}
 
@@ -375,22 +376,22 @@ class Hustle_Providers {
 
 	/**
 	 * Disconnect the addon.
-	 * 
+	 *
 	 * @since 3.0.5
 	 *
 	 * @param string $slug provider slus
-	 * @param array $submitted_data
+	 * @param array  $submitted_data
 	 * @return bool
 	 */
 	public function deactivate_addon( $slug, $submitted_data = array() ) {
 		$addon = $this->get_provider( $slug );
 		if ( is_null( $addon ) ) {
-			$this->last_error_message = __( 'Provider not found', 'wordpress-popup' );
+			$this->last_error_message = __( 'Provider not found', 'hustle' );
 			return false;
 		}
 
 		if ( ! $this->addon_is_active( $slug ) ) {
-			$this->last_error_message = __( 'Provider is not activated before', 'wordpress-popup' );
+			$this->last_error_message = __( 'Provider is not activated before', 'hustle' );
 			return false;
 		}
 
@@ -417,7 +418,6 @@ class Hustle_Providers {
 					// Remove the global provider's settings if there aren't more global instances of this one.
 					$this->force_remove_activated_addons( $slug );
 				}
-
 			}
 		} else {
 			// Do this only if global_multi_id is disabled.
@@ -436,12 +436,12 @@ class Hustle_Providers {
 	 * @since 4.0.1
 	 *
 	 * @param Hustle_Provider_Abstract $provider
-	 * @param array $submitted_data
+	 * @param array                    $submitted_data
 	 */
 	private function disconnect_provider_instance_from_modules( Hustle_Provider_Abstract $provider, $submitted_data ) {
 
 		$is_multi_on_global = $provider->is_allow_multi_on_global();
-		$is_multi_on_form 	= $provider->is_allow_multi_on_form();
+		$is_multi_on_form   = $provider->is_allow_multi_on_form();
 
 		$global_multi_id = ( $is_multi_on_global && ! $is_multi_on_form && ! empty( $submitted_data['global_multi_id'] ) ) ? $submitted_data['global_multi_id'] : false;
 
@@ -499,9 +499,9 @@ class Hustle_Providers {
 			$settions_options_name = 'hustle_provider_' . $slug . '_settings';
 		}
 
-		//delete version
+		// delete version
 		delete_option( $version_options_name );
-		//delete general settings
+		// delete general settings
 		delete_option( $settions_options_name );
 
 		$addon->remove_wp_options();

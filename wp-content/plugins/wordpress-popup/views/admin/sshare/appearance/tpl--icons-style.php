@@ -1,73 +1,64 @@
-<div id="hustle-appearance-icons-style" class="sui-box-settings-row"<?php if ( $is_empty ) echo ' style="display: none;"'; ?>>
+<?php
+/**
+ * Icons style section.
+ *
+ * @var bool $is_empty True if neither inline nor floating display types are enabled.
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
+
+$options = array(
+	'flat'    => array(
+		'value'     => 'flat',
+		'label'     => __( 'Default', 'hustle' ),
+		'hui-icon'  => 'social-facebook',
+		'icon-size' => 'sm',
+	),
+	'outline' => array(
+		'value'     => 'outline',
+		'label'     => __( 'Outlined', 'hustle' ),
+		'hui-icon'  => 'social-facebook hui-icon-outlined',
+		'icon-size' => 'sm',
+	),
+	'rounded' => array(
+		'value'     => 'rounded',
+		'label'     => __( 'Circle', 'hustle' ),
+		'hui-icon'  => 'social-facebook hui-icon-circle',
+		'icon-size' => 'sm',
+	),
+	'squared' => array(
+		'value'     => 'squared',
+		'label'     => __( 'Square', 'hustle' ),
+		'hui-icon'  => 'social-facebook hui-icon-square',
+		'icon-size' => 'sm',
+	),
+);
+?>
+<div id="hustle-appearance-icons-style" class="sui-box-settings-row"<?php echo $is_empty ? ' style="display: none;"' : ''; ?>>
 
 	<div class="sui-box-settings-col-1">
 
-		<span class="sui-settings-label"><?php esc_html_e( 'Icons Style', 'wordpress-popup' ); ?></span>
-		<span class="sui-description"><?php esc_html_e( 'Choose the style for your social icons as per your need.', 'wordpress-popup' ); ?></span>
+		<span class="sui-settings-label"><?php esc_html_e( 'Icons Style', 'hustle' ); ?></span>
+		<span class="sui-description"><?php esc_html_e( 'Choose the style for your social icons as per your need.', 'hustle' ); ?></span>
 
 	</div>
 
 	<div class="sui-box-settings-col-2">
 
-		<div class="sui-side-tabs">
-
-			<div class="sui-tabs-menu">
-
-				<label for="hustle-social-icon--default" class="sui-tab-item" >
-					<input
-						type="radio"
-						name="icon_style"
-						data-attribute="icon_style"
-						value="flat"
-						id="hustle-social-icon--default"
-						{{ _.checked( 'flat' === icon_style, true) }}
-					/>
-					<i class="hui-icon-social-facebook hui-sm" aria-hidden="true"></i>
-					<span class="sui-screen-reader-text"><?php esc_html_e( 'Default', 'wordpress-popup' ); ?></span>
-				</label>
-
-				<label for="hustle-social-icon--outlined" class="sui-tab-item" >
-					<input
-						type="radio"
-						name="icon_style"
-						data-attribute="icon_style"
-						value="outline"
-						id="hustle-social-icon--outlined"
-						{{ _.checked( 'outline' === icon_style, true) }}
-					/>
-					<i class="hui-icon-social-facebook hui-icon-outlined hui-sm" aria-hidden="true"></i>
-					<span class="sui-screen-reader-text"><?php esc_html_e( 'Outlined', 'wordpress-popup' ); ?></span>
-				</label>
-
-				<label for="hustle-social-icon--circle" class="sui-tab-item">
-					<input
-						type="radio"
-						name="icon_style"
-						data-attribute="icon_style"
-						value="rounded"
-						id="hustle-social-icon--circle"
-						{{ _.checked( 'rounded' === icon_style, true) }}
-					/>
-					<i class="hui-icon-social-facebook hui-icon-circle hui-sm" aria-hidden="true"></i>
-					<span class="sui-screen-reader-text"><?php esc_html_e( 'Circle', 'wordpress-popup' ); ?></span>
-				</label>
-
-				<label for="hustle-social-icon--square" class="sui-tab-item" >
-					<input
-						type="radio"
-						name="icon_style"
-						data-attribute="icon_style"
-						value="squared"
-						id="hustle-social-icon--square"
-						{{ _.checked( 'squared' === icon_style, true) }}
-					/>
-					<i class="hui-icon-social-facebook hui-icon-square hui-sm" aria-hidden="true"></i>
-					<span class="sui-screen-reader-text"><?php esc_html_e( 'Square', 'wordpress-popup' ); ?></span>
-				</label>
-
-			</div>
-
-		</div>
+		<?php
+		$this->render(
+			'admin/global/sui-components/sui-tabs',
+			array(
+				'name'        => 'icon_style',
+				'radio'       => true,
+				'saved_value' => $icon_style,
+				'sidetabs'    => true,
+				'content'     => false,
+				'options'     => $options,
+			)
+		);
+		?>
 
 	</div>
 

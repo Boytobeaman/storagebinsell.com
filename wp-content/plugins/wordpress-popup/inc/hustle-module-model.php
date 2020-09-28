@@ -18,26 +18,6 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Get the sub-types for social sharing modules.
-	 *
-	 * @since 4.0
-	 *
-	 * @return array
-	 */
-	public static function get_sshare_types( $with_titles = false ) {
-		if ( ! $with_titles ) {
-			return array( Hustle_Sshare_Model::FLOAT_MODULE, 'inline', 'widget', 'shortcode' );
-		} else {
-			return array(
-				Hustle_Sshare_Model::FLOAT_MODULE => __( 'Floating', 'wordpress-popup' ),
-				'inline' => __( 'Inline', 'wordpress-popup' ),
-				'widget' => __( 'Widget', 'wordpress-popup' ),
-				'shortcode' => __( 'Shortcode', 'wordpress-popup' ),
-			);
-		}
-	}
-
-	/**
 	 * Get the sub-types for embedded modules.
 	 *
 	 * @since the beggining of time
@@ -50,9 +30,9 @@ class Hustle_Module_Model extends Hustle_Model {
 			return array( 'inline', 'widget', 'shortcode' );
 		} else {
 			return array(
-				'inline' => __( 'Inline', 'wordpress-popup' ),
-				'widget' => __( 'Widget', 'wordpress-popup' ),
-				'shortcode' => __( 'Shortcode', 'wordpress-popup' ),
+				'inline'    => __( 'Inline', 'hustle' ),
+				'widget'    => __( 'Widget', 'hustle' ),
+				'shortcode' => __( 'Shortcode', 'hustle' ),
 			);
 		}
 	}
@@ -68,7 +48,7 @@ class Hustle_Module_Model extends Hustle_Model {
 		if ( self::EMBEDDED_MODULE === $this->module_type ) {
 			return self::get_embedded_types( $with_titles );
 		} elseif ( self::SOCIAL_SHARING_MODULE === $this->module_type ) {
-			return self::get_sshare_types( $with_titles );
+			return Hustle_SShare_Model::get_sshare_types( $with_titles );
 		}
 
 		return array();
@@ -93,7 +73,12 @@ class Hustle_Module_Model extends Hustle_Model {
 	public function get_decorated() {
 
 		if ( ! $this->_decorator ) {
-			$this->_decorator = new Hustle_Module_Decorator( $this ); }
+			if ( self::SOCIAL_SHARING_MODULE !== $this->module_type ) {
+				$this->_decorator = new Hustle_Decorator_Non_Sshare( $this );
+			} else {
+				$this->_decorator = new Hustle_Decorator_Sshare( $this );
+			}
+		}
 
 		return $this->_decorator;
 	}
@@ -110,7 +95,7 @@ class Hustle_Module_Model extends Hustle_Model {
 			$data['redirect_url'] = esc_url( $data['redirect_url'] );
 		}
 
-		return new Hustle_Popup_Content( $data, $this );
+		return new Hustle_Meta_Base_Content( $data, $this );
 	}
 
 	/**
@@ -123,7 +108,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	public function get_emails() {
 		$data = $this->get_settings_meta( self::KEY_EMAILS, '{}', true );
 
-		return new Hustle_Popup_Emails( $data, $this );
+		return new Hustle_Meta_Base_Emails( $data, $this );
 	}
 
 	/**
@@ -132,7 +117,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @since 4.0
 	 *
 	 * @param string $slug
-	 * @param bool $get_cached
+	 * @param bool   $get_cached
 	 * @return array
 	 */
 	public function get_provider_settings( $slug, $get_cached = true ) {
@@ -145,7 +130,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @since 4.0
 	 *
 	 * @param string $slug
-	 * @param array $data
+	 * @param array  $data
 	 * @return array
 	 */
 	public function set_provider_settings( $slug, $data ) {
@@ -162,12 +147,13 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @return array
 	 */
 	public function get_integrations_settings() {
-		return new Hustle_Popup_Integrations( $this->get_settings_meta( self::KEY_INTEGRATIONS_SETTINGS, '{}', true ), $this );
-
+		$stored = $this->get_settings_meta( self::KEY_INTEGRATIONS_SETTINGS, '{}', true );
+		return new Hustle_Meta_Base_Integrations( $stored, $this );
 	}
 
 	public function get_design() {
-		return new Hustle_Popup_Design( $this->get_settings_meta( self::KEY_DESIGN, '{}', true ), $this );
+		$stored = $this->get_settings_meta( self::KEY_DESIGN, '{}', true );
+		return new Hustle_Meta_Base_Design( $stored, $this );
 	}
 
 	/**
@@ -179,7 +165,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @return Hustle_Embedded_Display
 	 */
 	public function get_display() {
-		return new Hustle_Embedded_Display( $this->get_settings_meta( self::KEY_DISPLAY_OPTIONS, '{}', true ), $this );
+		return new Hustle_Meta_Base_Display( $this->get_settings_meta( self::KEY_DISPLAY_OPTIONS, '{}', true ), $this );
 	}
 
 	/**
@@ -190,31 +176,63 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @return Hustle_Popup_Visibility
 	 */
 	public function get_visibility() {
-		return new Hustle_Popup_Visbility( $this->get_settings_meta( self::KEY_VISIBILITY, '{}', true ), $this );
+		return new Hustle_Meta_Base_Visibility( $this->get_settings_meta( self::KEY_VISIBILITY, '{}', true ), $this );
 	}
 
 	/**
 	 * Used when populating data with "get".
-	 *
 	 */
 	public function get_settings() {
 		$saved = $this->get_settings_meta( self::KEY_SETTINGS, '{}', true );
+
+		// The default value for 'triggers' was an empty string in old versions.
+		// This will bring php errors if it persists.
+		// Let's remove that troubling value and let the module grab the new defaults.
+		if ( isset( $saved['triggers'] ) && empty( $saved['triggers'] ) ) {
+			unset( $saved['triggers'] );
+		}
 
 		if ( self::POPUP_MODULE === $this->module_type ) {
 			return new Hustle_Popup_Settings( $saved, $this );
 
 		} elseif ( self::EMBEDDED_MODULE === $this->module_type ) {
-			return new Hustle_Embedded_Settings( $saved, $this );
+			return new Hustle_Meta_Base_Settings( $saved, $this );
 
-		} else if ( self::SLIDEIN_MODULE === $this->module_type ) {
+		} elseif ( self::SLIDEIN_MODULE === $this->module_type ) {
 			return new Hustle_Slidein_Settings( $saved, $this );
 		}
 
-		return array();
+		return false;
+	}
+
+	/**
+	 * Get the stored schedule flags
+	 *
+	 * @since 4.2.0
+	 * @return array
+	 */
+	public function get_schedule_flags() {
+		$default = array(
+			'is_currently_scheduled' => '1',
+			'check_schedule_at'      => 1,
+		);
+
+		return $this->get_settings_meta( 'schedule_flags', $default, true );
+	}
+
+	/**
+	 * Set the schedule flags.
+	 *
+	 * @since 4.2.0
+	 * @param array $flags
+	 * @return void
+	 */
+	public function set_schedule_flags( $flags ) {
+		$this->update_meta( 'schedule_flags', $flags );
 	}
 
 	public function get_shortcode_id() {
-		return $this->get_meta( self::KEY_SHORTCODE_ID );
+		return $this->id;
 	}
 
 	public function get_custom_field( $key, $value ) {
@@ -264,7 +282,7 @@ class Hustle_Module_Model extends Hustle_Model {
 
 		} else {
 			$settings = array( 'settings' => $this->get_settings()->to_array() );
-			$data = array_merge( $settings, $this->get_data() );
+			$data     = array_merge( $settings, $this->get_data() );
 
 		}
 
@@ -284,148 +302,97 @@ class Hustle_Module_Model extends Hustle_Model {
 			return null;
 		}
 
-		$emails_data = $this->get_emails()->to_array();
-		$fields = array();
-		$form_fields = $emails_data['form_elements'];
+		$emails_data = empty( $this->emails ) ? $this->get_emails()->to_array() : (array) $this->emails;
+		/**
+		 * Edit module fields
+		 *
+		 * @since 4.1.1
+		 * @param string $form_elements Current module fields.
+		 */
+		$form_fields = apply_filters( 'hustle_form_elements', $emails_data['form_elements'] );
 
 		return $form_fields;
 
 	}
 
 	/**
-	 * Get visibility behavior by default, to display or not
+	 * Create a new module of the provided mode and type.
 	 *
-	 * @return bool
+	 * @since 4.0
+	 *
+	 * @param array $data Must contain the Module's 'mode', 'name' and 'type.
+	 * @return int|false Module ID if successfully saved. False otherwise.
 	 */
-	private function get_default_group_behavior( $conditions ) {
-		return !empty( $conditions['show_or_hide_conditions'] ) && 'hide' === $conditions['show_or_hide_conditions'];
+	public function create_new( $data ) {
 
+		// Verify it's a valid module type.
+		if ( ! in_array( $data['module_type'], array( self::POPUP_MODULE, self::SLIDEIN_MODULE, self::EMBEDDED_MODULE ), true ) ) {
+			return false;
+		}
+
+		// Abort if the mode isn't set.
+		if ( ! in_array( $data['module_mode'], array( 'optin', 'informational' ), true ) ) {
+			return false;
+		}
+
+		// Save to modules table.
+		$this->module_name = sanitize_text_field( $data['module_name'] );
+		$this->module_type = $data['module_type'];
+		$this->active      = 0;
+		$this->module_mode = $data['module_mode'];
+		$this->save();
+
+		// Save the new module's meta.
+		$this->store_new_module_meta( $data );
+
+		// Activate providers.
+		$this->activate_providers( $data );
+
+		return $this->id;
 	}
 
 	/**
-	 * Get relevant conditions based on subtype or return FALSE if it shouldn't be shown
+	 * Store the defaults meta when creating a new module.
 	 *
-	 * @param string $subtype
-	 * @return array|false
-	 */
-	private function get_conditions( $subtype = null ) {
-		$all_conditions = $this->get_visibility()->to_array();
-
-		// Return all. No need to filter per subtype.
-		if ( is_null( $subtype ) || empty( $all_conditions['conditions'] ) ) {
-			return $all_conditions;
-		}
-
-		// Remove the conditions that are not for this subtype.
-		$conditions_removed = false;
-		foreach ( $all_conditions['conditions'] as $group_id => $data ) {
-			if ( isset( $data['apply_on_' . $subtype ] ) && 'false' === $data['apply_on_' . $subtype ] ||
-					'shortcode' === $subtype && !isset( $data['apply_on_' . $subtype ] ) ) {
-				$conditions_removed = true;
-				unset( $all_conditions['conditions'][ $group_id ] );
-			}
-		}
-
-		// No conditions are left after filtering per subtype.
-		if ( $conditions_removed && empty( $all_conditions['conditions'] ) ) {
-			return false;
-		}
-
-		return $all_conditions;
-	}
-
-	/**
-	 * Checks if this module is allowed to be displayed
+	 * @since 4.0.0
 	 *
-	 * @return bool
+	 * @param array $data Data to store.
 	 */
-	public function is_allowed_to_display( $module_type, $sub_type = null ) {
-		$global_behavior = false;
+	private function store_new_module_meta( $data ) {
+		$def_content  = apply_filters( 'hustle_module_get_' . self::KEY_CONTENT . '_defaults', $this->get_content()->to_array(), $this, $data );
+		$content_data = empty( $data['content'] ) ? $def_content : array_merge( $def_content, $data['content'] );
 
-		// If the module isn't published, it shouldn't display.
-		if ( ! $this->active ) {
-			return false;
+		$def_emails  = apply_filters( 'hustle_module_get_' . self::KEY_EMAILS . '_defaults', $this->get_emails()->to_array(), $this, $data );
+		$emails_data = empty( $data['emails'] ) ? $def_emails : array_merge( $def_emails, $data['emails'] );
+
+		$def_design  = apply_filters( 'hustle_module_get_' . self::KEY_DESIGN . '_defaults', $this->get_design()->to_array(), $this, $data );
+		$design_data = empty( $data['design'] ) ? $def_design : array_merge( $def_design, $data['design'] );
+
+		$def_integrations_settings  = apply_filters( 'hustle_module_get_' . self::KEY_INTEGRATIONS_SETTINGS . '_defaults', $this->get_integrations_settings()->to_array(), $this, $data );
+		$integrations_settings_data = empty( $data['integrations_settings'] ) ? $def_integrations_settings : array_merge( $def_integrations_settings, $data['integrations_settings'] );
+
+		$def_settings  = apply_filters( 'hustle_module_get_' . self::KEY_SETTINGS . '_defaults', $this->get_settings()->to_array(), $this, $data );
+		$settings_data = empty( $data['settings'] ) ? $def_settings : array_merge( $def_settings, $data['settings'] );
+
+		// Visibility settings.
+		$def_visibility  = apply_filters( 'hustle_module_get_' . self::KEY_VISIBILITY . '_defaults', $this->get_visibility()->to_array(), $this, $data );
+		$visibility_data = empty( $data['visibility'] ) ? $def_visibility : array_merge( $def_visibility, $data['visibility'] );
+
+		// Save to meta table.
+		$this->update_meta( self::KEY_CONTENT, $content_data );
+		$this->update_meta( self::KEY_EMAILS, $emails_data );
+		$this->update_meta( self::KEY_INTEGRATIONS_SETTINGS, $integrations_settings_data );
+		$this->update_meta( self::KEY_DESIGN, $design_data );
+		$this->update_meta( self::KEY_SETTINGS, $settings_data );
+		$this->update_meta( self::KEY_VISIBILITY, $visibility_data );
+
+		// Embedded only. Display options.
+		if ( self::EMBEDDED_MODULE === $this->module_type ) {
+			$def_display  = apply_filters( 'hustle_module_get_' . self::KEY_DISPLAY_OPTIONS . '_defaults', $this->get_display()->to_array(), $this, $data );
+			$display_data = empty( $data['display'] ) ? $def_display : array_merge( $def_display, $data['display'] );
+
+			$this->update_meta( self::KEY_DISPLAY_OPTIONS, $display_data );
 		}
-
-		$all_conditions = $this->get_conditions( $sub_type );
-
-		if ( false === $all_conditions ) {
-			if ( 'shortcode' === $sub_type ) {
-				return true;
-			}
-			return false;
-		}
-		if ( empty( $all_conditions['conditions'] ) ) {
-			return true;
-		}
-
-		$display = null;
-		foreach ( $all_conditions['conditions'] as $group_id => $conditions ) {
-			$any_true = false;
-			$any_false = false;
-			$default_behavior = $this->get_default_group_behavior( $conditions );
-			if ( $default_behavior ) {
-				$global_behavior = true;
-			}
-
-			/**
-			 * condition type
-			 */
-			$filter_type = isset( $conditions['filter_type'] ) &&
-					'any' === $conditions['filter_type']
-				? $conditions['filter_type'] : 'all';
-
-			foreach ( $conditions as $condition_key => $args ) {
-
-				// These are not conditions but group's properties we don't need to check here.
-				if ( in_array( $condition_key, [ 'group_id', 'filter_type', 'apply_on_inline', 'apply_on_widget', 'apply_on_shortcode', 'show_or_hide_conditions' ], true ) ) {
-					continue;
-				}
-
-				// only cpt have 'postType' and 'postTypeLabel' properties.
-				if ( is_array( $args ) && isset( $args['postType'] ) && isset( $args['postTypeLabel'] ) ) {
-					$condition_key = 'cpt';
-				}
-				$condition = Hustle_Condition_Factory::build( $condition_key, $args );
-				if ( $condition ) {
-					$some_conditions = true;
-					$condition->set_type( $module_type );
-					$condition->module = $this;
-					$current = (bool) $condition->is_allowed();
-					if ( false === $current ) {
-						$any_false = true;
-					} else {
-						$any_true = true;
-					}
-				}
-			}
-
-			if ( 'any' === $filter_type ) {
-				if ( $any_true ) {
-					$display = $display || $any_true && ! $default_behavior ;
-				} else if ( $any_false ) {
-					$display = $display || $default_behavior;
-				}
-			}
-			if ( 'all' === $filter_type ) {
-				if ( $any_false ) {
-					$display = $display || $default_behavior;
-				} else if ( $any_true ) {
-					$display = $display || $any_true && ! $default_behavior;
-				}
-			}
-		}
-
-		// show module if there are no conditions
-		if ( empty( $some_conditions ) ) {
-			return true;
-		}
-
-		if ( is_null( $display ) ) {
-			return $global_behavior;
-		}
-
-		return $display;
 	}
 
 	/**
@@ -433,7 +400,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	 *
 	 * @since 3.0.5
 	 * @param string $email Email to be unsubscribed.
-	 * @param array $lists_id IDs of the modules to which it will be unsubscribed.
+	 * @param array  $lists_id IDs of the modules to which it will be unsubscribed.
 	 * @return boolean
 	 */
 	public function create_unsubscribe_nonce( $email, array $lists_id ) {
@@ -444,8 +411,8 @@ class Hustle_Module_Model extends Hustle_Model {
 
 		// If the email already created a nonce and didn't use it, replace its data.
 		$data[ $email ] = array(
-			'nonce' => $nonce,
-			'lists_id' => $lists_id,
+			'nonce'        => $nonce,
+			'lists_id'     => $lists_id,
 			'date_created' => time(),
 		);
 
@@ -515,26 +482,25 @@ class Hustle_Module_Model extends Hustle_Model {
 		if ( self::SOCIAL_SHARING_MODULE !== $this->module_type ) {
 
 			$data = array(
-				'content' => $this->get_content()->to_array(),
-				'emails' => $this->get_emails()->to_array(),
-				'design' => $this->get_design()->to_array(),
-				'settings' => $this->get_settings()->to_array(),
-				'visibility' => $this->get_visibility()->to_array(),
-				self::KEY_INTEGRATIONS_SETTINGS	=> $this->get_integrations_settings()->to_array(),
+				'content'                       => $this->get_content()->to_array(),
+				'emails'                        => $this->get_emails()->to_array(),
+				'design'                        => $this->get_design()->to_array(),
+				'settings'                      => $this->get_settings()->to_array(),
+				'visibility'                    => $this->get_visibility()->to_array(),
+				self::KEY_INTEGRATIONS_SETTINGS => $this->get_integrations_settings()->to_array(),
 			);
 
 			if ( self::EMBEDDED_MODULE === $this->module_type ) {
 				$data['display'] = $this->get_display()->to_array();
 			}
 
-			// Pass integrations
-
+			// Pass integrations.
 			if ( 'optin' === $this->module_mode ) {
 				$integrations = array();
-				$providers = Hustle_Providers::get_instance()->get_providers();
+				$providers    = Hustle_Providers::get_instance()->get_providers();
 				foreach ( $providers as $slug => $provider ) {
 					$provider_data = $this->get_provider_settings( $slug, false );
-					//if ( 'local_list' !== $slug && $provider_data && $provider->is_connected()
+					// if ( 'local_list' !== $slug && $provider_data && $provider->is_connected()
 					if ( $provider_data && $provider->is_connected()
 							&& $provider->is_form_connected( $this->module_id ) ) {
 						$integrations[ $slug ] = $provider_data;
@@ -543,33 +509,29 @@ class Hustle_Module_Model extends Hustle_Model {
 
 				$data['integrations'] = $integrations;
 			}
-
 		} else {
 			$data = array(
-				'content' => $this->get_content()->to_array(),
-				'display' => $this->get_display()->to_array(),
-				'design' => $this->get_design()->to_array(),
+				'content'    => $this->get_content()->to_array(),
+				'display'    => $this->get_display()->to_array(),
+				'design'     => $this->get_design()->to_array(),
 				'visibility' => $this->get_visibility()->to_array(),
 			);
 		}
 
 		unset( $this->id );
 
-		//rename
-		$this->module_name .= __( ' (copy)', 'wordpress-popup' );
+		// rename
+		$this->module_name .= __( ' (copy)', 'hustle' );
 
-		//turn status off
+		// Turn status off.
 		$this->active = 0;
 
-		//save
+		// Save.
 		$result = $this->save();
 
 		if ( $result && ! is_wp_error( $result ) ) {
 
 			$this->update_module( $data );
-
-			$shortcode_id = $this->get_new_shortcode_id( $this->module_name );
-			$this->add_meta( self::KEY_SHORTCODE_ID,  $shortcode_id );
 
 			return true;
 		}
@@ -578,267 +540,208 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Get data needed for rendering the tracking charts in the listing pages
-	 * Retrieved via AJAX.
+	 * Updates the metas specific for Non Social Sharing modules.
 	 *
-	 * @since 4.0.4
+	 * @since 4.3.0
+	 * @param array $data Data to save.
+	 * @return void
 	 */
-	public function get_tracking_data() {
-
-		if ( ! $this->id ) {
-			return '';
+	protected function update_module_metas( $data ) {
+		// Meta used in all module types.
+		if ( isset( $data['content'] ) ) {
+			$this->update_meta( self::KEY_CONTENT, $data['content'] );
+		}
+		// Meta used in all module types.
+		if ( isset( $data['visibility'] ) ) {
+			$this->update_meta( self::KEY_VISIBILITY, $data['visibility'] );
 		}
 
-		$tracking_model           = Hustle_Tracking_Model::get_instance();
-		$total_module_conversions = $tracking_model->count_tracking_data( $this->id, 'all_conversion' );
-		$total_module_views       = $tracking_model->count_tracking_data( $this->id, 'view' );
-		$last_entry_time          = Opt_In_Utils::get_latest_conversion_time_by_module_id( $this->id );
-		$rate                     = $total_module_views ? round( ( $total_module_conversions * 100 ) / $total_module_views, 1 ) : 0;
-		$module_sub_types         = $this->get_sub_types( true );
-		$is_cta                   = ! empty( $this->get_content()->__get( 'show_cta' ) );
+		// Design tab.
+		if ( isset( $data['design'] ) ) {
+			$saved_design = $this->get_design()->to_array();
+			$new_design   = array_merge( $saved_design, $data['design'] );
 
-		$multiple_charts = array();
+			$this->update_meta( self::KEY_DESIGN, $new_design );
+		}
 
-		// Get each sub type's tracking data if the module type has sub types.
-		if ( ! empty( $module_sub_types ) ) {
+		// Emails tab.
+		if ( isset( $data['emails'] ) ) {
+			$emails = $data['emails'];
+			if ( isset( $emails['form_elements'] ) ) {
+				$emails['form_elements'] = $this->sanitize_form_elements( $emails['form_elements'] );
+			}
+			$this->update_meta( self::KEY_EMAILS, $emails );
+		}
 
-			foreach ( $module_sub_types as $slug => $display_name ) {
+		// Settings tab.
+		if ( isset( $data['settings'] ) ) {
+			// Clear flags to skip cached schedule values.
+			$this->set_schedule_flags( array() );
+			$this->update_meta( self::KEY_SETTINGS, $data['settings'] );
+		}
 
-				$subtype         = $this->module_type . '_' . $slug;
-				$views           = $tracking_model->count_tracking_data( $this->id, 'view', $subtype );
-				$conversions     = $tracking_model->count_tracking_data( $this->id, 'all_conversion', $subtype );
-				$conversion_rate = $views ? round( ( $conversions * 100 ) / $views, 1 ) : 0;
+		// Integrations tab.
+		if ( isset( $data['integrations_settings'] ) ) {
+			$this->update_meta( self::KEY_INTEGRATIONS_SETTINGS, $data['integrations_settings'] );
+		}
 
-				$multiple_charts[ $slug ] = array(
-					'display_name'    => $display_name,
-					'last_entry_time' => Opt_In_Utils::get_latest_conversion_time_by_module_id( $this->id, $subtype ),
-					'views'           => $views,
-					'conversions'     => $conversions,
-					'conversion_rate' => $conversion_rate,
-				);
+		// Embedded only meta.
+		if ( self::EMBEDDED_MODULE === $this->module_type && isset( $data['display'] ) ) {
+			$this->update_meta( self::KEY_DISPLAY_OPTIONS, $data['display'] );
+		}
+
+		// Activate integrations if provided.
+		if ( isset( $data['integrations'] ) ) {
+			$this->activate_providers( $data );
+		}
+	}
+
+	/**
+	 * Sanitize/Replace the module's data.
+	 *
+	 * @param array $data Data to sanitize.
+	 * @return array Sanitized data.
+	 */
+	public function sanitize_module( $data ) {
+		$design_obj         = $this->get_design();
+		$default_options    = $design_obj->get_defaults();
+		$saved_options      = $design_obj->to_array();
+		$new_options        = ! empty( $data['design'] ) ? $data['design'] : array();
+		$typography_options = $design_obj->get_typography_defaults( 'desktop' );
+
+		// Check is `Border, Spacing and Shadow` enabled for desktop.
+		$spacing_on = $this->get_newest_value( 'customize_border_shadow_spacing', $new_options, $saved_options );
+		// Check is `Typography` enabled for desktop.
+		$typography_on = $this->get_newest_value( 'customize_typography', $new_options, $saved_options );
+
+		foreach ( $new_options as $option_name => $value ) {
+			if ( $spacing_on ) {
+				$data = $this->replace_empty_spacing_numbers( $data, $option_name, $value, $default_options );
+			}
+			if ( $typography_on ) {
+				$data = $this->replace_empty_typography_numbers( $data, $option_name, $value, $default_options, $typography_options );
 			}
 		}
-
-		$render_arguments = [
-			'module'                   => $this,
-			'total_module_views'       => $total_module_views,
-			'total_module_conversions' => $total_module_conversions,
-			'tracking_types'           => $this->get_tracking_types(),
-			'last_entry_time'          => $last_entry_time,
-			'rate'                     => $rate,
-			'is_cta'                   => $is_cta,
-		];
-
-		if ( $is_cta ) {
-			$notice_for_old_data = $tracking_model->has_old_tracking_data( $this->id );
-			$render_arguments['notice_for_old_data'] = $notice_for_old_data;
-		}
-
-		ob_start();
-
-		// ELEMENT: Tracking data.
-		Opt_In::static_render(
-			'admin/commons/sui-listing/elements/tracking-data',
-			[
-				'render_arguments' => $render_arguments,
-				'multiple_charts'  => $multiple_charts,
-			]
-		);
-
-		$html = ob_get_clean();
-
-		$charts_data = $this->get_charts_data( array_keys( $module_sub_types ), $total_module_views );
-
-		$data = array(
-			'html'        => $html,
-			'charts_data' => $charts_data,
-		);
 
 		return $data;
 	}
 
 	/**
-	 * Get tracking data for building charts on listing page
+	 * Validates the module's data.
 	 *
-	 * @since 4.0.4
-	 * @param array $sub_types Module's sub types.
-	 * @param int   $views Module's views count.
+	 * @since 4.0.3
+	 *
+	 * @param array $data Data to validate.
 	 * @return array
 	 */
-	private function get_charts_data( $sub_types, $views ) {
+	public function validate_module( $data ) {
+		$errors = array();
 
-		$sql_month_start_date = date( 'Y-m-d H:i:s', strtotime( '-30 days midnight' ) );
-		$tracking_model       = Hustle_Tracking_Model::get_instance();
-		$days_array           = [];
-		$default_array        = [];
+		// Name validation.
+		if ( empty( sanitize_text_field( $data['module']['module_name'] ) ) ) {
+			$errors['error']['name_error'] = __( 'This field is required', 'hustle' );
 
-		for ( $h = 30; $h >= 0; $h-- ) {
-			$time                   = strtotime( '-' . $h . ' days' );
-			$date                   = date( 'Y-m-d', $time );
-			$default_array[ $date ] = 0;
-			$days_array[]           = date( 'M j, Y', $time );
+			return $errors;
 		}
 
-		$sub_types[]      = 'overall';
-		$conversion_types = [ 'all' ];
+		return true;
+	}
 
-		if ( self::SOCIAL_SHARING_MODULE !== $this->module_type ) {
-			$conversion_types[] = 'cta';
-
-			if ( self::OPTIN_MODE === $this->module_mode ) {
-				$conversion_types[] = 'optin';
-			}
+	/**
+	 * Get newest value.
+	 *
+	 * @param string $option_name Option name.
+	 * @param array  $new_options New options.
+	 * @param array  $saved_options Old options.
+	 * @return bool
+	 */
+	private function get_newest_value( $option_name, $new_options, $saved_options ) {
+		if ( isset( $new_options[ $option_name ] ) ) {
+			$value = $new_options[ $option_name ];
+		} elseif ( isset( $saved_options[ $option_name ] ) ) {
+			$value = $saved_options[ $option_name ];
+		} else {
+			$value = '';
 		}
 
-		$data = [];
-		foreach ( $sub_types as $sub_type ) {
+		return $value;
+	}
 
-			$chart_container_id = sprintf(
-				'hustle-%1$s-%2$s-stats--%3$s',
-				$this->module_type,
-				$this->module_id,
-				$sub_type
-			);
-			$data[ $sub_type ]  = [
-				'id'   => $chart_container_id,
-				'days' => $days_array,
-			];
+	/**
+	 * Check if it's spacing option and value isn't set
+	 *
+	 * @param string $key Option name.
+	 * @param string $value Option value.
+	 * @return bool
+	 */
+	private function is_empty_spacing_number( $key, $value ) {
+		$needles = array( '_margin_', '_padding_', '_shadow_', '_radius_', '_border_' );
+		return $this->similar_in_array( $key, $needles ) && '' === $value;
+	}
 
-			foreach ( $conversion_types as $conversion_type ) {
+	/**
+	 * Check if it's typography option and value isn't set
+	 *
+	 * @param string $key Option name.
+	 * @param string $value Option value.
+	 * @param array  $typography_options Typography options.
+	 * @return bool
+	 */
+	private function is_empty_typography_number( $key, $value, $typography_options ) {
+		return '' === $value && isset( $typography_options[ $key ] )
+				&& ( is_float( $typography_options[ $key ] ) || is_int( $typography_options[ $key ] ) );
+	}
 
-				$last_month_conversions = $tracking_model->get_form_latest_tracking_data_count_grouped_by_day( $this->module_id, $sql_month_start_date, $conversion_type . '_conversion', $this->module_type, $sub_type );
-				$last_month_views       = $tracking_model->get_form_latest_tracking_data_count_grouped_by_day( $this->module_id, $sql_month_start_date, 'view', $this->module_type, $sub_type );
-
-				if ( ! $last_month_conversions ) {
-					$submissions_data = $default_array;
-				} else {
-					$submissions_array = wp_list_pluck( $last_month_conversions, 'tracked_count', 'date_created' );
-					$submissions_data  = array_merge( $default_array, array_intersect_key( $submissions_array, $default_array ) );
-				}
-
-				if ( ! $last_month_views ) {
-					$views_data = $default_array;
-				} else {
-					$views_array = wp_list_pluck( $last_month_views, 'tracked_count', 'date_created' );
-					$views_data  = array_merge( $default_array, array_intersect_key( $views_array, $default_array ) );
-				}
-
-				$query_sub_type        = 'overall' === $sub_type ? null : $sub_type;
-				$query_conversion_type = $conversion_type . '_conversion';
-				$sub_type_conversions  = $tracking_model->count_tracking_data( $this->id, $query_conversion_type, $query_sub_type );
-
-				$data[ $sub_type ][ $conversion_type ] = [
-					'conversions_count' => $sub_type_conversions,
-					'conversion_rate'   => $views ? round( ( $sub_type_conversions * 100 ) / $views, 1 ) : 0,
-					'conversions'       => array_values( $submissions_data ),
-				];
-			}
-
-			$data[ $sub_type ]['views'] = array_values( $views_data );
-			$data[ $sub_type ]['conversions'] = array_values( $submissions_data );
+	/**
+	 * If it's an empty number option from Destop section - replace it to relevant default value.
+	 *
+	 * @param string $data Data for sanitize.
+	 * @param string $option_name Option name.
+	 * @param string $option_value Option value.
+	 * @param array  $default_options Default options.
+	 * @return string
+	 */
+	private function replace_empty_spacing_numbers( $data, $option_name, $option_value, $default_options ) {
+		if ( $this->is_empty_spacing_number( $option_name, $option_value ) && '_mobile' !== substr( $option_name, -7 ) ) {
+			$data['design'][ $option_name ] = isset( $default_options[ $option_name ] ) ? $default_options[ $option_name ] : 0;
 		}
 
 		return $data;
 	}
 
 	/**
-	 * Get selector for chart on listing page
+	 * If it's an empty number option from Typography section - replace it to relevant default value.
 	 *
-	 * @param int $module_id
-	 * @param string $module_type
-	 * @param string $module_subtype
-	 * @param string $conversion_type all|ctp|optin
+	 * @param string $data Data for sanitize.
+	 * @param string $option_name Option name.
+	 * @param string $option_value Option value.
+	 * @param array  $default_options Default options.
+	 * @param array  $typography_options Typography options.
 	 * @return string
 	 */
-	private function get_chart_id( $module_id, $module_type, $module_subtype = 'overall', $conversion_type = 'all' ) {
-		$id = "hustle-{$module_type}-{$module_id}-stats" . ( $module_subtype ? '--' . $module_subtype : '' );
-
-		return $id;
-	}
-
-
-	/**
-	 * Get a new and unique shortcode id.
-	 *
-	 * @since 3.0.8
-	 *
-	 * @param string $module_name
-	 * @return string
-	 */
-	public function get_new_shortcode_id( $shortcode_id ) {
-
-		$shortcode_id = $this->sanitize_shortcode_id( $shortcode_id );
-		$new_shortcode_id = $shortcode_id;
-
-		$module_id = $this->get_module_id_by_shortcode_id( $shortcode_id );
-		$i = 1;
-
-		while ( $module_id ) {
-			$new_shortcode_id = $shortcode_id . '-' . $i;
-
-			$module_id = $this->get_module_id_by_shortcode_id( $new_shortcode_id );
-
-			++$i;
+	private function replace_empty_typography_numbers( $data, $option_name, $option_value, $default_options, $typography_options ) {
+		if ( $this->is_empty_typography_number( $option_name, $option_value, $typography_options ) && '_mobile' !== substr( $option_name, -7 ) ) {
+			$data['design'][ $option_name ] = isset( $default_options[ $option_name ] ) ? $default_options[ $option_name ] : 0;
 		}
 
-		return $new_shortcode_id;
+		return $data;
 	}
 
 	/**
-	 * Get a new and unique shortcode id.
+	 * Checks if a value contains a part of any array item
 	 *
-	 * @since 4.0
-	 *
-	 * @param string $id
-	 * @return string
+	 * @param array  $haystack The value.
+	 * @param string $needles The array of pices.
+	 * @return boolean
 	 */
-	private function sanitize_shortcode_id( $id ) {
-		$id = str_replace( ' ', '_', $id );
-		$id = preg_replace('/[^A-Za-z0-9 ]/', '', $id);
+	private function similar_in_array( $haystack, $needles ) {
+		foreach ( $needles as $needle ) {
+			if ( false !== strpos( $haystack, $needle ) ) {
+				return true;
+			}
+		}
 
-		return $id;
-	}
-
-	/**
-	 * Get the module_id by its shortcode_id.
-	 * Reduce the overload of get_by_shortcode().
-	 *
-	 * @todo use cache.
-	 *
-	 * @since 4.0
-	 *
-	 * @param string $shortcode_id
-	 * @return int|string
-	 */
-	public function get_module_id_by_shortcode_id( $shortcode_id ) {
-
-		$module_id = $this->_wpdb->get_var( $this->_wpdb->prepare( "
-		SELECT module_id FROM `" . Hustle_Db::modules_meta_table() . "`
-			WHERE `meta_key`='shortcode_id'
-			AND `meta_value`=%s", $shortcode_id
-		));
-
-		return $module_id;
-	}
-
-	/**
-	 * Get the module type by module id
-	 * without the overhead of populating the model.
-	 *
-	 * @since 4.0
-	 *
-	 * @param integer $module_id
-	 * @return string|null
-	 */
-	public function get_module_type_by_module_id( $module_id ) {
-
-		$query = $this->_wpdb->prepare( "
-			SELECT module_type FROM `" . Hustle_Db::modules_table() . "`
-			WHERE `module_id`=%s",
-			$module_id
-		);
-
-		return $this->_wpdb->get_var( $query );
+		return false;
 	}
 
 	/**
@@ -848,7 +751,7 @@ class Hustle_Module_Model extends Hustle_Model {
 	 *
 	 * @param string $sub_type
 	 * @param string $custom_classes
-	 * @param bool $is_preview
+	 * @param bool   $is_preview
 	 * @return string
 	 */
 	public function display( $sub_type = null, $custom_classes = '', $is_preview = false ) {
@@ -883,148 +786,6 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Load a palette array.
-	 *
-	 * @param string $name  Palette name = file name.
-	 *
-	 * @return string
-	 */
-	public static function get_palette_file( $name ) {
-		$file    = Opt_In::$plugin_path . "palettes/{$name}.php";
-		$content = array();
-
-		if ( is_file( $file ) ) {
-			/* @noinspection PhpIncludeInspection */
-			$content = include $file;
-		}
-
-		return $content;
-
-	}
-
-	/**
-	 * Returns palettes used to color optins
-	 *
-	 * @return array
-	 */
-	public static function get_default_palettes() {
-
-		$default_palettes_slugs = self::get_palettes_names();
-		$default_palettes = array();
-
-		foreach( $default_palettes_slugs as $slug ) {
-			$default_palettes[ $slug ] = self::get_palette_array( $slug );
-		}
-
-		return $default_palettes;
-	}
-
-	/**
-	 * Get all palettes, defaults + customized ones.
-	 *
-	 * @since 4.0.3
-	 * @return array
-	 */
-	public static function get_all_palettes() {
-
-		$default_palettes = self::get_default_palettes();
-
-		$custom_palettes_array = Hustle_Settings_Admin::get_custom_color_palettes();
-		$custom_palettes = array();
-
-		foreach( $custom_palettes_array as $slug => $data ) {
-			// Merge with one of the default palettes in case we introduce a new property.
-			$custom_palettes[ $slug ] = array_merge( $default_palettes['gray_slate'], $data['palette'] );
-		}
-
-		return array_merge( $default_palettes, $custom_palettes );
-	}
-
-	/**
-	 * Get all the default palettes and custom ones slugs and display names.
-	 *
-	 * @since 4.0.3
-	 * @return array
-	 */
-	public static function get_all_palettes_slug_and_name() {
-
-		$stored_palettes = Hustle_Settings_Admin::get_custom_color_palettes();
-
-		$stored_names = wp_list_pluck( $stored_palettes, 'name', 'slug' );
-
-		$default_palettes = self::get_palettes_names( true );
-
-		return array_merge( $stored_names, $default_palettes );
-	}
-
-	/**
-	 * Get the names of the existing color palettes.
-	 * Watch out if you change these. They are used during 3.x -> 4.x migration.
-	 *
-	 * @since 4.0
-	 * @since 4.0.3 $get_display_name parameter added
-	 *
-	 * @param bool $get_display_name
-	 * @return array
-	 */
-	public static function get_palettes_names( $get_display_name = false ) {
-
-		if ( ! $get_display_name ) {
-
-			return array(
-				'gray_slate', 'coffee', 'ectoplasm', 'blue', 'sunrise', 'midnight',
-			);
-		}
-
-		return array(
-			'gray_slate' => __( 'Gray Slate', 'wordpress-popup' ),
-			'coffee' => __( 'Coffee', 'wordpress-popup' ),
-			'ectoplasm' => __( 'Ectoplasm', 'wordpress-popup' ),
-			'blue' => __( 'Blue', 'wordpress-popup' ),
-			'sunrise' => __( 'Sunrise', 'wordpress-popup' ),
-			'midnight'=> __( 'Midnight', 'wordpress-popup' ),
-		);
-	}
-
-	/**
-	 * Returns palette array for palette name
-	 *
-	 * @param string $palette_name e.g. "gray_slate"
-	 *
-	 * @return array
-	 */
-	public static function get_palette_array( $palette_name ) {
-
-		$palette_data = array();
-
-		//since this is just used for comparision
-		//while creating custom palette.
-		if( 'info-module' === $palette_name ){
-			$palette_data = self::get_palette_file( $palette_name );
-		}
-
-		// If it's a default palette, get the array from the file.
-		if ( in_array( $palette_name, self::get_palettes_names(), true ) ) {
-			$palette_data = self::get_palette_file( $palette_name );
-
-		} else {
-			// If it's custom, retrieve it from the stored settings.
-			$saved_palettes = Hustle_Settings_Admin::get_custom_color_palettes();
-
-			// Check if the palette name still exists.
-			if ( isset( $saved_palettes[ $palette_name ] ) ) {
-				$palette = $saved_palettes[ $palette_name ];
-
-				// Merge it with a default in case we introduced new settings not present in the stored array.
-				$palette_data = array_merge( self::get_palette_file( 'gray_slate' ), $palette['palette'] );
-
-			}
-		}
-
-		return $palette_data;
-	}
-
-	/**
 	 * Sanitize the form fields name replacing spaces by underscores.
 	 * This way the data is handled properly along hustle.
 	 *
@@ -1042,8 +803,8 @@ class Hustle_Module_Model extends Hustle_Model {
 		// Replace the name without changing the array's order.
 		$names_array = array_keys( $form_fields );
 		foreach ( $names_to_sanitize as $name ) {
-			$index = array_search( $name, $names_array, true );
-			$sanitized_name = self::sanitize_form_field_name( $name );
+			$index                        = array_search( $name, $names_array, true );
+			$sanitized_name               = self::sanitize_form_field_name( $name );
 			$form_fields[ $name ]['name'] = $sanitized_name;
 
 			$names_array[ $index ] = $sanitized_name;
@@ -1057,18 +818,18 @@ class Hustle_Module_Model extends Hustle_Model {
 	public function sanitize_form_elements( $form_elements ) {
 		// Sanitize GDPR message
 		if ( isset( $form_elements['gdpr']['gdpr_message'] ) ) {
-			$allowed_html = array(
-				'a' => array(
-					'href' => true,
-					'title' => true,
+			$allowed_html                          = array(
+				'a'      => array(
+					'href'   => true,
+					'title'  => true,
 					'target' => true,
-					'alt' => true,
+					'alt'    => true,
 				),
-				'b' => array(),
+				'b'      => array(),
 				'strong' => array(),
-				'i' => array(),
-				'em' => array(),
-				'del' => array(),
+				'i'      => array(),
+				'em'     => array(),
+				'del'    => array(),
 			);
 			$form_elements['gdpr']['gdpr_message'] = wp_kses( wp_unslash( $form_elements['gdpr']['gdpr_message'] ), $allowed_html );
 		}
@@ -1097,36 +858,157 @@ class Hustle_Module_Model extends Hustle_Model {
 		$connected_addons = Hustle_Provider_Utils::get_addons_instance_connected_with_module( $this->module_id );
 
 		foreach ( $connected_addons as $addon ) {
-			// Change logic only for sendgrid for now
+
+			// Change logic only for sendgrid for now.
 			if ( 'sendgrid' !== $addon->get_slug() ) {
 				continue;
 			}
 			$global_multi_id = $addon->selected_global_multi_id;
-			$new_campaigns = $addon->get_setting( 'new_campaigns', '', $global_multi_id );
-			// only if it's the New Sendgrid Campaigns
+			$new_campaigns   = $addon->get_setting( 'new_campaigns', '', $global_multi_id );
+
+			// only if it's the New Sendgrid Campaigns.
 			if ( 'new_campaigns' !== $new_campaigns ) {
 				continue;
 			}
-			$emails = $this->get_emails()->to_array();
-			$custom_fields = [];
+			$emails        = $this->get_emails()->to_array();
+			$custom_fields = array();
 
 			$api_key = $addon->get_setting( 'api_key', '', $global_multi_id );
-			$api = $addon::api( $api_key, $new_campaigns );
+			$api     = $addon::api( $api_key, $new_campaigns );
 
 			foreach ( $emails['form_elements'] as $element ) {
-				if ( empty( $element['type'] ) || in_array( $element['type'], [ 'submit', 'recaptcha' ], true ) ) {
+				if ( empty( $element['type'] ) || in_array( $element['type'], array( 'submit', 'recaptcha' ), true ) ) {
 					continue;
 				}
-				$custom_fields[] = [
+				$custom_fields[] = array(
 					'type' => 'text',
 					'name' => $element['name'],
-				];
+				);
 			}
 
-			if ( !empty( $custom_fields ) ) {
+			if ( ! empty( $custom_fields ) ) {
 				$api->add_custom_fields( $custom_fields );
 			}
 		}
 	}
 
+	/**
+	 * Returns the link to the wizard page into the defined tab.
+	 *
+	 * @since unknown
+	 * @since 4.3.0 Moved from Hustle_Module_Decorator to this class.
+	 *
+	 * @param string $section Slug of the section to go to.
+	 * @return string
+	 */
+	public function get_edit_url( $section = '' ) {
+		$url = 'admin.php?page=' . $this->get_wizard_page() . '&id=' . $this->module_id;
+
+		if ( ! empty( $section ) ) {
+			$url .= '&section=' . $section;
+		}
+
+		return admin_url( $url );
+	}
+
+	/**
+	 * Gets the selected Google fonts for the active elements in the module.
+	 * Used for non-ssharing modules only.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return array
+	 */
+	public function get_google_fonts() {
+		$fonts      = array();
+		$is_preview = ! empty( $this->design );
+
+		$design = ! $is_preview ? $this->get_design()->to_array() : (array) $this->design;
+
+		if ( '1' === $design['use_vanilla'] ) {
+			return $fonts;
+		}
+
+		$content = ! $is_preview ? $this->get_content()->to_array() : (array) $this->content;
+
+		$elements = array(
+			'title'                      => '' !== $content['title'],
+			'subtitle'                   => '' !== $content['sub_title'],
+			'main_content_paragraph'     => '' !== $content['main_content'],
+			'main_content_heading_one'   => '' !== $content['main_content'],
+			'main_content_heading_two'   => '' !== $content['main_content'],
+			'main_content_heading_three' => '' !== $content['main_content'],
+			'main_content_heading_four'  => '' !== $content['main_content'],
+			'main_content_heading_five'  => '' !== $content['main_content'],
+			'main_content_heading_six'   => '' !== $content['main_content'],
+			'cta'                        => '0' !== $content['show_cta'],
+			'never_see_link'             => '0' !== $content['show_never_see_link'],
+		);
+
+		// Only list the font of the elements that are shown, and aren't using a 'custom' font.
+		foreach ( $elements as $element_name => $is_shown ) {
+			if ( ! $is_shown ) {
+				continue;
+			}
+
+			$font = $design[ $element_name . '_font_family' ];
+			if ( 'custom' !== $font ) {
+				$font_weight = $design[ $element_name . '_font_weight' ];
+				if ( ! isset( $fonts[ $font ] ) ) {
+					$fonts[ $font ] = array();
+				}
+				if ( ! in_array( $font_weight, $fonts[ $font ], true ) ) {
+					$fonts[ $font ][] = $font_weight;
+				}
+			}
+		}
+
+		// We're done here for informational modules.
+		if ( self::OPTIN_MODE !== $this->module_mode ) {
+			return $fonts;
+		}
+
+		$has_mailchimp = ! empty( $this->get_provider_settings( 'mailchimp' ) );
+
+		$emails              = ! $is_preview ? $this->get_emails()->to_array() : (array) $this->emails;
+		$form_fields         = $this->get_form_fields();
+		$has_success_message = 'show_success' === $emails['after_successful_submission'];
+
+		$elements_optin = array(
+			'form_extras'                   => $has_mailchimp,
+			'input'                         => true,
+			'select'                        => $has_mailchimp,
+			'checkbox'                      => $has_mailchimp,
+			'dropdown'                      => $has_mailchimp,
+			'gdpr'                          => ! empty( $form_fields['gdpr'] ),
+			'recaptcha'                     => ! empty( $form_fields['recaptcha'] ),
+			'submit_button'                 => true,
+			'success_message_paragraph'     => $has_success_message,
+			'success_message_heading_one'   => $has_success_message,
+			'success_message_heading_two'   => $has_success_message,
+			'success_message_heading_three' => $has_success_message,
+			'success_message_heading_four'  => $has_success_message,
+			'success_message_heading_five'  => $has_success_message,
+			'success_message_heading_six'   => $has_success_message,
+			'error_message'                 => true,
+		);
+
+		foreach ( $elements_optin as $element_name => $is_shown ) {
+			if ( ! $is_shown ) {
+				continue;
+			}
+
+			$font = $design[ $element_name . '_font_family' ];
+			if ( 'custom' !== $font ) {
+				$font_weight = $design[ $element_name . '_font_weight' ];
+				if ( ! isset( $fonts[ $font ] ) ) {
+					$fonts[ $font ] = array();
+				}
+				if ( ! in_array( $font_weight, $fonts[ $font ], true ) ) {
+					$fonts[ $font ][] = $font_weight;
+				}
+			}
+		}
+		return $fonts;
+	}
 }

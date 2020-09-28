@@ -1,11 +1,26 @@
 <?php
+/**
+ * Displays the actual tracking per module chart in the listing page.
+ *
+ * @package Hustle
+ * @since 4.0.0
+ */
+
+// Labels and values for the options for the Optin tracking charts.
+$cta_labels = array(
+	'all'   => __( 'All', 'hustle' ),
+	'cta'   => __( 'Call to Action', 'hustle' ),
+	'optin' => __( 'Opt-in Form', 'hustle' ),
+);
+
 $chart_message_class = '';
 $chart_message       = '';
 $chart_sub_type      = empty( $module_sub_type ) ? 'overall' : $module_sub_type;
 $is_tracking_enabled = ! empty( $tracking_types );
 $smallcaps_singular  = Opt_In_Utils::get_module_type_display_name( $module->module_type );
 
-$canvas_content = sprintf( '<canvas id="hustle-%1$s-%2$s-stats--%3$s"></canvas>',
+$canvas_content = sprintf(
+	'<canvas id="hustle-%1$s-%2$s-stats--%3$s"></canvas>',
 	esc_attr( $module->module_type ),
 	esc_attr( $module->id ),
 	esc_attr( $chart_sub_type )
@@ -28,21 +43,21 @@ if ( ! $module->active ) {
 	if ( 0 === $total_module_views && 0 === $total_module_conversions ) {
 
 		/* translators: 1: module type display name */
-		$chart_message       = sprintf( esc_html__( "This %1\$s is still in draft state. You can test your %1\$s, but we won't start collecting conversion data until you publish it live.", 'wordpress-popup' ), esc_html( $smallcaps_singular ) );
+		$chart_message       = sprintf( esc_html__( "This %1\$s is still in draft state. You can test your %1\$s, but we won't start collecting conversion data until you publish it live.", 'hustle' ), esc_html( $smallcaps_singular ) );
 		$chart_message_class = ' sui-chartjs-message--empty';
 		$canvas_content      = '';
 
 	} else {
 
 		/* translators: 1: module type display name */
-		$chart_message = sprintf( esc_html__( "This %1\$s is in draft state, so we've paused collecting data until you publish it live.", 'wordpress-popup' ), esc_html( $smallcaps_singular ) );
+		$chart_message = sprintf( esc_html__( "This %1\$s is in draft state, so we've paused collecting data until you publish it live.", 'hustle' ), esc_html( $smallcaps_singular ) );
 	}
 } else {
 
 	if ( ! $is_tracking_enabled ) {
 
 		/* translators: 1: module type display name */
-		$chart_message = sprintf( esc_html__( 'This %1$s has tracking disabled. Enable tracking from the settings dropdown to start collecting data.', 'wordpress-popup' ), esc_html( $smallcaps_singular ) );
+		$chart_message = sprintf( esc_html__( 'This %1$s has tracking disabled. Enable tracking from the settings dropdown to start collecting data.', 'hustle' ), esc_html( $smallcaps_singular ) );
 	}
 }
 
@@ -51,45 +66,45 @@ if ( ! $module->active ) {
 <ul class="sui-accordion-item-data">
 
 	<li data-col="large">
-		<strong><?php esc_html_e( 'Last Conversion', 'wordpress-popup' ); ?></strong>
+		<strong><?php esc_html_e( 'Last Conversion', 'hustle' ); ?></strong>
 		<span><?php echo esc_html( $last_entry_time ); ?></span>
 	</li>
 
 	<li data-col="small">
-		<strong><?php esc_html_e( 'Views', 'wordpress-popup' ); ?></strong>
+		<strong><?php esc_html_e( 'Views', 'hustle' ); ?></strong>
 		<span><?php echo esc_html( $total_module_views ); ?></span>
 	</li>
 
 	<li>
-		<strong><?php esc_html_e( 'Conversions', 'wordpress-popup' ); ?></strong>
+		<strong><?php esc_html_e( 'Conversions', 'hustle' ); ?></strong>
 		<span class="hustle-tracking-<?php echo esc_attr( $chart_sub_type ); ?>-conversions-count"><?php echo esc_html( $total_module_conversions ); ?></span>
 	</li>
 
 	<li>
-		<strong><?php esc_html_e( 'Conversion Rate', 'wordpress-popup' ); ?></strong>
+		<strong><?php esc_html_e( 'Conversion Rate', 'hustle' ); ?></strong>
 		<span class="hustle-tracking-<?php echo esc_attr( $chart_sub_type ); ?>-conversions-rate"><?php echo esc_html( $rate ); ?>%</span>
 	</li>
 
-	<?php if ( ! empty( $is_cta ) && Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type && Hustle_Module_Model::OPTIN_MODE === $module->module_mode ) : ?>
+	<?php if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type && Hustle_Module_Model::OPTIN_MODE === $module->module_mode ) : ?>
 
 		<li class="hustle-conversion-select" data-col="selector">
 
 			<label class="hui-selector-label">
 				<?php if ( ! empty( $notice_for_old_data ) ) { ?>
-				<span class="hui-label-icon sui-tooltip sui-tooltip-constrained" data-tooltip="<?php esc_attr_e( 'We can distinguish the new conversions from the version 4.0.4 or above. Your older conversions will appear under All conversions only.', 'wordpress-popup' ); ?>">
-					<i class="sui-icon-info sui-sm" aria-hidden="true"></i>
+				<span class="hui-label-icon sui-tooltip sui-tooltip-constrained" data-tooltip="<?php esc_attr_e( 'We can distinguish the new conversions from the version 4.0.4 or above. Your older conversions will appear under All conversions only.', 'hustle' ); ?>">
+					<span class="sui-icon-info sui-sm" aria-hidden="true"></span>
 				</span>
 				<?php } ?>
-				<span class="hui-label-text"><?php esc_html_e( 'Show conversions for', 'wordpress-popup' ); ?></span>
+				<span class="hui-label-text"><?php esc_html_e( 'Show conversions for', 'hustle' ); ?></span>
 			</label>
 
 			<select
 				class="sui-select-sm hui-selector-button hustle-conversion-type"
 				data-module-type="<?php echo esc_attr( $chart_sub_type ); ?>"
 			>
-				<option value="all"><?php esc_html_e( 'All', 'wordpress-popup' ); ?></option>
-				<option value="cta"><?php esc_html_e( 'CTA', 'wordpress-popup' ); ?></option>
-				<option value="optin"><?php esc_html_e( 'Opt-in Form', 'wordpress-popup' ); ?></option>
+				<?php foreach ( $cta_labels as $key => $cta_label ) { ?>
+					<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $cta_label ); ?></option>
+				<?php } ?>
 			</select>
 
 		</li>
@@ -102,7 +117,7 @@ if ( ! $module->active ) {
 
 	<div class="sui-chartjs-message sui-chartjs-message--loading">
 
-		<p><i class="sui-icon-loader sui-loading" aria-hidden="true"></i> <?php esc_html_e( 'Loading data...', 'wordpress-popup' ); ?></p>
+		<p><span class="sui-icon-loader sui-loading" aria-hidden="true"></span> <?php esc_html_e( 'Loading data...', 'hustle' ); ?></p>
 
 	</div>
 
@@ -110,7 +125,7 @@ if ( ! $module->active ) {
 
 		<div class="sui-chartjs-message<?php echo esc_attr( $chart_message_class ); ?>">
 
-			<p><i class="sui-icon-info" aria-hidden="true"></i><?php echo $chart_message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
+			<p><span class="sui-icon-info" aria-hidden="true"></span><?php echo $chart_message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
 
 		</div>
 

@@ -17,8 +17,8 @@ class Hustle_Module_Widget extends WP_Widget {
 	public function __construct() {
 		parent::__construct(
 			self::WIDGET_ID,
-			__( 'Hustle', 'wordpress-popup' ),
-			array( 'description' => __( 'A widget to add Hustle Embeds and Social Sharing.', 'wordpress-popup' ) )
+			__( 'Hustle', 'hustle' ),
+			array( 'description' => __( 'A widget to add Hustle Embeds and Social Sharing.', 'hustle' ) )
 		);
 	}
 
@@ -41,7 +41,7 @@ class Hustle_Module_Widget extends WP_Widget {
 			if ( ! empty( $instance['title'] ) ) {
 				echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ). $args['after_title'];
 			}
-			echo esc_attr__( 'Select Module', 'wordpress-popup' );
+			echo esc_attr__( 'Select Module', 'hustle' );
 
 			echo $args['after_widget'];
 
@@ -78,18 +78,18 @@ class Hustle_Module_Widget extends WP_Widget {
 	 * @return void
 	 */
 	public function form( $instance ) {
-		$title = ! empty( $instance['title'] ) ? $instance['title'] : __( 'New title', 'text_domain' );
+		$title = ! empty( $instance['title'] ) ? $instance['title'] : __( 'New title', 'hustle' );
 		if ( empty( $instance['module_id'] ) ) {
 			$instance['module_id'] = -1; }
 		?>
 		<p>
-			<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php echo esc_attr__( 'Title:', 'wordpress-popup' ); ?></label>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php echo esc_attr__( 'Title:', 'hustle' ); ?></label>
 			<input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
 		</p>
 		<p>
-			<label for="<?php echo esc_attr( $this->get_field_id( 'module_id' ) ); ?>"><?php echo esc_attr__( 'Select Module:', 'wordpress-popup' ); ?></label>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'module_id' ) ); ?>"><?php echo esc_attr__( 'Select Module:', 'hustle' ); ?></label>
 			<select name="<?php echo esc_attr( $this->get_field_name( 'module_id' ) ); ?>" id="hustle_module_id">
-				<option value=""><?php echo esc_attr__( 'Select Module', 'wordpress-popup' ); ?></option>
+				<option value=""><?php echo esc_attr__( 'Select Module', 'hustle' ); ?></option>
 				<?php
 					$types = array( 'embedded', 'social_sharing' );
 				foreach ( Hustle_Module_Collection::instance()->get_embed_id_names( $types ) as $mod ) :
@@ -97,14 +97,14 @@ class Hustle_Module_Widget extends WP_Widget {
 					if ( is_wp_error( $module ) ) {
 						continue;
 					}
-					//if( $module->settings->widget->show_in_front() ):
+					// if( $module->settings->widget->show_in_front() ):
 					?>
-					<option <?php selected( $instance['module_id'],  $mod->module_id ); ?> value="<?php echo esc_attr( $mod->module_id ); ?>"><?php echo esc_attr( $mod->module_name ); ?></option>
+					<option <?php selected( $instance['module_id'], $mod->module_id ); ?> value="<?php echo esc_attr( $mod->module_id ); ?>"><?php echo esc_attr( $mod->module_name ); ?></option>
 
 					<?php
-					//endif;
+					// endif;
 						endforeach;
-					?>
+				?>
 			</select>
 		</p>
 		<?php
@@ -122,9 +122,9 @@ class Hustle_Module_Widget extends WP_Widget {
 	 * @return array Updated safe values to be saved.
 	 */
 	public function update( $new_instance, $old_instance ) {
-		$instance = array();
-		$instance['title'] = ! empty( $new_instance['title'] )  ? wp_strip_all_tags( $new_instance['title'] ) : '';
-		$instance['module_id'] = ! empty( $new_instance['module_id'] )  ? wp_strip_all_tags( $new_instance['module_id'] ) : '';
+		$instance              = array();
+		$instance['title']     = ! empty( $new_instance['title'] ) ? wp_strip_all_tags( $new_instance['title'] ) : '';
+		$instance['module_id'] = ! empty( $new_instance['module_id'] ) ? wp_strip_all_tags( $new_instance['module_id'] ) : '';
 
 		return $instance;
 	}

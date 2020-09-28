@@ -14,6 +14,24 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 	}
 
 	/**
+	 * Prepare GDPR fields for Mailchimp API
+	 *
+	 * @param array $gdpr_fields Saved GDPR fields
+	 * @return array
+	 */
+	private function prepare_marketing_permissions( $gdpr_fields ) {
+		$permissions = array();
+		foreach ( $gdpr_fields as $key ) {
+			$permissions[] = array(
+				'marketing_permission_id' => $key,
+				'enabled'                 => true,
+			);
+		}
+
+		return $permissions;
+	}
+
+	/**
 	 * Add Mailchimp data to entry.
 	 *
 	 * @since 4.0
@@ -23,8 +41,8 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 	 */
 	public function add_entry_fields( $submitted_data ) {
 
-		$addon = $this->addon;
-		$module_id = $this->module_id;
+		$addon                  = $this->addon;
+		$module_id              = $this->module_id;
 		$form_settings_instance = $this->form_settings_instance;
 
 		/**
@@ -34,7 +52,7 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 		 *
 		 * @param array                                    $submitted_data
 		 * @param int                                      $module_id                current module_id
-		 * @param Hustle_Mailchimp_Form_Settings 	   	   $form_settings_instance
+		 * @param Hustle_Mailchimp_Form_Settings           $form_settings_instance
 		 */
 		$submitted_data = apply_filters(
 			'hustle_provider_mailchimp_form_submitted_data',
@@ -43,19 +61,19 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			$form_settings_instance
 		);
 
-		$addon_setting_values 	= $form_settings_instance->get_form_settings_values();
-		$global_multi_id 		= $addon_setting_values['selected_global_multi_id'];
-		$api_key 				= $addon->get_setting( 'api_key', '', $global_multi_id );
+		$addon_setting_values = $form_settings_instance->get_form_settings_values();
+		$global_multi_id      = $addon_setting_values['selected_global_multi_id'];
+		$api_key              = $addon->get_setting( 'api_key', '', $global_multi_id );
 
 		try {
 			$api = $addon->get_api( $api_key );
 
 			if ( empty( $submitted_data['email'] ) ) {
-				throw new Exception( __('Required Field "email" was not filled by the user.', 'wordpress-popup' ) );
+				throw new Exception( __( 'Required Field "email" was not filled by the user.', 'hustle' ) );
 			}
 
-			$list_id = $addon_setting_values['list_id'];
-			$list_id = apply_filters(
+			$list_id    = $addon_setting_values['list_id'];
+			$list_id    = apply_filters(
 				'hustle_provider_mailchimp_add_update_member_request_mail_list_id',
 				$list_id,
 				$module_id,
@@ -64,11 +82,11 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			);
 			$sub_status = 'subscribed' === $addon_setting_values['auto_optin'] ? 'subscribed' : 'pending';
 
-			$email =  $submitted_data['email'];
+			$email          = $submitted_data['email'];
 			$submitted_data = $this->check_legacy( $submitted_data );
-			$merge_vals = array();
-			$interests = array();
-			$gdpr = false;
+			$merge_vals     = array();
+			$interests      = array();
+			$gdpr           = false;
 			if ( isset( $submitted_data['first_name'] ) ) {
 				$merge_vals['MERGE1'] = $submitted_data['first_name'];
 				$merge_vals['FNAME']  = $submitted_data['first_name'];
@@ -77,18 +95,21 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 				$merge_vals['MERGE2'] = $submitted_data['last_name'];
 				$merge_vals['LNAME']  = $submitted_data['last_name'];
 			}
-			if ( isset( $submitted_data['gdpr'] ) ){
+			if ( isset( $submitted_data['gdpr'] ) ) {
 				$gdpr = ( 'on' === $submitted_data['gdpr'] ? true : false );
 				unset( $submitted_data['gdpr'] );
 			}
 			// Add extra fields
-			$merge_data = array_diff_key( $submitted_data, array(
-				'email' => '',
-				'first_name' => '',
-				'last_name' => '',
-				'mailchimp_group_id' => '',
-				'mailchimp_group_interest' => '',
-			) );
+			$merge_data = array_diff_key(
+				$submitted_data,
+				array(
+					'email'                    => '',
+					'first_name'               => '',
+					'last_name'                => '',
+					'mailchimp_group_id'       => '',
+					'mailchimp_group_interest' => '',
+				)
+			);
 
 			// Array containing the shortened keys.
 			$shortened_keys = array();
@@ -113,7 +134,7 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			// Add a warning in the entry letting the admin know how we're handling their keys.
 			if ( ! empty( $shortened_keys ) ) {
 				$success_message_extra = sprintf(
-					__( " These fields' names are being truncated to have a max length of 10. In parenthesis is the name currently used by Mailchimp: %s", 'wordpress-popup' ),
+					__( " These fields' names are being truncated to have a max length of 10. In parenthesis is the name currently used by Mailchimp: %s", 'hustle' ),
 					implode( ', ', $shortened_keys )
 				);
 			}
@@ -121,22 +142,21 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			if ( ! empty( $merge_data ) ) {
 				$merge_vals = array_merge( $merge_vals, $merge_data );
 			}
-			$merge_vals = array_change_key_case($merge_vals, CASE_UPPER);
+			$merge_vals = array_change_key_case( $merge_vals, CASE_UPPER );
 
 			/**
 			 * Add args for interest groups
 			 */
-			if( ! empty( $submitted_data['mailchimp_group_id'] ) && ! empty( $submitted_data['mailchimp_group_interest'] ) ){
+			if ( ! empty( $submitted_data['mailchimp_group_id'] ) && ! empty( $submitted_data['mailchimp_group_interest'] ) ) {
 				$data_interest = (array) $submitted_data['mailchimp_group_interest'];
-				foreach( $data_interest as $interest ) {
-					$interests[$interest] = true;
+				foreach ( $data_interest as $interest ) {
+					$interests[ $interest ] = true;
 				}
 			}
 
-
 			$subscribe_data = array(
 				'email_address' => $email,
-				'status'        => $sub_status
+				'status'        => $sub_status,
 			);
 			if ( ! empty( $merge_vals ) ) {
 				$subscribe_data['merge_fields'] = $merge_vals;
@@ -145,7 +165,7 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 				$subscribe_data['interests'] = $interests;
 			}
 
-			$error_detail = __( 'Something went wrong.', 'wordpress-popup' );
+			$error_detail = __( 'Something went wrong.', 'hustle' );
 			try {
 				// Add custom fields
 				$add_cf_result = $addon->maybe_add_custom_fields( $api, $list_id, $merge_data, $module_id );
@@ -155,25 +175,29 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 				}
 
 				$existing_member = $addon->get_member( $email, $list_id, $submitted_data, $api_key );
-				$member_exists = ! is_wp_error( $existing_member ) && $existing_member;
+				$member_exists   = ! is_wp_error( $existing_member ) && $existing_member;
 
-				//tags
-				$static_segments 	 = isset( $addon_setting_values['tags'] ) ? $addon_setting_values['tags'] : '' ;
+				// tags
+				$static_segments     = isset( $addon_setting_values['tags'] ) ? $addon_setting_values['tags'] : '';
 				$static_segments_val = ! empty( $static_segments ) ? ( $member_exists ? array_keys( $static_segments ) : array_values( $static_segments ) ) : '';
 
-				if( ! empty( $static_segments_val ) ){
+				if ( ! empty( $static_segments_val ) ) {
 					$subscribe_data['tags'] = $static_segments_val;
 				}
 
+				if ( true === $gdpr && ! empty( $addon_setting_values['gdpr_fields'] ) ) {
+					$subscribe_data['marketing_permissions'] = $this->prepare_marketing_permissions( $addon_setting_values['gdpr_fields'] );
+				}
+
 				if ( $member_exists ) {
-					$member_interests = isset($existing_member->interests) ? (array) $existing_member->interests : array();
-					$can_subscribe = true;
+					$member_interests = isset( $existing_member->interests ) ? (array) $existing_member->interests : array();
+					$can_subscribe    = true;
 					if ( isset( $subscribe_data['interests'] ) ) {
 
 						$local_interest_keys = array_keys( $subscribe_data['interests'] );
-						if ( !empty( $member_interests ) ) {
-							foreach( $member_interests as $member_interest => $subscribed ){
-								if( !$subscribed && in_array( $member_interest, $local_interest_keys, true ) ){
+						if ( ! empty( $member_interests ) ) {
+							foreach ( $member_interests as $member_interest => $subscribed ) {
+								if ( ! $subscribed && in_array( $member_interest, $local_interest_keys, true ) ) {
 									$can_subscribe = true;
 								}
 							}
@@ -183,13 +207,13 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 					}
 
 					if ( 'pending' === $existing_member->status ) {
-						$delete = $addon->delete_member( $email, $list_id, $submitted_data, $api_key );
+						$delete                   = $addon->delete_member( $email, $list_id, $submitted_data, $api_key );
 						$subscribe_data['status'] = 'pending';
-						$can_subscribe = true;
+						$can_subscribe            = true;
 					} elseif ( 'unsubscribed' === $existing_member->status ) {
 						// Resend Confirm Subscription Email even if `Automatically opt-in new users to the mailing list` is set
 						$subscribe_data['status'] = 'pending';
-						$can_subscribe = true;
+						$can_subscribe            = true;
 					} else {
 						unset( $subscribe_data['status'] );
 					}
@@ -206,7 +230,8 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 							$list_id,
 							$email
 						);
-						do_action( 'hustle_provider_mailchimp_before_update_member',
+						do_action(
+							'hustle_provider_mailchimp_before_update_member',
 							$subscribe_data,
 							$module_id,
 							$submitted_data,
@@ -217,7 +242,7 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 
 						$response = $api->update_subscription_patch( $list_id, $email, $subscribe_data );
 					} else {
-						$error_message = __( 'This email address has already subscribed', 'wordpress-popup' );
+						$error_message = __( 'This email address has already subscribed', 'hustle' );
 						throw new Exception( $error_message );
 					}
 
@@ -225,8 +250,8 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 					$member_status = $existing_member->status;
 
 				} elseif ( is_wp_error( $existing_member ) ) {
-					$error_data = json_decode( $existing_member->get_error_data(), true );
-					$error_message = __( 'Error', 'wordpress-popup' ) . ': ' . $error_data['status'] . ' - ' . $error_data['title'] . '. ' . $error_data['detail'];
+					$error_data    = json_decode( $existing_member->get_error_data(), true );
+					$error_message = __( 'Error', 'hustle' ) . ': ' . $error_data['status'] . ' - ' . $error_data['title'] . '. ' . $error_data['detail'];
 					throw new Exception( $error_message );
 
 				} else {
@@ -238,7 +263,8 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 						$form_settings_instance,
 						$list_id
 					);
-					do_action( 'hustle_provider_mailchimp_before_update_member',
+					do_action(
+						'hustle_provider_mailchimp_before_update_member',
 						$subscribe_data,
 						$module_id,
 						$submitted_data,
@@ -255,37 +281,14 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 
 				$is_sent = true;
 
-			} catch( Exception $e ) {
-				$is_sent = false;
-				$member_status = __( 'Member could not be subscribed.', 'wordpress-popup' );
-				$error_detail = $e->getMessage();
-			}
-
-			//check if gdpr field is present and also enabled on malichimp api
-			if( true === $gdpr && isset( $response->marketing_permissions ) ){
-				$marketing = $response->marketing_permissions;
-				$permissions = array( 'Email' );
-
-				/**
-				 * Marketing permission filter
-				 *
-				 * Filter marketing permissions from mailchimp here.
-				 * Currently only `Email` opt-in is supported on mailchimp
-				 * but this filter can be used to add your desired optin.
-				 *
-				 * @since 4.0.2
-				 *
-				 * @param array $permissions
-				 */
-				$current_permission = apply_filters( 'huslte_mailchimp_provider_marketing_permission', $permissions );
-
-				$marketing_permissions = $this->get_marketing_permission( $marketing, $current_permission );
-				$marketing_data['marketing_permissions'] = $marketing_permissions;
-				$response = $api->update_subscription( $list_id, $email, $marketing_data );
+			} catch ( Exception $e ) {
+				$is_sent       = false;
+				$member_status = __( 'Member could not be subscribed.', 'hustle' );
+				$error_detail  = $e->getMessage();
 			}
 
 			// If there's extra information to display in the success entry description, add it.
-			$success_message = __( 'Successfully added or updated member on Mailchimp list.', 'wordpress-popup' );
+			$success_message = __( 'Successfully added or updated member on Mailchimp list.', 'hustle' );
 			if ( ! empty( $success_message_extra ) ) {
 				$success_message = $success_message . $success_message_extra;
 			}
@@ -305,24 +308,25 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			$entry_fields = $this->exception( $e );
 		}
 
-		if ( !empty( $addon_setting_values['list_name'] ) ) {
+		if ( ! empty( $addon_setting_values['list_name'] ) ) {
 			$entry_fields[0]['value']['list_name'] = $addon_setting_values['list_name'];
 		}
 
-		if ( !empty( $addon_setting_values['group_name'] ) ) {
+		if ( ! empty( $addon_setting_values['group_name'] ) ) {
 			$entry_fields[0]['value']['group_name'] = $addon_setting_values['group_name'];
 		}
 
 		if ( ! empty( $interests ) ) {
 			$interest_name = array();
-			foreach( $interests as $key => $interest ) {
-				$interest_name[] = !empty( $addon_setting_values['interest_options'][ $key ] )
-					? $addon_setting_values['interest_options'][ $key ] : __( 'Noname', 'wordpress-popup' );
+			foreach ( $interests as $key => $interest ) {
+				$interest_name[] = ! empty( $addon_setting_values['interest_options'][ $key ] )
+					? $addon_setting_values['interest_options'][ $key ] : __( 'Noname', 'hustle' );
 			}
 			$entry_fields[0]['value']['group_interest_name'] = implode( ', ', $interest_name );
 		}
 
-		$entry_fields = apply_filters( 'hustle_provider_' . $addon->get_slug() . '_entry_fields',
+		$entry_fields = apply_filters(
+			'hustle_provider_' . $addon->get_slug() . '_entry_fields',
 			$entry_fields,
 			$module_id,
 			$submitted_data,
@@ -348,21 +352,22 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 			return '';
 		}
 
-		$template_path = plugin_dir_path( __FILE__ ) . 'views/front-fields-template.php';
+		$template_path    = plugin_dir_path( __FILE__ ) . 'views/front-fields-template.php';
 		$interest_options = Hustle_Mailchimp::get_instance()->get_interest_options( $module );
 		$default_interest = 'checkboxes' !== $settings['group_type'] ? '' : array();
 
 		$args = array(
-			'module_id' => $module->module_id,
-			'group_id' => $settings['group'],
-			'group_name' => $settings['group_name'],
-			'group_type' => $settings['group_type'],
-			'interest_options' => $interest_options,
-			'selected_interest' => ! empty( $settings['group_interest'] ) ? $settings['group_interest'] : $default_interest,
-			'dropdown_placeholder' => ! empty( $settings['group_interest_placeholder'] ) ? $settings['group_interest_placeholder'] : __( 'Select a group', 'wordpress-popup' ),
+			'module_id'            => $module->module_id,
+			'group_id'             => $settings['group'],
+			'group_name'           => $settings['group_name'],
+			'group_type'           => $settings['group_type'],
+			'interest_options'     => $interest_options,
+			'selected_interest'    => ! empty( $settings['group_interest'] ) ? $settings['group_interest'] : $default_interest,
+			'dropdown_placeholder' => ! empty( $settings['group_interest_placeholder'] ) ? $settings['group_interest_placeholder'] : __( 'Select a group', 'hustle' ),
 		);
 
-		return Opt_In::static_render( $template_path, $args, true );
+		$renderer = new Hustle_Layout_Helper();
+		return $renderer->render( $template_path, $args, true );
 	}
 
 	/**
@@ -375,16 +380,16 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 	 */
 	public function on_form_submit( $submitted_data, $allow_subscribed = true ) {
 
-		$is_success 				= true;
-		$module_id                	= $this->module_id;
-		$form_settings_instance 	= $this->form_settings_instance;
-		$addon 						= $this->addon;
-		$addon_setting_values 		= $form_settings_instance->get_form_settings_values();
-		$global_multi_id 			= $addon_setting_values['selected_global_multi_id'];
-		$api 						= $addon->get_api( $addon->get_setting( 'api_key', '', $global_multi_id ) );
+		$is_success             = true;
+		$module_id              = $this->module_id;
+		$form_settings_instance = $this->form_settings_instance;
+		$addon                  = $this->addon;
+		$addon_setting_values   = $form_settings_instance->get_form_settings_values();
+		$global_multi_id        = $addon_setting_values['selected_global_multi_id'];
+		$api                    = $addon->get_api( $addon->get_setting( 'api_key', '', $global_multi_id ) );
 
 		if ( empty( $submitted_data['email'] ) ) {
-			return __( 'Required Field "email" was not filled by the user.', 'wordpress-popup' );
+			return __( 'Required Field "email" was not filled by the user.', 'hustle' );
 		}
 
 		if ( ! $allow_subscribed ) {
@@ -405,17 +410,18 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 				$form_settings_instance
 			);
 
-			//triggers exception if not found.
+			// triggers exception if not found.
 			$is_sub = $this->get_subscriber(
 				$api,
 				array(
-					'email' 	=> $submitted_data['email'],
-					'list_id' 	=> $addon_setting_values['list_id'],
+					'email'   => $submitted_data['email'],
+					'list_id' => $addon_setting_values['list_id'],
 				)
 			);
 
-			if( ! is_wp_error( $is_sub ) )
+			if ( ! is_wp_error( $is_sub ) ) {
 				$is_success = self::ALREADY_SUBSCRIBED_ERROR;
+			}
 		}
 
 		/**
@@ -459,12 +465,12 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 	 *
 	 * @since 4.0.2
 	 *
-	 * @param 	object 	$api
-	 * @param 	mixed  	$data
-	 * @return  mixed 	array/object API response on queried subscriber
+	 * @param   object $api
+	 * @param   mixed  $data
+	 * @return  mixed   array/object API response on queried subscriber
 	 */
 	protected function get_subscriber( $api, $data ) {
-		if( empty ( $this->_subscriber ) && ! isset( $this->_subscriber[ md5( $data['email'] ) ] ) ){
+		if ( empty( $this->_subscriber ) && ! isset( $this->_subscriber[ md5( $data['email'] ) ] ) ) {
 			$this->_subscriber[ md5( $data['email'] ) ] = $api->check_email( $data['list_id'], $data['email'] );
 		}
 
@@ -475,7 +481,7 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 	 * Format submitted data
 	 *
 	 * @since 4.0
-	 * @param array $submitted_data
+	 * @param array  $submitted_data
 	 * @param string $slug Provider slug
 	 * @return array
 	 */
@@ -487,32 +493,4 @@ class Hustle_Mailchimp_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 		return $submitted_data;
 	}
 
-	/**
-	 * Get marketing permissions
-	 *
-	 *
-	 * @since 4.0.2
-	 *
-	 * @param 	object 	$api
-	 * @param 	mixed  	$data
-	 * @return  mixed 	array of enabled markeing permissions
-	 */
-	protected function get_marketing_permission( $marketing, $current ) {
-		$permissions = array();
-		if( ! empty( $marketing ) && ! empty( $current ) ){
-			foreach ( $marketing as $key => $value ) {
-				if( in_array( $value->text, $current, true ) ){
-					$permissions[] = array(
-						'marketing_permission_id' => $value->marketing_permission_id,
-						'enabled'				  => true
-					);
-					unset( $current[$value->text] ); //duplicate saftey
-				}
-			}
-			return $permissions;
-		}
-		return false;
-	}
-
 }
-
