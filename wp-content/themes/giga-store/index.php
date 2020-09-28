@@ -33,7 +33,6 @@ if ( class_exists( 'WooCommerce' ) && get_theme_mod( 'breadcrumbs-check', 1 ) !=
 </div>
 <!-- end content container -->
 
-
 <?php get_template_part( 'template-part', 'footernav' ); ?>
 
 <?php get_footer(); ?>

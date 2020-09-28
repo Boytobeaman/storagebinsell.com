@@ -18,7 +18,6 @@ if ( class_exists( 'WooCommerce' ) && get_theme_mod( 'breadcrumbs-check', 1 ) !=
 	<?php get_sidebar( 'right' ); ?>
 </div>
 
-
 <!-- end content container -->
 
 <?php
