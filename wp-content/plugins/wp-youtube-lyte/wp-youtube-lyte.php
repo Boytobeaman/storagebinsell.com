@@ -4,16 +4,15 @@ Plugin Name: WP YouTube Lyte
 Plugin URI: http://blog.futtta.be/wp-youtube-lyte/
 Description: Lite and accessible YouTube audio and video embedding.
 Author: Frank Goossens (futtta)
-Version: 1.7.13
+Version: 1.7.14
 Author URI: http://blog.futtta.be/
 Text Domain: wp-youtube-lyte
-Domain Path: /languages
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 $debug=false;
-$lyte_version="1.7.13";
+$lyte_version="1.7.14";
 $lyte_db_version=get_option('lyte_version','none');
 
 /** have we updated? */
@@ -290,7 +289,7 @@ function lyte_parse($the_content,$doExcerpt=false) {
                                 $captionsMeta="";
                                 $threshold = 30;
                                 if (array_key_exists('captions_timestamp',$yt_resp_array)) {
-                                    $cache_timestamp = $yt_resp_array["captions_timestamp"];
+                                    $cache_timestamp = (int) $yt_resp_array["captions_timestamp"];
                                     $interval = (strtotime("now") - $cache_timestamp)/60/60/24;
                                 } else {
                                     $cache_timestamp = false;
@@ -616,34 +615,39 @@ function lyte_init() {
         $mobJS = "var mOs=navigator.userAgent.match(/(iphone|ipad|ipod|android)/i);";
     }
 
+    // if we're caching local thumbnails and filter says so, create lyteCookie cookie to prevent image hotlinking.
+    if ( get_option( 'lyte_local_thumb', '0' ) === '1' && apply_filters( 'lyte_filter_local_thumb_doublecheck', false ) ) {
+        $doublecheck_thumb_cookie = 'document.cookie="lyteCookie=1;path=/;samesite=strict";';
+    } else {
+        $doublecheck_thumb_cookie = '';
+    }
+
     /** API: filter hook to change css */
     $lyte_css = apply_filters( 'lyte_css', $lyte_css);
 
-    echo "<script type=\"text/javascript\">var bU='".$lyteSettings['path']."';".$mobJS."style = document.createElement('style');style.type = 'text/css';rules = document.createTextNode(\"".$lyte_css."\" );if(style.styleSheet) { style.styleSheet.cssText = rules.nodeValue;} else {style.appendChild(rules);}document.getElementsByTagName('head')[0].appendChild(style);</script>";
+    echo "<script type=\"text/javascript\">var bU='" . $lyteSettings['path'] . "';" . $mobJS . $doublecheck_thumb_cookie . "style = document.createElement('style');style.type = 'text/css';rules = document.createTextNode(\"".$lyte_css."\" );if(style.styleSheet) { style.styleSheet.cssText = rules.nodeValue;} else {style.appendChild(rules);}document.getElementsByTagName('head')[0].appendChild(style);</script>";
     echo "<script type=\"text/javascript\" async src=\"".$lyteSettings['path'].$lyteSettings['file']."\"></script>";
 }
 
 /** override default wp_trim_excerpt to have lyte_parse remove the httpv-links */
-function lyte_trim_excerpt($text) {
-    global $post;
-    $raw_excerpt = $text;
-    if ( '' == $text ) {
-        $text = get_the_content('');
+function lyte_trim_excerpt($text = '', $post = null) {
+	$raw_excerpt = $text;
+
+	if ( '' === trim( $text ) ) {
+		$post = get_post( $post );
+		$text = get_the_content( '', false, $post );
         $text = lyte_parse($text, true);
         $text = strip_shortcodes( $text );
-        $text = apply_filters('the_content', $text);
-        $text = str_replace(']]>', ']]&gt;', $text);
-        $excerpt_length = apply_filters('excerpt_length', 55);
-        $excerpt_more = apply_filters('excerpt_more', ' ' . '[...]');
-        if (function_exists('wp_trim_words')) {
-            $text = wp_trim_words( $text, $excerpt_length, $excerpt_more );
-        } else {
-            $length = $excerpt_length*6;
-            $text = substr( strip_tags(trim(preg_replace('/\s+/', ' ', $text))), 0, $length );
-            $text .= $excerpt_more;
-        }
-    }
-    return apply_filters('wp_trim_excerpt', $text, $raw_excerpt);
+		$text = excerpt_remove_blocks( $text );
+		$text = apply_filters( 'the_content', $text );
+		$text = str_replace( ']]>', ']]&gt;', $text );
+		$excerpt_length = intval( _x( '55', 'excerpt_length' ) );
+		$excerpt_length = (int) apply_filters( 'excerpt_length', $excerpt_length );
+		$excerpt_more = apply_filters( 'excerpt_more', ' ' . '[&hellip;]' );
+		$text         = wp_trim_words( $text, $excerpt_length, $excerpt_more );
+	}
+
+	return apply_filters( 'wp_trim_excerpt', $text, $raw_excerpt );
 }
 
 /** Lyte shortcode */
@@ -801,10 +805,36 @@ function lyte_prepare( $the_content ) {
     return $the_content;
 }
 
+function lytecache_doublecheck_activator() {
+    // image hotlinking protection: conditionally (by filter, off by default)
+    // create a file telling lyteCache to check for a cookie before serving thumbnail.
+    // file is also set if local thumbnail caching is not active, rendering lyteCache harmless.
+    if ( ! defined( 'LYTE_CACHE_DIR' ) ) {
+        define( 'LYTE_CACHE_DIR', WP_CONTENT_DIR .'/cache/lyteCache' );
+    }
+    $_doublecheck_activator_file = LYTE_CACHE_DIR . '/doubleCheckLyteThumbnailCache.txt';
+
+    if ( ( get_option( 'lyte_local_thumb', '0' ) === '1' && apply_filters( 'lyte_filter_local_thumb_doublecheck', false ) ) || get_option( 'lyte_local_thumb', '0' ) !== '1' ) {
+        if ( ! file_exists( $_doublecheck_activator_file ) ) {
+            if ( ! file_exists( LYTE_CACHE_DIR ) ) {
+                // create LYTE cache dir (and index.html) if it doesn't exist yet.
+                @mkdir( LYTE_CACHE_DIR, 0775, true );
+                @file_put_contents( LYTE_CACHE_DIR . '/index.html', '<html><head><meta name="robots" content="noindex, nofollow"></head><body>Generated by <a href="http://wordpress.org/extend/plugins/wp-youtube-lyte/" rel="nofollow">WP YouTube Lyte</a></body></html>' );
+            }
+            // file needed but not found, create it.
+            @file_put_contents( $_doublecheck_activator_file, 'This file is used to ensure lyteCache.php is not abused (prevent hotlinking of cached YouTube thumbnails or lyteCache.php being accessed when local thumbnail caching is not active).' );
+        }
+    } elseif ( file_exists( $_doublecheck_activator_file ) ) {
+        // file exists but not needed (any more), delete it.
+        @unlink( $_doublecheck_activator_file );
+    }
+}
+
 /** hooking it all up to wordpress */
 if ( is_admin() ) {
     require_once(dirname(__FILE__).'/options.php');
     add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'lyte_add_action_link' );
+    add_action( 'admin_init', 'lytecache_doublecheck_activator' );
 } else {
     add_filter('the_content', 'lyte_prepare', 4);
     add_filter('the_content', 'lyte_parse', 10);
@@ -812,6 +842,7 @@ if ( is_admin() ) {
     remove_filter('get_the_excerpt', 'wp_trim_excerpt');
     add_filter('get_the_excerpt', 'lyte_trim_excerpt');
     add_action('schedule_captions_lookup', 'captions_lookup', 1, 3);
+    add_action( 'init', 'lytecache_doublecheck_activator' );
 
     /** API: action hook to allow extra actions or filters to be added */
     do_action("lyte_actionsfilters");
