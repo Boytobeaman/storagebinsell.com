@@ -407,7 +407,7 @@ button.elementor-search-form__submit {
   clear: both; }
 
 .elementor-location-header header.elementor-section .elementor-search-form.elementor-search-form--focus .elementor-search-form__input {
-  color: #323876; }
+  color: #323876 !important; }
 
 .elementor-location-header .elementor-nav-menu .current-menu-item {
   background-color: #4753cd; }
