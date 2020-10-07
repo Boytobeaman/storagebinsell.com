@@ -373,14 +373,12 @@ body {
 
 a {
   color: #323876; }
-
-a:hover, a:focus {
+  a:hover, a:focus {
     color: #14162e; }
 
 header a {
   color: #eee; }
-
-header a:hover, header a:focus {
+  header a:hover, header a:focus {
     color: #fff; }
 
 button.elementor-button,
@@ -389,8 +387,7 @@ button.elementor-search-form__submit {
 
 .home .rsrc-main {
   width: 100%; }
-
-.home .rsrc-main .rsrc-post-content {
+  .home .rsrc-main .rsrc-post-content {
     padding: 0;
     margin: 0;
     width: 100%; }
@@ -409,51 +406,53 @@ button.elementor-search-form__submit {
 .woocommerce .term-description {
   clear: both; }
 
+.elementor-location-header .elementor-nav-menu .current-menu-item {
+  background-color: #4753cd; }
+
+.elementor-location-header .elementor-nav-menu .menu-item .sub-menu.elementor-nav-menu--dropdown {
+  background-color: #323876; }
+  .elementor-location-header .elementor-nav-menu .menu-item .sub-menu.elementor-nav-menu--dropdown a {
+    color: #fff;
+    background-color: #323876; }
+    .elementor-location-header .elementor-nav-menu .menu-item .sub-menu.elementor-nav-menu--dropdown a.elementor-item-active, .elementor-location-header .elementor-nav-menu .menu-item .sub-menu.elementor-nav-menu--dropdown a:hover {
+      color: #fff;
+      background-color: #4753cd; }
+
 .rsrc-top-menu {
   display: none; }
-
-.rsrc-top-menu .navbar-inverse {
+  .rsrc-top-menu .navbar-inverse {
     background-color: #746f6f; }
 
 .header-section {
   background-color: #746f6f; }
-
-.header-section .header-search-form input {
+  .header-section .header-search-form input {
     background-color: #fff;
     color: #746f6f; }
-
-.header-section .header-search-form button, .header-section .header-search-form select {
+  .header-section .header-search-form button, .header-section .header-search-form select {
     border: 1px solid #fff;
     background-color: rgba(0, 0, 0, 0.9); }
-
-.header-section #site-header a {
+  .header-section #site-header a {
     font-size: 26px; }
-
-.header-section #site-header a.custom-logo-link:hover, .header-section #site-header a.custom-logo-link:focus {
+    .header-section #site-header a.custom-logo-link:hover, .header-section #site-header a.custom-logo-link:focus {
+      background-color: transparent;
       background-color: initial; }
 
 .main-menu-section {
   background-color: #746f6f; }
-
-.main-menu-section .container {
+  .main-menu-section .container {
     padding-left: 0;
     padding-right: 0; }
-
-.main-menu-section .container .navbar-collapse {
+    .main-menu-section .container .navbar-collapse {
       padding-left: 0;
       padding-right: 0; }
-
-.main-menu-section .container .current-menu-item {
+    .main-menu-section .container .current-menu-item {
       background-color: #232752; }
-
-.main-menu-section .container .navbar-nav li {
+    .main-menu-section .container .navbar-nav li {
       border-radius: 5px; }
-
-.main-menu-section .container .navbar-nav li a {
+      .main-menu-section .container .navbar-nav li a {
         padding: 10px;
         border-radius: 5px; }
-
-.main-menu-section .container .navbar-nav li a:hover, .main-menu-section .container .navbar-nav li a:focus {
+        .main-menu-section .container .navbar-nav li a:hover, .main-menu-section .container .navbar-nav li a:focus {
           background-color: #232752; }
 
 nav.elementor-section.elementor-top-section {
@@ -463,17 +462,15 @@ nav.elementor-section.elementor-top-section {
   background-color: transparent;
   background-image: none;
   padding: 5px 0 0; }
-
-#breadcrumbs .breadcrumbs-inner {
+  #breadcrumbs .breadcrumbs-inner {
     background-color: #fff;
     padding-top: 15px;
     padding-bottom: 5px;
     color: #3a3636; }
-
-#breadcrumbs .breadcrumbs-inner a {
+    #breadcrumbs .breadcrumbs-inner a {
       color: #323876; }
-
-#breadcrumbs .breadcrumbs-inner a:hover {
+      #breadcrumbs .breadcrumbs-inner a:hover {
+        background-color: transparent;
         background-color: initial;
         text-decoration: underline; }
 
@@ -482,60 +479,43 @@ nav.elementor-section.elementor-top-section {
 
 .products {
   clear: both; }
-
-.products a {
+  .products a {
     color: #333;
     font-family: 'Flexo-Light'; }
-
-.products .product {
+  .products .product {
     background-color: #fff;
     border-radius: 5px; }
-
-.products .product:first-child {
+    .products .product:first-child {
       margin-top: 20px; }
-
-.products .product .product-wrap .product-right {
+    .products .product .product-wrap .product-right {
       width: 100%;
       float: left;
-      -webkit-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      -moz-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      -o-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       margin-bottom: 20px; }
-
-.products .product .product-wrap .product-right:hover {
-        -webkit-box-shadow: 0 0 15px rgba(89, 100, 101, 0.7);
-        -moz-box-shadow: 0 0 15px rgba(89, 100, 101, 0.7);
+      .products .product .product-wrap .product-right:hover {
         box-shadow: 0 0 15px rgba(89, 100, 101, 0.7); }
-
-.products .product .product-wrap .product-right > .row {
+      .products .product .product-wrap .product-right > .row {
         margin-left: 200px; }
-
-.products .product .product-wrap .product-right .product-name {
+      .products .product .product-wrap .product-right .product-name {
         background-color: #b8b6b6;
         overflow: hidden; }
-
-.products .product .product-wrap .product-right .product-title {
+      .products .product .product-wrap .product-right .product-title {
         margin: 0;
         font-size: 20px;
         height: 34px;
         line-height: 34px;
         color: #fff;
         display: inline-block; }
-
-.products .product .product-wrap .product-right .product-val-mm, .products .product .product-wrap .product-right .product-val-inch {
+      .products .product .product-wrap .product-right .product-val-mm, .products .product .product-wrap .product-right .product-val-inch {
         padding: 0px 10px 0 4px;
         line-height: 63px;
         height: 63px; }
-
-.products .product .product-wrap .product-right .product-val-mm {
+      .products .product .product-wrap .product-right .product-val-mm {
         background-color: #eee; }
-
-.products .product .product-wrap .product-right .product-val-inch {
+      .products .product .product-wrap .product-right .product-val-inch {
         background-color: #f6f6f6; }
-
-.products .product .product-wrap .product-right .product-cat-inquiry {
+      .products .product .product-wrap .product-right .product-cat-inquiry {
         background-color: #323876;
         border-color: #323876; }
 
@@ -572,14 +552,12 @@ nav.elementor-section.elementor-top-section {
 
 #footerLink {
   padding-top: 20px; }
-
-#footerLink a {
+  #footerLink a {
     color: #999; }
 
 footer .friend-links {
   margin: 0 0 15px; }
-
-footer .friend-links a {
+  footer .friend-links a {
     color: #777;
     margin-right: 15px; }
 
@@ -595,12 +573,10 @@ footer.elementor-section.elementor-top-section {
   background-color: #232752;
   border-top-left-radius: 5px;
   border-top-right-radius: 5px; }
-
-#contactUs .modal-header > button.close {
+  #contactUs .modal-header > button.close {
     color: #fff;
     opacity: 1; }
-
-#contactUs .modal-header .modal-title {
+  #contactUs .modal-header .modal-title {
     font-weight: bold;
     display: inline-block;
     color: #fff; }
@@ -608,35 +584,27 @@ footer.elementor-section.elementor-top-section {
 #contactUs .modal-body {
   padding-left: 30px;
   padding-right: 30px; }
-
-#contactUs .modal-body label {
+  #contactUs .modal-body label {
     width: 100%; }
-
-#contactUs .modal-body label input {
+    #contactUs .modal-body label input {
       width: 100%; }
-
-#contactUs .modal-body label input:focus {
+      #contactUs .modal-body label input:focus {
         border: 1px solid #232752;
         outline: none; }
-
-#contactUs .modal-body label textarea {
+    #contactUs .modal-body label textarea {
       width: 100%;
       height: 60px; }
-
-#contactUs .modal-body label textarea:focus {
+      #contactUs .modal-body label textarea:focus {
         border: 1px solid #232752;
         outline: none; }
-
-#contactUs .modal-body input[type="submit"] {
+  #contactUs .modal-body input[type="submit"] {
     border: 1px solid #232752;
     color: #232752;
     border-radius: 5px; }
-
-#contactUs .modal-body input[type="submit"]:hover {
+    #contactUs .modal-body input[type="submit"]:hover {
       background-color: #232752;
       color: #fff; }
-
-#contactUs .modal-body #productURL {
+  #contactUs .modal-body #productURL {
     height: 1px;
     visibility: hidden;
     padding: 0; }
@@ -648,6 +616,7 @@ footer.elementor-section.elementor-top-section {
 
 @media screen and (max-width: 1024px) and (min-width: 768px) {
   .product-attributes .product-val-mm, .product-attributes .product-val-inch {
+    line-height: normal;
     line-height: initial; }
     .product-attributes .product-val-mm span, .product-attributes .product-val-inch span {
       line-height: 31.5px;
@@ -669,10 +638,12 @@ footer.elementor-section.elementor-top-section {
     .products .product .product-wrap .product-img-wrap {
       display: none;
       width: 100%;
+      margin-right: 0;
       margin-right: initial; }
       .products .product .product-wrap .product-img-wrap img {
         width: 100%; }
     .products .product .product-wrap .product-right > .row {
+      margin-left: 0;
       margin-left: initial; }
       .products .product .product-wrap .product-right > .row .product-attributes .volumn {
         display: none; }
