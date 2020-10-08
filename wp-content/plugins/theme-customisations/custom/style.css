@@ -376,11 +376,6 @@ a {
   a:hover, a:focus {
     color: #14162e; }
 
-header a {
-  color: #eee; }
-  header a:hover, header a:focus {
-    color: #fff; }
-
 button.elementor-button,
 button.elementor-search-form__submit {
   background-color: #323876 !important; }
@@ -408,6 +403,11 @@ button.elementor-search-form__submit {
 
 .elementor-location-header header.elementor-section .elementor-search-form.elementor-search-form--focus .elementor-search-form__input {
   color: #323876 !important; }
+
+.elementor-location-header header .contact-email-section a {
+  color: #eee; }
+  .elementor-location-header header .contact-email-section a:hover, .elementor-location-header header .contact-email-section a:focus {
+    color: #fff; }
 
 .elementor-location-header .elementor-nav-menu .current-menu-item {
   background-color: #4753cd; }
