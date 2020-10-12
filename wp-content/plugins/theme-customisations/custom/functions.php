@@ -165,7 +165,7 @@ if ( ! function_exists( 'woocommerce_template_loop_product_attr' ) ) {
 							<div class="col-sm-12">
 								<h2 class="product-title pl-1">'. get_the_title() .'</h2>
 								<span class="btn btn-danger pull-right product-cat-inquiry">Inquiry</span>
-								<span class="btn btn-info pull-right product-model mr-1">'. $productmodel .'</span>
+								<span class="btn btn-info pull-right product-model mr-1" data-value="'.$productmodel.'">'. $productmodel .'</span>
 							</div>
 						</div>
 						<div class="product-attributes">

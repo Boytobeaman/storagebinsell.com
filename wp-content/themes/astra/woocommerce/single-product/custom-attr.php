@@ -78,7 +78,7 @@ echo '
 	    	<tr>
 					<td><h4>Product Model</h4></td>
 					<td class="product-model">
-						<span class="mm pull-left value">'. $productmodel .'</span>
+						<span class="mm pull-left value" data-value="'.$productmodel.'">'. $productmodel .'</span>
 					</td>
 	    	</tr>
 	      <tr>
