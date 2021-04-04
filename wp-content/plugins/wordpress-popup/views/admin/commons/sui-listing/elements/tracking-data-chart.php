@@ -27,8 +27,7 @@ $canvas_content = sprintf(
 );
 
 // For embeds and ssharing, check if the sub type (inline, shortcode, etc.) this chart
-// belongs to has tracking enabled.
-if ( ! empty( $module_sub_type ) && $is_tracking_enabled ) {
+if ( ! empty( $module_sub_type ) ) {
 
 	// And set the data of this sub type.
 	$is_tracking_enabled      = isset( $tracking_types[ $module_sub_type ] );
@@ -99,7 +98,8 @@ if ( ! $module->active ) {
 			</label>
 
 			<select
-				class="sui-select-sm hui-selector-button hustle-conversion-type"
+				class="sui-select sui-select-inline sui-select-sm hustle-conversion-type"
+				data-width="120"
 				data-module-type="<?php echo esc_attr( $chart_sub_type ); ?>"
 			>
 				<?php foreach ( $cta_labels as $key => $cta_label ) { ?>

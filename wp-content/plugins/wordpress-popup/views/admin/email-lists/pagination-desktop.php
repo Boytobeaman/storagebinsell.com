@@ -42,10 +42,11 @@ if ( isset( $actions_class ) ) {
 
 			<select
 				name="hustle_action"
-				class="sui-select-sm"
 				id="hustle-select-bulk-actions-<?php echo $is_bottom ? 'bottom' : 'top'; ?>"
+				class="sui-select sui-select-sm"
+				data-placeholder="<?php esc_html_e( 'Bulk actions', 'hustle' ); ?>"
 			>
-				<option value=""><?php esc_html_e( 'Bulk actions', 'hustle' ); ?></option>
+				<option></option>
 				<option value="delete-all"><?php esc_html_e( 'Delete', 'hustle' ); ?></option>
 			</select>
 

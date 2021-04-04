@@ -36,7 +36,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-one" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $optin_default, 'png', '', true ); ?>
+					<?php $this->hustle_image( $optin_default, 'png', '', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -54,7 +54,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-two" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $optin_compact, 'png', '', true ); ?>
+					<?php $this->hustle_image( $optin_compact, 'png', '', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -72,7 +72,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-three" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $optin_focus, 'png', 'sui-graphic', true ); ?>
+					<?php $this->hustle_image( $optin_focus, 'png', 'sui-graphic', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -90,7 +90,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-four" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $content_focus, 'png', 'sui-graphic', true ); ?>
+					<?php $this->hustle_image( $content_focus, 'png', 'sui-graphic', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -110,7 +110,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-minimal" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $info_default, 'png', 'sui-graphic', true ); ?>
+					<?php $this->hustle_image( $info_default, 'png', 'sui-graphic', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -128,7 +128,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-simple" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $info_compact, 'png', 'sui-graphic', true ); ?>
+					<?php $this->hustle_image( $info_compact, 'png', 'sui-graphic', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"
@@ -146,7 +146,7 @@ $content_focus = self::$plugin_url . 'assets/images/layouts/layout-content-focus
 
 				<label for="hustle-layout-cabriolet" class="sui-radio-image">
 
-					<?php Opt_In_Utils::hustle_image( $info_stacked, 'png', 'sui-graphic', true ); ?>
+					<?php $this->hustle_image( $info_stacked, 'png', 'sui-graphic', true ); ?>
 
 					<span class="sui-radio sui-radio-sm">
 						<input type="radio"

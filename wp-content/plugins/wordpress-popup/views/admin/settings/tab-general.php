@@ -33,10 +33,10 @@
 
 		<?php
 		// SETTINGS: Responsive Options.
-		//$this->render(
-		//	'admin/settings/general/responsiveness',
-		//	array( 'settings' => $settings )
-		//);
+		$this->render(
+			'admin/settings/general/responsiveness',
+			array( 'settings' => $settings )
+		);
 		?>
 
 		<?php

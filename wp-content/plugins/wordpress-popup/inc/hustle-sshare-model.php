@@ -1,6 +1,6 @@
 <?php
 
-class Hustle_SShare_Model extends Hustle_Module_Model {
+class Hustle_SShare_Model extends Hustle_Model {
 
 	const SETTINGS_KEY       = 'sshare_counters';
 	const COUNTER_META_KEY   = 'hustle_shares';
@@ -11,6 +11,7 @@ class Hustle_SShare_Model extends Hustle_Module_Model {
 	const FLOAT_MODULE       = 'floating';
 
 	public static function instance() {
+		_deprecated_function( __METHOD__, '4.3.0', 'new Hustle_SShare_Model' );
 		return new self();
 	}
 
@@ -53,6 +54,16 @@ class Hustle_SShare_Model extends Hustle_Module_Model {
 		return new Hustle_SShare_Display( $this->get_settings_meta( self::KEY_DISPLAY_OPTIONS, '{}', true ), $this );
 	}
 
+	/**
+	 * Gets the instance of the decorator class for this module type.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return Hustle_Decorator_Sshare
+	 */
+	public function get_decorator_instance() {
+		return new Hustle_Decorator_Sshare( $this );
+	}
 	/**
 	 * Create a new module of the provided mode and type.
 	 *
@@ -203,6 +214,28 @@ class Hustle_SShare_Model extends Hustle_Module_Model {
 	}
 
 	/**
+	 * Get the module's data. Used to display it.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @return array
+	 */
+	public function get_module_data_to_display() {
+		return $this->get_data();
+	}
+
+	/**
+	 * Get the sub-types for this module.
+	 *
+	 * @since 4.3.1
+	 *
+	 * @return array
+	 */
+	public function get_sub_types( $with_titles = false ) {
+		return self::get_sshare_types( $with_titles );
+	}
+
+	/**
 	 * Return whether or not the requested counter type is enabled
 	 *
 	 * @since 3.0.3
@@ -217,6 +250,39 @@ class Hustle_SShare_Model extends Hustle_Module_Model {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Get social patform names
+	 *
+	 * @return array
+	 */
+	public static function get_social_platform_names() {
+		$social_platform_names = array(
+			'facebook'      => esc_html__( 'Facebook', 'hustle' ),
+			'twitter'       => esc_html__( 'Twitter', 'hustle' ),
+			'pinterest'     => esc_html__( 'Pinterest', 'hustle' ),
+			'reddit'        => esc_html__( 'Reddit', 'hustle' ),
+			'linkedin'      => esc_html__( 'LinkedIn', 'hustle' ),
+			'vkontakte'     => esc_html__( 'Vkontakte', 'hustle' ),
+			'fivehundredpx' => esc_html__( '500px', 'hustle' ),
+			'houzz'         => esc_html__( 'Houzz', 'hustle' ),
+			'instagram'     => esc_html__( 'Instagram', 'hustle' ),
+			'twitch'        => esc_html__( 'Twitch', 'hustle' ),
+			'youtube'       => esc_html__( 'YouTube', 'hustle' ),
+			'telegram'      => esc_html__( 'Telegram', 'hustle' ),
+			'whatsapp'      => esc_html__( 'WhatsApp', 'hustle' ),
+			'email'         => esc_html__( 'Email', 'hustle' ),
+		);
+
+		/**
+		 * Social networks list
+		 *
+		 * @since 4.0.4
+		 *
+		 * @param array $social_platform_names {slug} => {name}
+		 */
+		return apply_filters( 'hustle_social_platform_names', $social_platform_names );
 	}
 
 	/**
@@ -313,6 +379,8 @@ class Hustle_SShare_Model extends Hustle_Module_Model {
 		$post_id = apply_filters( 'hustle_network_shares_post_id', $post_id );
 
 		$current_link = ( 0 !== $post_id && get_permalink( $post_id ) ) ? get_permalink( $post_id ) : home_url();
+		// We share URL without trailing slash, So we need to remove slash when we fetch from API.
+		$current_link = untrailingslashit( $current_link );
 		$current_link = apply_filters( 'hustle_network_shares_from_url', $current_link );
 
 		// If we should use the stored values instead of retrieving them from the API.

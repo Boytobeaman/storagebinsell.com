@@ -56,7 +56,7 @@
 				<a
 					target="_blank"
 					id="hustle-button--upgrade-to-pro"
-					href="https://premium.wpmudev.org/project/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_modal_upsell_notice"
+					href="<?php echo esc_url( Opt_In_Utils::get_link( 'plugin', 'hustle_modal_upsell_notice' ) ); ?>"
 					class="sui-button sui-button-purple"
 				>
 					<?php esc_html_e( 'Try Pro for Free Today!', 'hustle' ); ?>

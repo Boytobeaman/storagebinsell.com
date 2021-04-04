@@ -143,8 +143,12 @@ $units = array(
 							array(
 								'label'         => __( 'Gap', 'hustle' ),
 								'name'          => $proximity_unit,
+								'class'         => 'sui-select sui-select-inline sui-select-sm sui-inlabel',
 								'selected'      => $settings[ $proximity_unit ],
 								'exclude_units' => array( 'vh', 'vw' ),
+								'attributes'    => array(
+									'data-width' => '50',
+								),
 							)
 						);
 						?>

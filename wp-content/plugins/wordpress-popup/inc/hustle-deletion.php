@@ -24,6 +24,8 @@ class Hustle_Deletion {
 	 * @since 4.0.3
 	 */
 	public static function hustle_delete_custom_options() {
+		delete_option( 'hustle_version' );
+		delete_site_option( 'hustle_version' );
 		delete_option( 'hustle_color_index' );
 		delete_option( 'hustle_database_version' );
 		delete_option( 'hustle_unsubscribe_nonces' );
@@ -225,4 +227,13 @@ class Hustle_Deletion {
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}optins" );
 	}
 
+	/**
+	 * Removes cronjobs.
+	 *
+	 * @since 4.3.3
+	 */
+	public static function clear_cronjobs() {
+		// Remove the cron for refreshing Aweber's token.
+		wp_clear_scheduled_hook( 'hustle_aweber_token_refresh' );
+	}
 }

@@ -442,12 +442,12 @@ class Hustle_Settings_Admin {
 		}
 
 		if ( 'all' === $key ) {
-			update_option( self::SETTINGS_OPTION_KEY, $value );
+			update_option( self::SETTINGS_OPTION_KEY, $value, false );
 			return;
 		}
 		$settings         = self::get_hustle_settings();
 		$settings[ $key ] = $value;
-		update_option( self::SETTINGS_OPTION_KEY, $settings );
+		update_option( self::SETTINGS_OPTION_KEY, $settings, false );
 	}
 
 	/**
@@ -466,7 +466,7 @@ class Hustle_Settings_Admin {
 
 			$name = $stored_palettes[ $palette_id ]['name'];
 			unset( $stored_palettes[ $palette_id ] );
-			update_option( 'hustle_custom_palettes', $stored_palettes );
+			update_option( 'hustle_custom_palettes', $stored_palettes, false );
 		}
 
 		return $name;
@@ -509,7 +509,7 @@ class Hustle_Settings_Admin {
 
 		$stored_palettes[ $id ] = $palette_data;
 
-		update_option( 'hustle_custom_palettes', $stored_palettes );
+		update_option( 'hustle_custom_palettes', $stored_palettes, false );
 
 		return $id;
 	}

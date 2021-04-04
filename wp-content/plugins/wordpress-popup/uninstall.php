@@ -16,6 +16,8 @@ if ( ! class_exists( 'Hustle_Deletion' ) ) {
 	require_once dirname( __FILE__ ) . '/inc/hustle-deletion.php';
 }
 
+Hustle_Deletion::clear_cronjobs();
+
 $hustle_settings = get_option( 'hustle_settings', array() );
 
 if ( ! empty( $hustle_settings['data'] ) && ! empty( $hustle_settings['data']['reset_settings_uninstall'] ) && '1' === $hustle_settings['data']['reset_settings_uninstall'] ) {

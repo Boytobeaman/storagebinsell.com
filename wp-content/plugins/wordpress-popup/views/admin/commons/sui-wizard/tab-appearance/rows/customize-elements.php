@@ -41,10 +41,6 @@ $customize_elements = array(
 		'prop_prefix' => 'optin_form',
 		'row_name'    => 'optin_form',
 	),
-	//'close_icon'       => array(
-	//	'show' => true,
-	//	'name' => esc_html__( 'Close Icon', 'hustle' ),
-	//),
 );
 ?>
 

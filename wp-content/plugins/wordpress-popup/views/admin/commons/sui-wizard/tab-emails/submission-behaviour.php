@@ -42,7 +42,7 @@ ob_start();
 
 	<label class="sui-label"><?php esc_html_e( 'Auto close success message', 'hustle' ); ?></label>
 
-	<select name="auto_close_success_message" data-attribute="auto_close_success_message">
+	<select name="auto_close_success_message" class="sui-select" data-attribute="auto_close_success_message">
 		<option value="0" <?php selected( $settings['auto_close_success_message'], '0' ); ?>>
 			<?php esc_html_e( 'Never', 'hustle' ); ?>
 		</option>
@@ -89,7 +89,7 @@ ob_start();
 	<input type="url"
 		name="redirect_url"
 		data-attribute="redirect_url"
-		value="<?php echo esc_attr( $settings['redirect_url'] ); ?>"
+		value="<?php echo esc_attr( esc_url_raw( $settings['redirect_url'] ) ); ?>"
 		placeholder="<?php esc_html_e( 'E.g. http://website.com', 'hustle' ); ?>"
 		class="sui-form-control" />
 </div>

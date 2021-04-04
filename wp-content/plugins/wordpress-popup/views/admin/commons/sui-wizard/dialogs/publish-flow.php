@@ -58,7 +58,7 @@ if ( ! $this->is_branding_hidden ) {
 	$image_1x = self::$plugin_url . 'assets/images/hustle-summary.png';
 	$image_2x = self::$plugin_url . 'assets/images/hustle-summary@2x.png';
 
-	$attributes['after_body_content'] = Opt_In_Utils::render_image_markup( $image_1x, $image_2x, 'sui-image sui-image-center', 'auto', '120px' );
+	$attributes['after_body_content'] = $this->render_image_markup( $image_1x, $image_2x, 'sui-image sui-image-center', 'auto', '120px' );
 }
 
 $this->render_modal( $attributes );

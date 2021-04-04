@@ -15,23 +15,15 @@
 class Hustle_Decorator_Sshare extends Hustle_Decorator_Abstract {
 
 	protected function get_styles() {
-		$preview = $this->is_preview;
-
 		$prefix = '.hustle-ui[data-id="' . $this->module->module_id . '"]';
 
 		$styles = '';
 
 		$module_id = $this->module->id;
 
-		if ( $preview ) {
-			$content = (array) $this->module->content;
-			$display = (array) $this->module->display;
-			$design  = (array) $this->module->design;
-		} else {
-			$content = $this->module->get_content()->to_array();
-			$display = $this->module->get_display()->to_array();
-			$design  = $this->module->get_design()->to_array();
-		}
+		$content = (array) $this->module->content;
+		$display = (array) $this->module->display;
+		$design  = $this->design;
 
 		/**
 		 * Floating Social

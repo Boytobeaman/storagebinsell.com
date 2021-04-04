@@ -360,7 +360,7 @@ class Hustle_Provider_Utils {
 
 		foreach ( $modules_ids as $id ) {
 
-			$module = Hustle_Module_Model::instance()->get( $id );
+			$module = new Hustle_Module_Model( $id );
 
 			if ( is_wp_error( $module ) ) {
 				continue;

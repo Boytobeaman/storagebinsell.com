@@ -9,7 +9,7 @@
 if ( $total <= $entries_per_page ) {
 	return;
 }
-// don't use filter_input() here, because of see Hustle_Module_Admin::maybe_remove_paged function
+// don't use filter_input() here, because of see Hustle_Module_Admin::maybe_remove_paged function.
 $paged = ! empty( $_GET['paged'] ) ? (int) $_GET['paged'] : 1; // phpcs:ignore
 $args  = array();
 if ( ! empty( $section ) ) {

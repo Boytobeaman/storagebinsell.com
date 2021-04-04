@@ -8,6 +8,12 @@
  */
 class Hustle_Get_Response_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 
+	/**
+	 * Existing contact ID.
+	 *
+	 * @var string
+	 */
+	private $existing_member;
 
 	/**
 	 * Add Get_Response data to entry.
@@ -104,7 +110,7 @@ class Hustle_Get_Response_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 						return 'phone' === $var;
 					}
 				);
-				$module        = Hustle_Module_Model::instance()->get( $module_id );
+				$module        = new Hustle_Module_Model( $module_id );
 				$form_fields   = $module->get_form_fields();
 
 				foreach ( $extra_data as $key => $value ) {
@@ -160,7 +166,11 @@ class Hustle_Get_Response_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 				$form_settings_instance
 			);
 
-			$res = $api->subscribe( $new_data );
+			if ( $this->existing_member ) {
+				$res = $api->update_contact( $this->existing_member, $new_data );
+			} else {
+				$res = $api->subscribe( $new_data );
+			}
 
 			/**
 			 * Fires after adding subscriber
@@ -245,37 +255,34 @@ class Hustle_Get_Response_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 			return __( 'Required Field "email" was not filled by the user.', 'hustle' );
 		}
 
-		if ( ! $allow_subscribed ) {
+		/**
+		 * Filter submitted form data to be processed
+		 *
+		 * @since 4.0
+		 *
+		 * @param array                                    $submitted_data
+		 * @param int                                      $module_id                current module_id
+		 * @param Hustle_Get_Response_Form_Settings $form_settings_instance
+		 */
+		$submitted_data = apply_filters(
+			'hustle_provider_get_response_form_submitted_data_before_validation',
+			$submitted_data,
+			$module_id,
+			$form_settings_instance
+		);
 
-			/**
-			 * Filter submitted form data to be processed
-			 *
-			 * @since 4.0
-			 *
-			 * @param array                                    $submitted_data
-			 * @param int                                      $module_id                current module_id
-			 * @param Hustle_Get_Response_Form_Settings $form_settings_instance
-			 */
-			$submitted_data = apply_filters(
-				'hustle_provider_get_response_form_submitted_data_before_validation',
-				$submitted_data,
-				$module_id,
-				$form_settings_instance
-			);
+		// triggers exception if not found.
+		$global_multi_id = $addon_setting_values['selected_global_multi_id'];
+		$api_key         = $addon->get_setting( 'api_key', '', $global_multi_id );
+		$api             = $addon::api( $api_key );
+		$args            = array(
+			'email'   => $submitted_data['email'],
+			'list_id' => $addon_setting_values['list_id'],
+		);
+		$this->existing_member = $this->get_subscriber( $api, $args );
 
-			// triggers exception if not found.
-			$global_multi_id = $addon_setting_values['selected_global_multi_id'];
-			$api_key         = $addon->get_setting( 'api_key', '', $global_multi_id );
-			$api             = $addon::api( $api_key );
-			$args            = array(
-				'email'   => $submitted_data['email'],
-				'list_id' => $addon_setting_values['list_id'],
-			);
-			$existing_member = $this->get_subscriber( $api, $args );
-
-			if ( $existing_member ) {
-				$is_success = self::ALREADY_SUBSCRIBED_ERROR;
-			}
+		if ( $this->existing_member && ! $allow_subscribed ) {
+			$is_success = self::ALREADY_SUBSCRIBED_ERROR;
 		}
 
 		/**

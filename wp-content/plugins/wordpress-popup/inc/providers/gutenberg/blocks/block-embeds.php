@@ -126,10 +126,10 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 	/**
 	 * Check the modules' dependencies to be queued.
 	 *
-	 * @param Hustle_Module_Model $module Module to be checked.
+	 * @param Hustle_Model $module Module to be checked.
 	 * @return void
 	 */
-	protected function check_dependencies( Hustle_Module_Model $module ) {
+	protected function check_dependencies( Hustle_Model $module ) {
 
 		// Do check if recaptcha wasn't required already.
 		if ( ! isset( $this->dependencies['recaptcha'] ) ) {
@@ -149,7 +149,7 @@ class Hustle_GHBlock_Embeds extends Hustle_GHBlock_Abstract {
 		}
 	}
 
-	protected function is_module_included( Hustle_Module_Model $module ) {
+	protected function is_module_included( Hustle_Model $module ) {
 		return $module->is_display_type_active( Hustle_Module_Model::SHORTCODE_MODULE );
 	}
 }

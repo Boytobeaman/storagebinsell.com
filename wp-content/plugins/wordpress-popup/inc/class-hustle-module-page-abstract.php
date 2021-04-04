@@ -15,6 +15,14 @@
 abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 
 	/**
+	 * Edit page slug defined by WordPress when registering the page.
+	 *
+	 * @since 4.3.1
+	 * @var string
+	 */
+	private $page_edit_slug;
+
+	/**
 	 * Wizard page slug assigned by us.
 	 *
 	 * @since 4.0.1
@@ -81,11 +89,11 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 
 		$this->page_menu_title = $this->page_title;
 
-		$this->page = Hustle_Module_Admin::get_listing_page_by_module_type( $this->module_type );
+		$this->page = Hustle_Data::get_listing_page_by_module_type( $this->module_type );
 
 		$this->page_capability = 'hustle_edit_module';
 
-		$this->page_edit = Hustle_Module_Admin::get_wizard_page_by_module_type( $this->module_type );
+		$this->page_edit = Hustle_Data::get_wizard_page_by_module_type( $this->module_type );
 
 		$this->page_edit_capability = 'hustle_edit_module';
 
@@ -134,8 +142,8 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	 *
 	 * @since 4.2.0
 	 */
-	public function run_action_on_page_load() {
-		$this->export_module();
+	public function current_page_loaded() {
+		parent::current_page_loaded();
 	}
 
 	/**
@@ -173,7 +181,39 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 			}
 		}
 
+		if ( $module_type ) {
+			self::maybe_view_stats( $module_type );
+		}
+
 		return $removable_query_args;
+	}
+
+	/**
+	 * Change pagination page to the relevant one for View Stats links
+	 *
+	 * @param string $module_type Module type.
+	 */
+	private static function maybe_view_stats( $module_type ) {
+		$module_id = filter_input( INPUT_GET, 'view-stats', FILTER_VALIDATE_INT );
+		if ( ! $module_id ) {
+			return;
+		}
+		$module_id        = (string) $module_id;
+		$args             = array(
+			'module_type' => $module_type,
+			'fields'      => 'ids',
+		);
+		$entries_per_page = Hustle_Settings_Admin::get_per_page( 'module' );
+		$modules          = Hustle_Module_Collection::instance()->get_all( null, $args );
+		$i                = array_search( $module_id, $modules, true );
+		if ( false === $i ) {
+			return;
+		}
+
+		$paged = ceil( ( $i + 1 ) / $entries_per_page );
+		if ( 1 < $paged ) {
+			$_GET['paged'] = $paged;
+		}
 	}
 
 	/**
@@ -214,9 +254,6 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 
 			add_filter( 'mce_external_plugins', array( $this, 'add_hustle_tinymce_button_and_remove_externals' ) );
 		}
-
-		// Register variables for the js side only if this is the requested page.
-		add_filter( 'hustle_optin_vars', array( $this, 'register_current_json' ) );
 	}
 
 	/**
@@ -272,26 +309,32 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 		wp_enqueue_media();
 		wp_enqueue_script( 'media-upload' );
 
-		wp_register_script(
-			'optin_admin_ace',
-			Opt_In::$plugin_url . 'assets/js/vendor/ace/ace.js',
-			array(),
-			Opt_In::VERSION,
-			true
-		);
-		wp_register_script(
-			'optin_admin_fitie',
-			Opt_In::$plugin_url . 'assets/js/vendor/fitie/fitie.js',
-			array(),
-			Opt_In::VERSION,
+//		wp_enqueue_script(
+//			'optin_admin_ace',
+//			Opt_In::$plugin_url . 'assets/js/vendor/ace/ace.js',
+//			array(),
+//			Opt_In::VERSION,
+//			true
+//		);
+
+		Opt_In_Utils::maybe_add_scripts_for_ie();
+
+		// Datepicker and timpicker for automated email in optins.
+		wp_enqueue_script( 'jquery-ui-datepicker' );
+		wp_enqueue_script(
+			'jquery-ui-timepicker',
+			Opt_In::$plugin_url . 'assets/js/vendor/jquery.timepicker.min.js',
+			array( 'jquery' ),
+			'1.3.5',
 			true
 		);
 
-		wp_enqueue_script( 'optin_admin_ace' );
-		wp_enqueue_script( 'optin_admin_fitie' );
-
-		// TODO: Remove in 4.3.2. Temporary fix to the missing timepicker script and styles.
-		Hustle_Module_Front::add_hui_scripts();
+		wp_enqueue_style(
+			'jquery-ui-timepicker',
+			Opt_In::$plugin_url . 'assets/css/jquery.timepicker.min.css',
+			array(),
+			'1.3.5'
+		);
 
 		// Register moment.js and its timezone extension.
 		// Used for schedule, to calculate time with timezones on client side.
@@ -390,10 +433,11 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	 * @return void
 	 */
 	public function register_admin_menu() {
-
 		parent::register_admin_menu();
 
-		add_submenu_page( 'hustle', $this->page_edit_title, $this->page_edit_title, $this->page_edit_capability, $this->page_edit, array( $this, 'render_edit_page' ) );
+		$this->page_edit_slug = add_submenu_page( 'hustle', $this->page_edit_title, $this->page_edit_title, $this->page_edit_capability, $this->page_edit, array( $this, 'render_edit_page' ) );
+
+		add_action( 'load-' . $this->page_edit_slug, array( $this, 'current_page_loaded' ) );
 	}
 
 	/**
@@ -502,12 +546,12 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	/**
 	 * Add data to the current json array.
 	 *
-	 * @since 4.0.1
+	 * @since 4.3.1
 	 *
-	 * @param array $current_array Currently registered data.
 	 * @return array
 	 */
-	public function register_current_json( $current_array ) {
+	protected function get_vars_to_localize() {
+		$current_array = parent::get_vars_to_localize();
 
 		// Wizard page only.
 		if ( $this->module ) {
@@ -525,7 +569,7 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 					'is_optin'     => 'optin' === $this->module->module_mode,
 					'listing_page' => $this->page,
 					'wizard_page'  => $this->page_edit,
-					'section'      => Hustle_Module_Admin::get_current_section(),
+					'section'      => $this->get_current_section(),
 					'data'         => $data,
 					'shortcode_id' => $this->module->get_shortcode_id(),
 				)
@@ -537,13 +581,11 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 			$messages = array(
 				'module_error'        => __( "Couldn't save your module settings because there were some errors on {page} tab(s). Please fix those errors and try again.", 'hustle' ),
 				'module_error_reload' => __( 'Something went wrong. Please reload this page and try saving again', 'hustle' ),
-				'unpublish'           => __( 'Unpublish', 'hustle' ),
-				'save_draft'          => __( 'Save draft', 'hustle' ),
-				'save_changes'        => __( 'Save changes', 'hustle' ),
-				'publish'             => __( 'Publish', 'hustle' ),
 				/* translators: 1. module type capitalized, 2. module type in lowercase */
 				'module_created'      => sprintf( __( '%1$s created successfully. Get started by adding content to your new %2$s below.', 'hustle' ), $type_capitalized, $type_lowercase ), // only when 'is_new'.
 			);
+
+			$current_array['single_module_action_nonce'] = wp_create_nonce( 'hustle_single_action' );
 
 			$current_array['messages'] = array_merge( $current_array['messages'], $messages );
 
@@ -590,11 +632,16 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 
 		// Both Wizard and Listing pages.
 		$current_array['messages']['days_and_months'] = array(
-			'days_full'    => Opt_In_Utils::get_week_days(),
-			'days_short'   => Opt_In_Utils::get_week_days( 'short' ),
-			'days_min'     => Opt_In_Utils::get_week_days( 'min' ),
-			'months_full'  => Opt_In_Utils::get_months(),
-			'months_short' => Opt_In_Utils::get_months( 'short' ),
+			'days_full'    => Hustle_Time_Helper::get_week_days(),
+			'days_short'   => Hustle_Time_Helper::get_week_days( 'short' ),
+			'days_min'     => Hustle_Time_Helper::get_week_days( 'min' ),
+			'months_full'  => Hustle_Time_Helper::get_months(),
+			'months_short' => Hustle_Time_Helper::get_months( 'short' ),
+		);
+
+		$current_array['module_tabs'] = array(
+			'services' => esc_html__( 'Services', 'hustle' ),
+			'display'  => esc_html__( 'Display Options', 'hustle' ),
 		);
 
 		return $current_array;
@@ -622,7 +669,7 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 		$wc_cats    = array();
 		$wc_tags    = array();
 
-		$module = Hustle_Module_Model::instance()->get( filter_input( INPUT_GET, 'id', FILTER_VALIDATE_INT ) );
+		$module = new Hustle_Module_Model( filter_input( INPUT_GET, 'id', FILTER_VALIDATE_INT ) );
 		if ( ! is_wp_error( $module ) ) {
 			$settings = $module->get_visibility()->to_array();
 
@@ -969,9 +1016,9 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 				esc_html__( 'Successfully added a schedule for your %1$s. However, make sure to save changes and publish your %1$s for it to start appearing as per your schedule.', 'hustle' ),
 				esc_html( $type_lowercase )
 			),
-			'months'           => Opt_In_Utils::get_months(),
-			'week_days'        => Opt_In_Utils::get_week_days( 'short' ),
-			'meridiem'         => Opt_In_Utils::get_time_periods(),
+			'months'           => Hustle_Time_Helper::get_months(),
+			'week_days'        => Hustle_Time_Helper::get_week_days( 'short' ),
+			'meridiem'         => Hustle_Time_Helper::get_meridiam_periods(),
 		);
 	}
 
@@ -1035,13 +1082,12 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 			wp_enqueue_editor();
 		}
 
-		$main_class = implode( ' ', apply_filters( 'hustle_sui_wrap_class', null ) );
+		$main_class = $this->get_sui_wrap_class();
 
 		?>
 		<main class="<?php echo esc_attr( $main_class ); ?>">
 
 			<?php
-			$template_args = $this->get_page_edit_template_args();
 			$renderer      = $this->get_renderer();
 			$renderer->render( $this->page_edit_template_path, $template_args );
 			?>
@@ -1057,11 +1103,8 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	 * @return array
 	 */
 	protected function get_page_edit_template_args() {
-
-		$current_section = Hustle_Module_Admin::get_current_section();
-
 		return array(
-			'section'   => ( ! $current_section ) ? 'content' : $current_section,
+			'section'   => $this->get_current_section( 'content' ),
 			'module_id' => $this->module->module_id,
 			'module'    => $this->module,
 			'is_active' => (bool) $this->module->active,
@@ -1100,7 +1143,7 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	 */
 	public static function get_tracking_charts_markup( $module_id ) {
 
-		$module = Hustle_Module_Model::instance()->get( $module_id );
+		$module = Hustle_Model::get_module( $module_id );
 		if ( is_wp_error( $module ) ) {
 			return '';
 		}
@@ -1108,10 +1151,9 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 		$tracking_model           = Hustle_Tracking_Model::get_instance();
 		$total_module_conversions = $tracking_model->count_tracking_data( $module_id, 'all_conversion' );
 		$total_module_views       = $tracking_model->count_tracking_data( $module_id, 'view' );
-		$last_entry_time          = Opt_In_Utils::get_latest_conversion_time_by_module_id( $module_id );
+		$last_entry_time          = $tracking_model->get_latest_conversion_time_by_module_id( $module_id );
 		$rate                     = $total_module_views ? round( ( $total_module_conversions * 100 ) / $total_module_views, 1 ) : 0;
 		$module_sub_types         = $module->get_sub_types( true );
-		$is_cta                   = ! empty( $module->get_content()->__get( 'show_cta' ) );
 
 		$multiple_charts = array();
 
@@ -1127,7 +1169,7 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 
 				$multiple_charts[ $slug ] = array(
 					'display_name'    => $display_name,
-					'last_entry_time' => Opt_In_Utils::get_latest_conversion_time_by_module_id( $module_id, $subtype ),
+					'last_entry_time' => $tracking_model->get_latest_conversion_time_by_module_id( $module_id, $subtype ),
 					'views'           => $views,
 					'conversions'     => $conversions,
 					'conversion_rate' => $conversion_rate,
@@ -1142,10 +1184,9 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 			'tracking_types'           => $module->get_tracking_types(),
 			'last_entry_time'          => $last_entry_time,
 			'rate'                     => $rate,
-			'is_cta'                   => $is_cta,
 		);
 
-		if ( $is_cta ) {
+		if ( $module->get_content()->has_cta() ) {
 			$notice_for_old_data                     = $tracking_model->has_old_tracking_data( $module_id );
 			$render_arguments['notice_for_old_data'] = $notice_for_old_data;
 		}
@@ -1181,12 +1222,12 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 	 * @since 4.0.4
 	 * @since 4.2.0 Move from Hustle_Module_Model to this class. $module param added.
 	 *
-	 * @param array               $sub_types Module's sub types.
-	 * @param int                 $views Module's views count.
-	 * @param Hustle_Module_Model $module Instance of the module to get the charts data for.
+	 * @param array        $sub_types Module's sub types.
+	 * @param int          $views Module's views count.
+	 * @param Hustle_Model $module Instance of the module to get the charts data for.
 	 * @return array
 	 */
-	private static function get_charts_data( $sub_types, $views, Hustle_Module_Model $module ) {
+	private static function get_charts_data( $sub_types, $views, Hustle_Model $module ) {
 
 		$sql_month_start_date = date( 'Y-m-d H:i:s', strtotime( '-30 days midnight' ) );
 		$tracking_model       = Hustle_Tracking_Model::get_instance();
@@ -1244,7 +1285,7 @@ abstract class Hustle_Module_Page_Abstract extends Hustle_Admin_Page_Abstract {
 					$views_data  = array_merge( $default_array, array_intersect_key( $views_array, $default_array ) );
 				}
 
-				$query_sub_type        = 'overall' === $sub_type ? null : $sub_type;
+				$query_sub_type        = 'overall' === $sub_type ? null : $module->module_type . '_' . $sub_type;
 				$query_conversion_type = $conversion_type . '_conversion';
 				$sub_type_conversions  = $tracking_model->count_tracking_data( $module->module_id, $query_conversion_type, $query_sub_type );
 

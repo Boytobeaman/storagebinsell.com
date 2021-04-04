@@ -2,7 +2,7 @@
 /**
  * Hustle plugin.
  *
- * @link              http://premium.wpmudev.org/projects/hustle/
+ * @link              http://wpmudev.com/projects/hustle/
  * @since             1.0.0
  * @package           Hustle
  *
@@ -10,9 +10,9 @@
  * Plugin Name: Hustle
  * Plugin URI: https://wordpress.org/plugins/wordpress-popup/
  * Description: Start collecting email addresses and quickly grow your mailing list with big bold pop-ups, slide-ins, widgets, or in post opt-in forms.
- * Version: 7.3.1
+ * Version: 7.4.3
  * Author: WPMU DEV
- * Author URI: https://premium.wpmudev.org
+ * Author URI: https://wpmudev.com
  * Text Domain: hustle
  * 
  */
@@ -73,7 +73,7 @@ if ( ! class_exists( 'ComposerAutoloaderInitda98371940d11703c56dee923bbb392f' ) 
 require_once dirname( __FILE__ ) . '/lib/wpmu-lib/core.php';
 
 if ( ! defined( 'HUSTLE_SUI_VERSION' ) ) {
-	define( 'HUSTLE_SUI_VERSION', '2.8.1' );
+	define( 'HUSTLE_SUI_VERSION', '2.10.1' );
 }
 
 if ( ! class_exists( 'Opt_In' ) ) {
@@ -83,7 +83,7 @@ if ( ! class_exists( 'Opt_In' ) ) {
 	 */
 	class Opt_In {
 
-		const VERSION = '4.3.1';
+		const VERSION = '4.4.3';
 
 		const VIEWS_FOLDER = 'views';
 
@@ -277,6 +277,9 @@ if ( ! function_exists( 'hustle_deactivation' ) ) {
 	function hustle_deactivation() {
 		// Remove the cron for data protection cleanup.
 		wp_clear_scheduled_hook( 'hustle_general_data_protection_cleanup' );
+
+		// TODO: Remove in 4.4.3.
+		delete_option( 'hustle_version' );
 	}
 }
 

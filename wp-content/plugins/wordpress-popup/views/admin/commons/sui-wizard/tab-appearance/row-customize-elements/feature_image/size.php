@@ -90,9 +90,10 @@ $size_options = array(
 									'name'       => $width_unit,
 									'options'    => $units,
 									'id'         => 'hustle-' . $width_unit,
-									'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+									'class'      => 'sui-inlabel sui-select sui-select-sm sui-select-inline',
 									'selected'   => $settings[ $width_unit ],
 									'attributes' => array(
+										'data-width'      => 50,
 										'data-attribute'  => $width_unit,
 										'aria-labelledby' => 'hustle-' . $width_unit . '-label',
 									),

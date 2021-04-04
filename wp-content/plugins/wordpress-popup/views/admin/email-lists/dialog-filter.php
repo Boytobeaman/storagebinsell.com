@@ -55,7 +55,7 @@ ob_start();
 
 	<label for="hustle-dialog-filter--sortby" class="sui-label"><?php esc_html_e( 'Sort by', 'hustle' ); ?></label>
 
-	<select name="order_by" id="hustle-dialog-filter--sortby">
+	<select name="order_by" id="hustle-dialog-filter--sortby" class="sui-select">
 		<?php foreach ( $order_by_array as $key => $name ) { ?>
 			<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $key, $order_by ); ?>><?php echo esc_html( $name ); ?></option>
 		<?php } ?>

@@ -119,7 +119,7 @@ if ( ! class_exists( 'Hustle_Mautic' ) ) :
 				include_once 'hustle-mautic-api.php';
 			}
 			try {
-				return Hustle_Mautic_Api::get_instance( $base_url, $username, $password );
+				return Hustle_Mautic_Api::get_instance( $username, $base_url, $password );
 			} catch ( Exception $e ) {
 				return $e;
 			}

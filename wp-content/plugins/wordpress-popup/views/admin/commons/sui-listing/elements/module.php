@@ -65,7 +65,8 @@ if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type ) {
 	<?php
 	$module_id       = $module->module_id;
 	$can_edit        = Opt_In_Utils::is_user_allowed( 'hustle_edit_module', $module_id );
-	$last_entry_time = Opt_In_Utils::get_latest_conversion_time_by_module_id( $module_id );
+	$tracking_model  = Hustle_Tracking_Model::get_instance();
+	$last_entry_time = $tracking_model->get_latest_conversion_time_by_module_id( $module_id );
 	$view_stats      = filter_input( INPUT_GET, 'view_stats', FILTER_VALIDATE_INT );
 
 	if ( $view_stats && intval( $module_id ) === $view_stats ) {
@@ -154,8 +155,6 @@ if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type ) {
 						'module'               => $module,
 						'smallcaps_singular'   => $smallcaps_singular,
 						'capitalize_singular'  => $capitalize_singular,
-						'capability'           => $capability,
-						'can_create'           => $can_create,
 						'is_tracking_disabled' => $is_tracking_disabled,
 					)
 				);

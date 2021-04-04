@@ -74,7 +74,7 @@ if ( ! class_exists( 'Hustle_Local_List_Form_Settings' ) ) :
 
 			$entries_page = add_query_arg(
 				array(
-					'page' => Hustle_Module_Admin::ENTRIES_PAGE,
+					'page' => Hustle_Data::ENTRIES_PAGE,
 				),
 				get_admin_url( get_current_blog_id(), 'admin.php' )
 			);

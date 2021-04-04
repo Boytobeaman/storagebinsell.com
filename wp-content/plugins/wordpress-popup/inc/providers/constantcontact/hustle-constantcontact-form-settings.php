@@ -71,8 +71,7 @@ if ( ! class_exists( 'Hustle_ConstantContact_Form_Settings' ) ) :
 
 			$current_data  = $this->get_current_data( $current_data, $submitted_data );
 			$is_submit     = ! empty( $submitted_data['hustle_is_submit'] );
-			$is_ssl        = is_ssl();
-			$error_message = $is_ssl ? '' : __( 'Constant Contact requires your site to have SSL certificate.', 'hustle' );
+			$error_message = is_ssl() ? '' : __( 'Constant Contact requires your site to have SSL certificate.', 'hustle' );
 
 			if ( $is_submit && empty( $submitted_data['list_id'] ) ) {
 				$error_message = __( 'The email list is required.', 'hustle' );

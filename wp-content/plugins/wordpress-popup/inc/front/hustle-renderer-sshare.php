@@ -312,8 +312,9 @@ class Hustle_Renderer_Sshare extends Hustle_Renderer_Abstract {
 
 						$type  = isset( $data['type'] ) ? $data['type'] : '';
 						$label = isset( $data['label'] ) ? $data['label'] : '';
+						$link  = isset( $data['link'] ) ? $data['link'] : '';
 
-						if ( '' === $data['link'] && 'email' !== $icon ) {
+						if ( '' === $link && 'email' !== $icon ) {
 
 							$href_value = 'href="#"';
 							$link_type  = 'native';
@@ -331,7 +332,8 @@ class Hustle_Renderer_Sshare extends Hustle_Renderer_Abstract {
 								$title      = apply_filters( 'hustle_social_share_platform_title', rawurlencode( html_entity_decode( esc_html( get_the_title() ) ) ) );
 
 							} else {
-								$href_value = 'href="' . esc_url( $data['link'] ) . '" target="_blank"';
+								$link = apply_filters( 'hustle_social_share_custom_link', $link, $data, $this->module );
+								$href_value = 'href="' . esc_url( $link ) . '" target="_blank"';
 							}
 
 							$link_type = 'custom';
@@ -404,7 +406,7 @@ class Hustle_Renderer_Sshare extends Hustle_Renderer_Abstract {
 	 * @since 4.0
 	 * @return string
 	 */
-	public function ajax_display( Hustle_Module_Model $module, $data = array(), $is_preview = true ) {
+	public function ajax_display( Hustle_Sshare_Model $module, $data = array(), $is_preview = true ) {
 
 		self::$is_preview = $is_preview;
 

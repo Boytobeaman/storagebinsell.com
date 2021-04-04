@@ -11,7 +11,7 @@
 
 	<?php
 	if ( ! $this->is_branding_hidden ) :
-		echo Opt_In_Utils::render_image_markup( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo $this->render_image_markup( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			self::$plugin_url . 'assets/images/hustle-empty-message.png',
 			self::$plugin_url . 'assets/images/hustle-empty-message@2x.png',
 			'sui-image'

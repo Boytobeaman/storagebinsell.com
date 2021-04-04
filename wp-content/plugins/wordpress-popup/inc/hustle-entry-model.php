@@ -182,7 +182,7 @@ class Hustle_Entry_Model {
 		}
 
 		if ( empty( $date_created ) ) {
-			$date_created = Opt_In_Utils::get_current_date();
+			$date_created = Hustle_Time_Helper::get_current_date();
 		}
 
 		// clear cache first
@@ -315,7 +315,7 @@ class Hustle_Entry_Model {
 		global $wpdb;
 
 		if ( empty( $date_created ) ) {
-			$date_created = Opt_In_Utils::get_current_date();
+			$date_created = Hustle_Time_Helper::get_current_date();
 		}
 
 		$result = $wpdb->insert(
@@ -611,9 +611,9 @@ class Hustle_Entry_Model {
 		wp_cache_delete( $module_id, 'hustle_total_entries' );
 		wp_cache_delete( 'all_module_types', 'hustle_total_entries' );
 
-		$model = Hustle_Module_Model::instance()->get( $module_id );
-		if ( ! is_wp_error( $model ) ) {
-			wp_cache_delete( $model->module_type . '_module_type', 'hustle_total_entries' );
+		$module_type = Hustle_Model::get_module_type_by_module_id( $module_id );
+		if ( ! is_wp_error( $module_type ) ) {
+			wp_cache_delete( $module_type . '_module_type', 'hustle_total_entries' );
 		}
 	}
 
@@ -983,7 +983,7 @@ class Hustle_Entry_Model {
 	 * @return boolean
 	 */
 	public function unsubscribe_email( $email, $nonce ) {
-		$data = get_option( Hustle_Data::KEY_UNSUBSCRIBE_NONCES, false );
+		$data = get_option( Hustle_Module_Model::KEY_UNSUBSCRIBE_NONCES, false );
 		if ( ! $data ) {
 			return false;
 		}
@@ -997,7 +997,7 @@ class Hustle_Entry_Model {
 		// Nonce expired. Remove it. Currently giving 1 day of life span.
 		if ( ( time() - (int) $email_data['date_created'] ) > DAY_IN_SECONDS ) {
 			unset( $data[ $email ] );
-			update_option( Hustle_Data::KEY_UNSUBSCRIBE_NONCES, $data );
+			update_option( Hustle_Module_Model::KEY_UNSUBSCRIBE_NONCES, $data );
 			return false;
 		}
 		// Proceed to unsubscribe
@@ -1011,7 +1011,7 @@ class Hustle_Entry_Model {
 
 		// The email was unsubscribed and the nonce was used. Remove it from the saved list.
 		unset( $data[ $email ] );
-		update_option( Hustle_Data::KEY_UNSUBSCRIBE_NONCES, $data );
+		update_option( Hustle_Module_Model::KEY_UNSUBSCRIBE_NONCES, $data );
 		return true;
 	}
 

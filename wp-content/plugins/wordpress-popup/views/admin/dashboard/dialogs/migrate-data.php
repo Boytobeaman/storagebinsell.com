@@ -16,11 +16,10 @@ $slide_three_1x = self::$plugin_url . 'assets/images/onboard-create.png';
 $slide_three_2x = self::$plugin_url . 'assets/images/onboard-create@2x.png';
 
 $is_first_time_opening = empty( filter_input( INPUT_GET, 'show-migrate', FILTER_VALIDATE_BOOLEAN ) );
-$support_link          = 'https://premium.wpmudev.org/get-support/';
+$support_link          = Opt_In_Utils::get_link( 'support' );
 
-if ( Opt_In_Utils::_is_free() ) {
-	$support_link = 'https://wordpress.org/support/plugin/wordpress-popup/';
-}
+$user     = wp_get_current_user();
+$username = ! empty( $user->user_firstname ) ? $user->user_firstname : $user->user_login;
 ?>
 
 <div class="sui-modal sui-modal-md">
@@ -45,7 +44,7 @@ if ( Opt_In_Utils::_is_free() ) {
 
 					<?php if ( ! $this->is_branding_hidden ) : ?>
 						<figure class="sui-box-banner" role="banner" aria-hidden="true">
-							<?php echo Opt_In_Utils::render_image_markup( $slide_one_1x, $slide_one_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<?php echo $this->render_image_markup( $slide_one_1x, $slide_one_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						</figure>
 					<?php endif; ?>
 
@@ -85,7 +84,7 @@ if ( Opt_In_Utils::_is_free() ) {
 				<div class="sui-box-header sui-flatten sui-content-center sui-spacing-top--60">
 
 					<figure class="sui-box-banner" role="banner" aria-hidden="true">
-						<?php echo Opt_In_Utils::render_image_markup( $slide_two_1x, $slide_two_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php echo $this->render_image_markup( $slide_two_1x, $slide_two_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</figure>
 
 					<h3
@@ -219,7 +218,7 @@ if ( Opt_In_Utils::_is_free() ) {
 					</button>
 
 					<figure class="sui-box-banner" role="banner" aria-hidden="true">
-						<?php echo Opt_In_Utils::render_image_markup( $slide_three_1x, $slide_three_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php echo $this->render_image_markup( $slide_three_1x, $slide_three_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</figure>
 
 					<h3 class="sui-box-title sui-lg"><?php esc_html_e( 'Create Module', 'hustle' ); ?></h3>

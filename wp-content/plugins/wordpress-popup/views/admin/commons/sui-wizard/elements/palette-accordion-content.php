@@ -44,9 +44,9 @@ $first_tab_content = true;
 
 									<?php
 									if ( ! $is_settings_page ) {
-										Opt_In_Utils::sui_colorpicker( $key_color, $color['value'], $color['alpha'], false, $settings[ $color['value'] ] );
+										$this->sui_colorpicker( $key_color, $color['value'], $color['alpha'], false, $settings[ $color['value'] ] );
 									} else {
-										Opt_In_Utils::sui_colorpicker( $key_color, $color['value'], $color['alpha'], true );
+										$this->sui_colorpicker( $key_color, $color['value'], $color['alpha'], true );
 									}
 									?>
 
@@ -73,9 +73,9 @@ $first_tab_content = true;
 
 					<?php
 					if ( ! $is_settings_page ) {
-						Opt_In_Utils::sui_colorpicker( $key_color, $color['value'], $color['alpha'], false, $settings[ $color['value'] ] );
+						$this->sui_colorpicker( $key_color, $color['value'], $color['alpha'], false, $settings[ $color['value'] ] );
 					} else {
-						Opt_In_Utils::sui_colorpicker( $key_color, $color['value'], $color['alpha'], true );
+						$this->sui_colorpicker( $key_color, $color['value'], $color['alpha'], true );
 					}
 					?>
 

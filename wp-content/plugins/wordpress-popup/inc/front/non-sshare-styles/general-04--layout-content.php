@@ -44,6 +44,21 @@ $mobile_border_left   = ( '' !== $advanced['layout_content_border_left_mobile'] 
 $mobile_border_width = ( ! $is_mobile_enabled || ( $is_mobile_enabled && $default_advanced ) ) ? $padding : $mobile_border_top . ' ' . $mobile_border_right . ' ' . $mobile_border_bottom . ' ' . $mobile_border_left;
 $mobile_border_style = ( ! $is_mobile_enabled || ( $is_mobile_enabled && $default_advanced ) ) ? $border_style : $advanced['layout_content_border_type_mobile'];
 
+// SETTINGS: Border Radius.
+$radius_topleft     = ( '' !== $advanced['layout_content_radius_top_left'] ) ? $advanced['layout_content_radius_top_left'] . $advanced['layout_content_radius_unit'] : '0';
+$radius_topright    = ( '' !== $advanced['layout_content_radius_top_right'] ) ? $advanced['layout_content_radius_top_right'] . $advanced['layout_content_radius_unit'] : '0';
+$radius_bottomright = ( '' !== $advanced['layout_content_radius_bottom_right'] ) ? $advanced['layout_content_radius_bottom_right'] . $advanced['layout_content_radius_unit'] : '0';
+$radius_bottomleft  = ( '' !== $advanced['layout_content_radius_bottom_left'] ) ? $advanced['layout_content_radius_bottom_left'] . $advanced['layout_content_radius_unit'] : '0';
+
+$border_radius = $radius_topleft . ' ' . $radius_topright . ' ' . $radius_bottomright . ' ' . $radius_bottomleft;
+
+$mobile_radius_topleft     = ( '' !== $advanced['layout_content_radius_top_left_mobile'] ) ? $advanced['layout_content_radius_top_left_mobile'] . $advanced['layout_content_radius_unit_mobile'] : $radius_topleft;
+$mobile_radius_topright    = ( '' !== $advanced['layout_content_radius_top_right_mobile'] ) ? $advanced['layout_content_radius_top_right_mobile'] . $advanced['layout_content_radius_unit_mobile'] : $radius_topright;
+$mobile_radius_bottomright = ( '' !== $advanced['layout_content_radius_bottom_right_mobile'] ) ? $advanced['layout_content_radius_bottom_right_mobile'] . $advanced['layout_content_radius_unit_mobile'] : $radius_bottomright;
+$mobile_radius_bottomleft  = ( '' !== $advanced['layout_content_radius_bottom_left_mobile'] ) ? $advanced['layout_content_radius_bottom_left_mobile'] . $advanced['layout_content_radius_unit_mobile'] : $radius_bottomleft;
+
+$mobile_border_radius = ( ! $is_mobile_enabled || ( $is_mobile_enabled && $default_advanced ) ) ? $border_radius : $mobile_radius_topleft . ' ' . $mobile_radius_topright . ' ' . $mobile_radius_bottomright . ' ' . $mobile_radius_bottomleft;
+
 // SETTINGS: Colors.
 $background_color = $colors['layout_content_bg'];
 
@@ -54,6 +69,7 @@ $style     .= $prefix_mobile . $component . ' {';
 	$style .= 'padding: ' . $mobile_padding . ';';
 	$style .= 'border-width: ' . $mobile_border_width . ';';
 	$style .= 'border-style: ' . $mobile_border_style . ';';
+	$style .= 'border-radius: ' . $mobile_border_radius . ';';
 	$style .= ( ! $is_vanilla ) ? 'border-color: ' . $border_color . ';' : '';
 	$style .= ( ! $is_vanilla ) ? 'background-color: ' . $background_color . ';' : '';
 $style     .= '}';
@@ -65,6 +81,7 @@ if ( $is_mobile_enabled ) {
 			$style .= 'padding: ' . $padding . ';';
 			$style .= 'border-width: ' . $border_width . ';';
 			$style .= 'border-style: ' . $border_style . ';';
+			$style .= 'border-radius: ' . $border_radius . ';';
 		$style     .= '}';
 	$style         .= '}';
 }

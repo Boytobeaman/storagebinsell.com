@@ -137,7 +137,7 @@ ob_start();
 						<select id="hustle-palette-module-type" name="module_type" aria-labelledby="hustle-palette-module-type-label">
 
 							<?php
-							foreach ( Hustle_Module_Model::get_module_types() as $module_type ) :
+							foreach ( Hustle_Data::get_module_types() as $module_type ) :
 								if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE === $module_type ) {
 									continue;
 								}

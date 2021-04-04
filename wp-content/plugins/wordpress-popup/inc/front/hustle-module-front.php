@@ -36,6 +36,7 @@ class Hustle_Module_Front {
 
 		// Schedule email cron action.
 		add_action( 'hustle_send_email', array( 'Hustle_Mail', 'send_email' ), 10, 3 );
+		add_action( 'hustle_aweber_token_refresh', array( 'Hustle_Aweber', 'refresh_token' ) );
 
 		$is_preview = filter_input( INPUT_GET, 'hustle_preview', FILTER_VALIDATE_BOOLEAN ) && Opt_In_Utils::is_user_allowed( 'hustle_edit_module' );
 
@@ -44,8 +45,8 @@ class Hustle_Module_Front {
 			$this->register_shortcodes_and_widget();
 		}
 
-		// Abort here if it's admin. Only register the shortcodes and widget.
-		if ( is_admin() ) {
+		// Abort here if it's admin or widget preview. Only register the shortcodes and widget.
+		if ( is_admin() || isset( $_GET['widgetPreview'] ) ) {
 			return;
 		}
 
@@ -182,13 +183,6 @@ class Hustle_Module_Front {
 			true
 		);
 
-		wp_register_script(
-			'hustle_front_fitie',
-			Opt_In::$plugin_url . 'assets/js/vendor/fitie/fitie.js',
-			array(),
-			Opt_In::VERSION,
-			false
-		);
 		$modules = apply_filters( 'hustle_front_modules', $this->_modules );
 		wp_localize_script( 'hustle_front', 'Modules', $modules );
 
@@ -214,11 +208,11 @@ class Hustle_Module_Front {
 		// Datepicker. Add translated strings only if some module has a datepicker.
 		if ( ! empty( $modules_deps['datepicker'] ) ) {
 			$vars['days_and_months'] = array(
-				'days_full'    => Opt_In_Utils::get_week_days(),
-				'days_short'   => Opt_In_Utils::get_week_days( 'short' ),
-				'days_min'     => Opt_In_Utils::get_week_days( 'min' ),
-				'months_full'  => Opt_In_Utils::get_months(),
-				'months_short' => Opt_In_Utils::get_months( 'short' ),
+				'days_full'    => Hustle_Time_Helper::get_week_days(),
+				'days_short'   => Hustle_Time_Helper::get_week_days( 'short' ),
+				'days_min'     => Hustle_Time_Helper::get_week_days( 'min' ),
+				'months_full'  => Hustle_Time_Helper::get_months(),
+				'months_short' => Hustle_Time_Helper::get_months( 'short' ),
 			);
 		}
 		wp_localize_script( 'hustle_front', 'incOpt', $vars );
@@ -229,7 +223,7 @@ class Hustle_Module_Front {
 		if ( ! empty( $modules_deps['adblocker'] ) ) {
 			wp_enqueue_script(
 				'hustle_front_ads',
-				Opt_In::$plugin_url . 'assets/js/dfp.js',
+				Opt_In::$plugin_url . 'assets/js/adblock.js',
 				array(),
 				Opt_In::VERSION,
 				true
@@ -254,21 +248,8 @@ class Hustle_Module_Front {
 
 		self::add_hui_scripts();
 		wp_enqueue_script( 'hustle_front' );
-		wp_enqueue_script( 'hustle_front_fitie' );
 
-		add_filter(
-			'script_loader_tag',
-			array( 'Hustle_Module_Front', 'handle_specific_script' ),
-			10,
-			2
-		);
-
-		add_filter(
-			'style_loader_tag',
-			array( 'Hustle_Module_Front', 'handle_specific_style' ),
-			10,
-			2
-		);
+		Opt_In_Utils::maybe_add_scripts_for_ie();
 	}
 
 	/**
@@ -319,53 +300,6 @@ class Hustle_Module_Front {
 		} elseif ( $is_preview ) {
 			return $script_url;
 		}
-	}
-
-	/**
-	 * Handling specific scripts for each scenario
-	 */
-	public static function handle_specific_script( $tag, $handle ) {
-		if ( 'hustle_front_fitie' === $handle ) {
-			if ( isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
-				$user_agent = $_SERVER['HTTP_USER_AGENT'];
-			} else {
-				return $tag;
-			}
-
-			$is_ie = (
-				// IE 10 or older
-				false !== stripos( $user_agent, 'MSIE' ) ||
-				// IE 11
-				false !== stripos( $user_agent, 'Trident' ) ||
-				// Edge (IE 12+)
-				false !== stripos( $user_agent, 'Edge' )
-			);
-			if ( ! $is_ie ) {
-				$tag = '';
-			}
-		}
-		return $tag;
-	}
-
-	/**
-	 * Handling specific style for each scenario
-	 */
-	public static function handle_specific_style( $tag, $handle ) {
-		if ( 'hustle_front_ie' === $handle ) {
-			$user_agent = $_SERVER['HTTP_USER_AGENT'];
-			$is_ie      = (
-				// IE 10 or older
-				false !== stripos( $user_agent, 'MSIE' ) ||
-				// IE 11
-				false !== stripos( $user_agent, 'Trident' ) ||
-				// Edge (IE 12+)
-				false !== stripos( $user_agent, 'Edge' )
-			);
-			if ( ! $is_ie ) {
-				$tag = '';
-			}
-		}
-		return $tag;
 	}
 
 	/**
@@ -480,8 +414,25 @@ class Hustle_Module_Front {
 			wp_enqueue_style( 'hustle_slidein' );
 		}
 
+		$has_social_sharing_module = in_array( Hustle_Module_Model::SOCIAL_SHARING_MODULE, $module_types_to_display, true );
+		$has_embedded_module       = in_array( Hustle_Module_Model::EMBEDDED_MODULE, $module_types_to_display, true );
+
+		// Social share and Embedded both need hustle-inline CSS.
+		if ( ! $module_types_to_display || $has_social_sharing_module || $has_embedded_module ) {
+			wp_register_style(
+				'hustle_inline',
+				Opt_In::$plugin_url . 'assets/hustle-ui/css/hustle-inline.min.css',
+				array(),
+				Opt_In::VERSION
+			);
+		}
+
+		if ( ! $module_types_to_display || $has_embedded_module ) {
+			wp_enqueue_style( 'hustle_inline' );
+		}
+
 		// SSharing type.
-		if ( ! $module_types_to_display || in_array( Hustle_Module_Model::SOCIAL_SHARING_MODULE, $module_types_to_display, true ) ) {
+		if ( ! $module_types_to_display || $has_social_sharing_module ) {
 
 			wp_register_style(
 				'hustle_social',
@@ -494,12 +445,6 @@ class Hustle_Module_Front {
 			// Inline display.
 			if ( ! $module_types_to_display || in_array( Hustle_SShare_Model::INLINE_MODULE, $module_types_to_display, true ) ) {
 
-				wp_register_style(
-					'hustle_inline',
-					Opt_In::$plugin_url . 'assets/hustle-ui/css/hustle-inline.min.css',
-					array(),
-					Opt_In::VERSION
-				);
 				wp_enqueue_style( 'hustle_inline' );
 			}
 
@@ -578,7 +523,7 @@ class Hustle_Module_Front {
 
 		foreach ( $modules as $module ) {
 
-			if ( ! $module instanceof Hustle_Module_Model || ! $module->active ) {
+			if ( ! $module instanceof Hustle_Model || ! $module->active ) {
 				continue;
 			}
 
@@ -592,7 +537,7 @@ class Hustle_Module_Front {
 
 			$is_non_inline_module = ( Hustle_Module_Model::POPUP_MODULE === $module->module_type || Hustle_Module_Model::SLIDEIN_MODULE === $module->module_type );
 
-			if ( ! $module->visibility->is_allowed_to_display( $module->module_type ) ) {
+			if ( ! $module->get_visibility()->is_allowed_to_display( $module->module_type ) ) {
 
 				// If shortcode is enabled for inline modules, don't abort.
 				// Shortcodes shouldn't follow the visibility conditions.
@@ -608,6 +553,7 @@ class Hustle_Module_Front {
 
 			// Setting up stuff for all modules except social sharing.
 			if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type ) {
+				$module->load();
 
 				// Skip if Google fonts were deativated via hook.
 				if ( $use_google_fonts ) {
@@ -659,27 +605,22 @@ class Hustle_Module_Front {
 
 				// For popups and slideins.
 				if ( $is_non_inline_module ) {
-					$this->_non_inline_modules[] = $module;
+					$this->_non_inline_modules[ $module->module_id ] = $module;
 
 					if ( ! $enqueue_adblock ) {
 
 						$settings = $module->get_settings()->to_array();
-						if (
-							// If Trigger exists.
-							! empty( $settings['triggers']['trigger'] )
-							// If trigger is adblock.
-							&& 'adblock' === $settings['triggers']['trigger']
-							// If on_adblock toggle is enabled.
-							&& ! empty( $settings['triggers']['on_adblock'] )
-						) {
+
+						// If trigger is adblock.
+						if ( in_array( 'adblock', $settings['triggers']['trigger'], true ) ) {
 							$enqueue_adblock = true;
 						}
 					}
 				} elseif ( Hustle_Module_Model::EMBEDDED_MODULE === $module->module_type ) {
-					$this->_inline_modules[] = $module;
+					$this->_inline_modules[ $module->module_id ] = $module;
 				}
 			} else { // Social sharing modules.
-				$ssharing_networks = $module->get_content()->__get( 'social_icons' );
+				$ssharing_networks = $module->get_content()->get_social_icons();
 				if (
 					! empty( $ssharing_networks )
 					&& in_array( 'pinterest', array_keys( $ssharing_networks ), true )
@@ -687,8 +628,9 @@ class Hustle_Module_Front {
 				) {
 					$pinterest_found = true;
 				}
-				$this->_inline_modules[]     = $module;
-				$this->_non_inline_modules[] = $module;
+				$this->_inline_modules[ $module->module_id ] = $module;
+
+				$this->_non_inline_modules[ $module->module_id ] = $module;
 			}
 
 			$this->log_module_type_to_load_styles( $module );
@@ -731,9 +673,9 @@ class Hustle_Module_Front {
 	 *
 	 * @since 4.0.1
 	 *
-	 * @param Hustle_Module_Model $module
+	 * @param Hustle_Model $module Current module to check.
 	 */
-	private function log_module_type_to_load_styles( Hustle_Module_Model $module ) {
+	private function log_module_type_to_load_styles( Hustle_Model $module ) {
 
 		// Keep track of the of the modules types and modes to display
 		// in order to queue the required styles only.
@@ -869,37 +811,27 @@ class Hustle_Module_Front {
 			$enforce_type = true;
 		}
 
-		// Get the module data.
-		$module = Hustle_Module_Model::instance()->get_by_shortcode( $atts['id'], $enforce_type );
-		if ( is_wp_error( $module ) ) {
-			return '';
-		}
-
-		// Return if the module isn't active.
-		if ( ! $module || ! $module->active ) {
-			return '';
-		}
-
-		$module = Hustle_Module_Collection::instance()->return_model_from_id( $module->module_id );
-
-		if ( is_wp_error( $module ) || ! $module->is_display_type_active( Hustle_Module_Model::SHORTCODE_MODULE ) ) {
-			return '';
-		}
-
-		// Check schedule for non ssharing modules.
-		if ( Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module->module_type ) {
-			$settings = $module->get_settings();
-
-			// Abort if it's not currently scheduled.
-			if ( ! $settings->is_currently_scheduled() ) {
-				return '';
-			}
-		}
+		$module_id = Hustle_Model::get_module_id_by_shortcode_id( $atts['id'] );
 
 		$custom_classes = esc_attr( $atts['css_class'] );
 
-		// Maybe display trigger link (For popups and slideins).
-		if ( ! empty( $content ) && ( 'popup' === $type || 'slidein' === $type ) ) {
+		if ( isset( $this->_inline_modules[ $module_id ] ) ) {
+			$module = $this->_inline_modules[ $module_id ];
+
+			if ( ! $module->is_display_type_active( Hustle_Module_Model::SHORTCODE_MODULE ) ) {
+				return '';
+			}
+
+			// Display the module.
+			ob_start();
+
+			$module->display( Hustle_Module_Model::SHORTCODE_MODULE, $custom_classes );
+
+			return ob_get_clean();
+		}
+
+		if ( isset( $this->_non_inline_modules[ $module_id ] ) && ! empty( $content ) ) {
+			$module = $this->_non_inline_modules[ $module_id ];
 
 			// If shortcode click trigger is disabled, print nothing.
 			$settings = $module->get_settings()->to_array();
@@ -918,20 +850,7 @@ class Hustle_Module_Front {
 			);
 		}
 
-		$preview = Hustle_Renderer_Abstract::$is_preview;
-
-		// Display the module.
-		ob_start();
-
-		$module->display( Hustle_Module_Model::SHORTCODE_MODULE, $custom_classes, $preview );
-
-		if ( $preview ) {
-			$view         = $module->get_renderer();
-			$view->module = $module->load();
-			$view->print_styles( $preview );
-		}
-
-		return ob_get_clean();
+		return '';
 	}
 
 	/**

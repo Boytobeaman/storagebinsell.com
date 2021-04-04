@@ -591,7 +591,7 @@ if ( ! class_exists( 'Hustle_Mailchimp' ) ) :
 				}
 			}
 			if ( ! empty( $new_fields ) ) {
-				$module = Hustle_Module_Model::instance()->get( $module_id );
+				$module = new Hustle_Module_Model( $module_id );
 				if ( is_wp_error( $module ) ) {
 					return $module;
 				}

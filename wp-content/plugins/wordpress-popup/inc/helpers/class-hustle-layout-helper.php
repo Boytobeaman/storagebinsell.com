@@ -38,6 +38,13 @@ class Hustle_Layout_Helper {
 	public static $plugin_url;
 
 	/**
+	 * Flag for letting SUI doesn't run auto init selects to suiSelect.
+	 *
+	 * @var bool
+	 */
+	private static $dont_init_selects;
+
+	/**
 	 * Hustle_Layout_Helper class constructor.
 	 *
 	 * @since 4.2.0
@@ -215,5 +222,151 @@ class Hustle_Layout_Helper {
 	 */
 	private function render_modal( $arguments ) {
 		$this->render( '/admin/commons/modal-template', $arguments );
+	}
+
+	/**
+	 * Image function
+	 * Return image element with 2x and 1x support.
+	 *
+	 * @since 4.3.1
+	 *
+	 * @param string      $image_path URL for the given image.
+	 * @param string      $image_suffix Image format, like png, jpg, etc.
+	 * @param string      $image_class Class for the image HTML element.
+	 * @param string|bool $support Whether the image has retina support.
+	 */
+	private function hustle_image( $image_path, $image_suffix, $image_class, $support ) {
+		$image = '';
+		/**
+		 * White labeling based on Dash Plugin Settings
+		 */
+		$hide_branding = apply_filters( 'wpmudev_branding_hide_branding', false );
+		if ( $hide_branding ) {
+			return $image;
+		}
+		$image_name = esc_html__( 'Hustle image', 'hustle' );
+		if ( ( true === $support ) || ( '2x' === $support ) ) {
+			if ( '' !== $image_class ) {
+				$image = '<img src="' . $image_path . '.' . $image_suffix . '" srcset="' . $image_path . '.' . $image_suffix . ' 1x, ' . $image_path . '@2x.' . $image_suffix . ' 2x" alt="' . $image_name . '" class="' . $image_class . '" aria-hidden="true">';
+			} else {
+				$image = '<img src="' . $image_path . '.' . $image_suffix . '" srcset="' . $image_path . '.' . $image_suffix . ' 1x, ' . $image_path . '@2x.' . $image_suffix . ' 2x" alt="' . $image_name . '" aria-hidden="true">';
+			}
+		} else {
+			if ( '' !== $image_class ) {
+				$image = '<img src="' . $image_path . '.' . $image_suffix . '" alt="' . $image_name . '" class="' . $image_class . '" aria-hidden="true">';
+			} else {
+				$image = '<img src="' . $image_path . '.' . $image_suffix . '" alt="' . $image_name . '" aria-hidden="true">';
+			}
+		}
+		echo $image; // phpcs:ignore
+	}
+
+	/**
+	 * Return the image markup for retina and no retina images
+	 *
+	 * @since 4.3.1
+	 *
+	 * @param string $image_path URL for the given image.
+	 * @param string $image_retina_path URL for the given image for retina.
+	 * @param string $image_class Class for the image HTML element.
+	 * @param string $image_width Image max width.
+	 * @param string $image_height Image max height.
+	 *
+	 * @return string
+	 */
+	private function render_image_markup( $image_path, $image_retina_path = '', $image_class = '', $image_width = '', $image_height = '' ) {
+
+		$image = '';
+
+		$image_path   = esc_url( $image_path );
+		$image_srcset = '';
+		$image_styles = '';
+
+		if ( ! empty( $image_retina_path ) || '' !== $image_retina_path ) {
+			$image_srcset = $image_path . ' 1x, ' . esc_url( $image_retina_path ) . ' 2x';
+		}
+
+		if ( '' !== $image_width || '' !== $image_height ) {
+
+			$image_styles .= ' styles="';
+
+			if ( '' !== $image_width ) {
+				$image_styles = 'max-width: ' . $image_width . 'px';
+
+				if ( '' !== $image_height ) {
+					$image_styles = ' ';
+				}
+			}
+
+			if ( '' !== $image_height ) {
+				$image_styles = 'max-height: ' . $image_height . 'px';
+			}
+
+			$image_styles .= '"';
+
+		}
+
+		$image .= '<img';
+
+		$image .= ' src="' . $image_path . '"';
+
+		if ( '' !== $image_srcset ) {
+			$image .= ' srcset="' . $image_srcset . '"';
+		}
+
+		$image .= ' title="Hustle image"';
+		$image .= ' alt="Hustle image commonly Hustle-Man doing something fun"';
+
+		if ( ! empty( $image_class ) || '' !== $image_class ) {
+			$image .= ' class="' . $image_class . '"';
+		}
+
+		$image .= ' aria-hidden="true"';
+
+		$image .= '/>';
+
+		return $image;
+	}
+
+	/**
+	 * Color Picker
+	 *
+	 * Return the correct color picker markup that's compatible with Shared UI 2.0
+	 *
+	 * @since 4.3.1
+	 *
+	 * @param string $id "id" attribute of the input.
+	 * @param string $name "name" attribute of the input.
+	 * @param string $alpha "false"/"true". Enables or disables the alpha selector in the colorpicker.
+	 * @param bool   $is_js_template whether this colorpicker will be filled via js templating.
+	 * @param string $value Value to be used when js templating isn't used.
+	 */
+	private function sui_colorpicker( $id, $name, $alpha = 'false', $is_js_template = true, $value = false ) {
+
+		$value = ( ! $is_js_template && $value ) ? $value : '{{ ' . $name . ' }}';
+
+		echo '<div class="sui-colorpicker-wrap">
+
+			<div class="sui-colorpicker" aria-hidden="true">
+				<div class="sui-colorpicker-value">
+					<span role="button">
+						<span style="background-color: ' . esc_attr( $value ) . '"></span>
+					</span>
+					<input class="hustle-colorpicker-input" type="text" value="' . esc_attr( $value ) . '"/>
+					<button><span class="sui-icon-close" aria-hidden="true"></span></button>
+				</div>
+				<button class="sui-button">' . esc_html__( 'Select', 'hustle' ) . '</button>
+			</div>
+
+			<input type="text"
+				name="' . esc_attr( $name ) . '"
+				value="' . esc_attr( $value ) . '"
+				id="' . esc_attr( $id ) . '"
+				class="sui-colorpicker-input"
+				data-alpha="' . esc_attr( $alpha ) . '"
+				data-attribute="' . esc_attr( $name ) . '" />
+
+		</div>';
+
 	}
 }

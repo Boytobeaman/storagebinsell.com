@@ -8,66 +8,68 @@
 
 ?>
 
-<?php // SETTINGS: Click on existing element. ?>
+<?php /* translators: module type smallcaps and in singular */ ?>
+<p class="sui-description" style="margin: 0 0 20px;"><?php printf( esc_html__( 'Trigger your %s by clicking on an existing page element or render a new trigger button on your website.', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></p>
+
 <div class="sui-form-field">
 
-	<label for="hustle-trigger-click--selector" class="sui-toggle hustle-toggle-with-container" data-toggle-on="trigger-click-selector">
-		<input type="checkbox"
-			id="hustle-trigger-click--selector"
-			name="trigger_on_click_selector"
-			data-attribute="triggers.enable_on_click_element"
-			aria-labelledby="hustle-trigger-click--selector-label"
-			aria-describedby="hustle-trigger-click--selector-description"
-			<?php checked( $triggers['enable_on_click_element'], '1' ); ?>
-		/>
-		<span class="sui-toggle-slider" aria-hidden="true"></span>
+	<?php
+	$this->render(
+		'admin/global/sui-components/sui-checkbox',
+		array(
+			'name'         => 'triggers.enable_on_click_element',
+			'saved_value'  => $triggers['enable_on_click_element'],
+			'small'        => true,
+			'stacked'      => true,
+			'label'        => esc_html__( 'Trigger by clicking on an existing page element(s)', 'hustle' ),
+			'custom_class' => 'hustle-toggle-with-container',
+			'attributes'   => 'data-toggle-on=enable_on_click_element',
+		)
+	);
+	?>
 
-		<span id="hustle-trigger-click--selector-label" class="sui-toggle-label"><?php esc_html_e( 'Click on existing element', 'hustle' ); ?></span>
-
-		<?php /* translators: module type capitalized and in singular */ ?>
-		<span id="hustle-trigger-click--selector-description" class="sui-description"><?php printf( esc_html__( 'Trigger your %s when a user clicks on an existing HTML element(s).', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></span>
-	</label>
-
-	<div class="sui-border-frame sui-toggle-content" data-toggle-content="trigger-click-selector">
+	<div style="margin-left: 26px;" data-toggle-content="enable_on_click_element">
 
 		<label class="sui-label"><?php esc_html_e( 'CSS selector(s)', 'hustle' ); ?></label>
 
-		<input type="text"
-			placeholder="<?php esc_attr_e( 'For example .element-class, #element-id', 'hustle' ); ?>"
+		<input
+			type="text"
 			value="<?php echo esc_attr( $triggers['on_click_element'] ); ?>"
-			class="sui-form-control"
 			name="trigger_on_click_element"
-			data-attribute="triggers.on_click_element" />
+			placeholder="<?php esc_attr_e( 'For example .element-class, #element-id', 'hustle' ); ?>"
+			class="sui-form-control"
+			data-attribute="triggers.on_click_element"
+		/>
 
-			<?php /* translators: module type in smallcaps and in singular */ ?>
+		<?php /* translators: module type in smallcaps and in singular */ ?>
 		<p class="sui-description"><?php printf( esc_html__( 'You can add multiple selectors separated by a comma to trigger your %s from multiple elements.', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></p>
+
 	</div>
 
 </div>
 
-<?php // SETTINGS: Render a new button. ?>
+<hr />
+
 <div class="sui-form-field">
 
-	<label for="hustle-trigger-click--shortcode" class="sui-toggle hustle-toggle-with-container" data-toggle-on="trigger-click-shortcode">
-		<input type="checkbox"
-			id="hustle-trigger-click--shortcode"
-			name="trigger_on_click_shortcode"
-			data-attribute="triggers.enable_on_click_shortcode"
-			aria-labelledby="hustle-trigger-click--shortcode-label"
-			aria-describedby="hustle-trigger-click--shortcode-description"
-			<?php checked( $triggers['enable_on_click_shortcode'], '1' ); ?>
-		/>
-		<span class="sui-toggle-slider" aria-hidden="true"></span>
+	<?php
+	$this->render(
+		'admin/global/sui-components/sui-checkbox',
+		array(
+			'name'         => 'triggers.enable_on_click_shortcode',
+			'saved_value'  => $triggers['enable_on_click_shortcode'],
+			'small'        => true,
+			'stacked'      => true,
+			'label'        => esc_html__( 'Render a trigger button', 'hustle' ),
+			'custom_class' => 'hustle-toggle-with-container',
+			'attributes'   => 'data-toggle-on=enable_on_click_shortcode',
+		)
+	);
+	?>
 
-		<span id="hustle-trigger-click--shortcode-label" class="sui-toggle-label"><?php esc_html_e( 'Render a new button', 'hustle' ); ?></span>
+	<div style="margin-left: 26px;" data-toggle-content="enable_on_click_shortcode">
 
-		<?php /* translators: module type in small caps and in singular */ ?>
-		<span id="hustle-trigger-click--shortcode-description" class="sui-description" style="margin-top: 0;"><?php printf( esc_html__( 'You can render a new button which will tigger the %s using the shortcode.', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></span>
-	</label>
-
-	<div class="sui-border-frame sui-toggle-content" data-toggle-content="trigger-click-shortcode">
-
-		<label class="sui-label"><?php esc_html_e( 'Shortcode to render the trigger element', 'hustle' ); ?></label>
+		<label class="sui-label"><?php esc_html_e( 'Button shortcode', 'hustle' ); ?></label>
 
 		<div class="sui-with-button sui-with-button-inside">
 			<input type="text"
@@ -79,6 +81,8 @@
 				<span class="sui-screen-reader-text"><?php esc_html_e( 'Copy shortcode', 'hustle' ); ?></span>
 			</button>
 		</div>
+
+		<p class="sui-description"><?php esc_html_e( 'Copy the button shortcode and paste it wherever you want to render this trigger button.', 'hustle' ); ?></p>
 
 	</div>
 

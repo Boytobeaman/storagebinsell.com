@@ -37,7 +37,7 @@
 				<label
 					for="hustle-<?php echo esc_attr( $option['slug'] ); ?>"
 					id="hustle-<?php echo esc_attr( $option['slug'] ); ?>-label"
-					class="sui-label"
+					class="sui-label<?php echo ! empty( $option['label-nowrap'] ) ? ' hustle-nowrap' : ''; ?>"
 					><?php echo esc_html( $option['name'] ); ?></label>
 
 				<?php Hustle_Layout_Helper::get_html_for_options( array( $render_options ) ); ?>

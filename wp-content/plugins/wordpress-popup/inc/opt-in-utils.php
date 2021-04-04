@@ -10,13 +10,6 @@
 class Opt_In_Utils {
 
 	/**
-	 * Instance of Opt_In_Geo
-	 *
-	 * @var Opt_In_Geo
-	 */
-	private $geo;
-
-	/**
 	 * CPT
 	 *
 	 * @var array
@@ -29,36 +22,6 @@ class Opt_In_Utils {
 	 * @var array
 	 */
 	private static $admin_roles;
-
-	public static $comment;
-
-	public function __construct( Opt_In_Geo $geo ) {
-		$this->geo = $geo;
-	}
-
-	/**
-	 * Checks if user has already commented
-	 *
-	 * @return bool|int
-	 */
-	public function has_user_commented() {
-		if ( null === self::$comment ) {
-			// Guests (and maybe logged in users) are tracked via a cookie.
-			self::$comment = isset( $_COOKIE[ 'comment_author_' . COOKIEHASH ] ) ? 1 : 0;
-
-			if ( ! self::$comment && is_user_logged_in() ) {
-				// For logged-in users we can also check the database.
-				$count         = get_comments(
-					array(
-						'count'   => true,
-						'user_id' => get_current_user_id(),
-					)
-				);
-				self::$comment = $count > 0;
-			}
-		}
-		return self::$comment;
-	}
 
 	/**
 	 * Returns the referrer.
@@ -114,70 +77,6 @@ class Opt_In_Utils {
 	}
 
 	/**
-	 * Tests if the $test_url matches any pattern defined in the $list.
-	 *
-	 * @since  4.6
-	 * @param  string $test_url The URL to test.
-	 * @param  array  $list List of URL-patterns to test against.
-	 * @return bool
-	 */
-	public function check_url( $list ) {
-		$response = false;
-
-		$list = array_map( 'trim', (array) $list );
-		if ( empty( $list ) ) {
-			$response = true;
-
-		} else {
-
-			$test_url             = strtok( $this->get_current_actual_url( true ), '#' );
-			$test_url_no_protocol = strtok( $this->get_current_actual_url(), '#' );
-
-			foreach ( $list as $match ) {
-				$match = strtok( $match, '#' );
-
-				// We're using '%' at the beggining of the string in visibility conditions to differentiate
-				// regular urls from regex. If it's not regex, use regular url check.
-				if ( 0 !== strpos( $match, '%' ) ) {
-
-					// Check if we're using a wildcard.
-					if ( false === strpos( $match, '*' ) ) {
-						$match = preg_quote( $match, null );
-						if ( false === strpos( $match, '://' ) ) {
-							$match = '\w+://' . $match;
-						}
-						if ( '/' !== substr( $match, -1 ) ) {
-							$match .= '/?';
-						} else {
-							$match .= '?';
-						}
-						$exp = '#^' . $match . '$#i';
-
-						$res = preg_match( $exp, $test_url );
-
-					} else {
-						// Check wildcards.
-						$res = fnmatch( $match, $test_url_no_protocol );
-					}
-				} else {
-					// Check for regex urls.
-					$match = ltrim( $match, '%' );
-					$exp   = $match;
-
-					$res = preg_match( $exp, $test_url );
-				}
-
-				if ( $res ) {
-					$response = true;
-					break;
-				}
-			}
-		}
-
-		return $response;
-	}
-
-	/**
 	 * Returns current url
 	 * should only be called after plugins_loaded hook is fired
 	 *
@@ -189,39 +88,6 @@ class Opt_In_Utils {
 
 		global $wp;
 		return add_query_arg( $wp->query_string, '', home_url( $wp->request ) );
-	}
-
-	/**
-	 * Returns current actual url, the one seen on browser
-	 *
-	 * @return string
-	 */
-	public function get_current_actual_url( $with_protocol = false ) {
-		if ( ! did_action( 'plugins_loaded' ) ) {
-			new Exception( 'This method should only be called after plugins_loaded hook is fired' ); }
-
-		if ( ! $with_protocol ) {
-			return "$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-		}
-		return 'http' . ( isset( $_SERVER['HTTPS'] ) ? 's' : '' ) . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-	}
-
-	/**
-	 * Checks if the current user IP belongs to one of the countries defined in
-	 * country_codes list.
-	 *
-	 * @param  array $country_codes List of country codes.
-	 * @return bool
-	 */
-	public function test_country( $country_codes ) {
-		$response = true;
-		$country  = $this->geo->get_user_country();
-
-		if ( 'XX' === $country ) {
-			return $response;
-		}
-
-		return in_array( $country, (array) $country_codes, true );
 	}
 
 	/**
@@ -289,24 +155,6 @@ class Opt_In_Utils {
 	}
 
 	/**
-	 * Get short days names html escaped and translated
-	 *
-	 * @since 4.0
-	 * @return array
-	 */
-	public static function get_short_days_names() {
-		return array(
-			esc_html__( 'Su', 'hustle' ),
-			esc_html__( 'Mo', 'hustle' ),
-			esc_html__( 'Tu', 'hustle' ),
-			esc_html__( 'We', 'hustle' ),
-			esc_html__( 'Th', 'hustle' ),
-			esc_html__( 'Fr', 'hustle' ),
-			esc_html__( 'Sa', 'hustle' ),
-		);
-	}
-
-	/**
 	 * Checks if user has the capability
 	 *
 	 * @since 4.0
@@ -340,7 +188,7 @@ class Opt_In_Utils {
 		} else {
 
 			// If editing a module and the user isn't godish...
-			$module = Hustle_Module_Model::instance()->get( $module_id );
+			$module = new Hustle_Module_Model( $module_id );
 
 			// If the module isn't valid, abort.
 			if ( is_wp_error( $module ) ) {
@@ -353,6 +201,115 @@ class Opt_In_Utils {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Get's the status of the membership.
+	 *
+	 * @since 4.3.3
+	 *
+	 * @return string
+	 */
+	public static function get_membership_status() {
+		// Dashboard is active.
+		if ( class_exists( 'WPMUDEV_Dashboard' ) ) {
+			// Get membership type.
+			$status = WPMUDEV_Dashboard::$api->get_membership_type();
+			// Check if API key is available.
+			if ( 'free' === $status && WPMUDEV_Dashboard::$api->has_key() ) {
+				$status = 'expired';
+			}
+		} else {
+			$status = 'free';
+		}
+		return $status;
+	}
+
+	/**
+	 * Checks whether Hustle is included in the membership.
+	 *
+	 * @since 4.3.3
+	 *
+	 * @return boolean
+	 */
+	public static function is_hustle_included_in_membership() {
+		if ( class_exists( 'WPMUDEV_Dashboard' ) ) {
+			if ( method_exists( 'WPMUDEV_Dashboard_Api', 'get_membership_projects' ) && method_exists( 'WPMUDEV_Dashboard_Api', 'get_membership_type' ) ) {
+				$type     = WPMUDEV_Dashboard::$api->get_membership_type();
+				$projects = WPMUDEV_Dashboard::$api->get_membership_projects();
+
+				if ( ( 'unit' === $type && in_array( 1107020, $projects, true ) ) || ( 'single' === $type && 1107020 === $projects ) ) {
+					return true;
+				}
+
+				if ( function_exists( 'is_wpmudev_member' ) ) {
+					return is_wpmudev_member();
+				}
+
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Return URL link for wp.org, wpmudev, support, live chat, docs, installing plugin.
+	 *
+	 * @since 4.3.4
+	 *
+	 * @param string      $link_for The section to retrieve the link for.
+	 * @param string|bool $campaign  Utm campaign tag to be used in link.
+	 *
+	 * @return string
+	 */
+	public static function get_link( $link_for, $campaign = false ) {
+		$domain   = 'https://premium.wpmudev.org';
+		$wp_org   = 'https://wordpress.org';
+		$utm_tags = ! $campaign ? '' : "?utm_source=hustle&utm_medium=plugin&utm_campaign={$campaign}";
+
+		switch ( $link_for ) {
+			case 'chat':
+				$link = "{$domain}/live-support/{$utm_tags}";
+				break;
+			case 'plugin':
+				$link = "{$domain}/project/hustle/{$utm_tags}";
+				break;
+			case 'support':
+				if ( 'full' === self::get_membership_status() ) {
+					$link = "{$domain}/hub/support/{$utm_tags}#get-support";
+				} else {
+					$link = "{$wp_org}/support/plugin/wordpress-popup";
+				}
+				break;
+			case 'docs':
+				$link = "{$domain}/docs/wpmu-dev-plugins/hustle/{$utm_tags}";
+				break;
+			case 'install_plugin':
+				if ( self::is_hustle_included_in_membership() ) {
+					// Return the pro plugin URL.
+					$url  = WPMUDEV_Dashboard::$ui->page_urls->plugins_url;
+					$link = $url . '#pid=1107020';
+				} else {
+					// Return the free URL.
+					$link = wp_nonce_url( self_admin_url( 'update.php?action=install-plugin&plugin=wordpress-popup' ), 'install-plugin_wordpress-popup' );
+				}
+				break;
+			case 'roadmap':
+				$link = "{$domain}/roadmap/{$utm_tags}";
+				break;
+			case 'wpmudev':
+				$link = "{$domain}/{$utm_tags}";
+				break;
+			case 'blog':
+				$link = "{$domain}/blog/{$utm_tags}";
+				break;
+			default:
+				$link = '';
+				break;
+		}
+
+		return $link;
 	}
 
 	/**
@@ -373,13 +330,6 @@ class Opt_In_Utils {
 		$is_free = ! file_exists( Opt_In::$plugin_path . 'lib/wpmudev-dashboard/wpmudev-dash-notification.php' );
 
 		return $is_free;
-	}
-
-	/**
-	 * Remove "-pro" that came from the menu which causes template not to work
-	 **/
-	public static function clean_current_screen( $screen ) {
-		return str_replace( 'hustle-pro', 'hustle', $screen );
 	}
 
 	/**
@@ -503,152 +453,6 @@ class Opt_In_Utils {
 		}
 	}
 
-
-	// ====================================
-	// MARKUPS
-	// ====================================
-
-	/**
-	 * Image function
-	 *
-	 * Return image element with 2x and 1x support.
-	 *
-	 * @since 4.0.0
-	 */
-	public static function hustle_image( $image_path, $image_suffix, $image_class, $support ) {
-		$image = '';
-		/**
-		 * White labeling based on Dash Plugin Settings
-		 */
-		$hide_branding = apply_filters( 'wpmudev_branding_hide_branding', false );
-		if ( $hide_branding ) {
-			return $image;
-		}
-		$image_name = esc_html__( 'Hustle image', 'hustle' );
-		if ( ( true === $support ) || ( '2x' === $support ) ) {
-			if ( '' !== $image_class ) {
-				$image = '<img src="' . $image_path . '.' . $image_suffix . '" srcset="' . $image_path . '.' . $image_suffix . ' 1x, ' . $image_path . '@2x' . '.' . $image_suffix . ' 2x" alt="' . $image_name . '" class="' . $image_class . '" aria-hidden="true">';
-			} else {
-				$image = '<img src="' . $image_path . '.' . $image_suffix . '" srcset="' . $image_path . '.' . $image_suffix . ' 1x, ' . $image_path . '@2x' . '.' . $image_suffix . ' 2x" alt="' . $image_name . '" aria-hidden="true">';
-			}
-		} else {
-			if ( '' !== $image_class ) {
-				$image = '<img src="' . $image_path . '.' . $image_suffix . '" alt="' . $image_name . '" class="' . $image_class . '" aria-hidden="true">';
-			} else {
-				$image = '<img src="' . $image_path . '.' . $image_suffix . '" alt="' . $image_name . '" aria-hidden="true">';
-			}
-		}
-		echo $image; // phpcs:ignore
-	}
-
-	/**
-	 * Color Picker
-	 *
-	 * Return the correct color picker markup that's compatible with Shared UI 2.0
-	 *
-	 * @since 4.0.0
-	 * @since 4.1.1 Params $is_js_template and $value added.
-	 *
-	 * @param string $id "id" attribute of the input.
-	 * @param string $name "name" attribute of the input.
-	 * @param string $alpha "false"/"true". Enables or disables the alpha selector in the colorpicker.
-	 * @param bool   $is_js_template whether this colorpicker will be filled via js templating.
-	 * @param string $value Value to be used when js templating isn't used.
-	 */
-	public static function sui_colorpicker( $id, $name, $alpha = 'false', $is_js_template = true, $value = false ) {
-
-		$value = ( ! $is_js_template && $value ) ? esc_attr( $value ) : '{{ ' . esc_attr( $name ) . ' }}';
-
-		echo '<div class="sui-colorpicker-wrap">
-
-			<div class="sui-colorpicker" aria-hidden="true">
-				<div class="sui-colorpicker-value">
-					<span role="button">
-						<span style="background-color: ' . $value . '"></span>
-					</span>
-					<input class="hustle-colorpicker-input" type="text" value="' . $value . '"/>
-					<button><span class="sui-icon-close" aria-hidden="true"></span></button>
-				</div>
-				<button class="sui-button">' . esc_html__( 'Select', 'hustle' ) . '</button>
-			</div>
-
-			<input type="text"
-				name="' . esc_attr( $name ) . '"
-				value="' . $value . '"
-				id="' . esc_attr( $id ) . '"
-				class="sui-colorpicker-input"
-				data-alpha="' . esc_attr( $alpha ) . '"
-				data-attribute="' . esc_attr( $name ) . '" />
-
-		</div>';
-
-	}
-
-	/**
-	 * Return the image markup for retina and no retina images
-	 *
-	 * @since 4.0
-	 *
-	 * @param string $image_path
-	 * @param string $class
-	 * @param string $retina_image_path
-	 * @return string
-	 */
-	public static function render_image_markup( $image_path, $image_retina_path = '', $image_class = '', $image_width = '', $image_height = '' ) {
-
-		$image = '';
-
-		$image_path   = esc_url( $image_path );
-		$image_srcset = '';
-		$image_styles = '';
-
-		if ( ! empty( $image_retina_path ) || '' !== $image_retina_path ) {
-			$image_srcset = $image_path . ' 1x, ' . esc_url( $image_retina_path ) . ' 2x';
-		}
-
-		if ( '' !== $image_width || '' !== $image_height ) {
-
-			$image_styles .= ' styles="';
-
-			if ( '' !== $image_width ) {
-				$image_styles = 'max-width: ' . $image_width . 'px';
-
-				if ( '' !== $image_height ) {
-					$image_styles = ' ';
-				}
-			}
-
-			if ( '' !== $image_height ) {
-				$image_styles = 'max-height: ' . $image_height . 'px';
-			}
-
-			$image_styles .= '"';
-
-		}
-
-		$image .= '<img';
-
-			$image .= ' src="' . $image_path . '"';
-
-		if ( '' !== $image_srcset ) {
-			$image .= ' srcset="' . $image_srcset . '"';
-		}
-
-			$image .= ' title="Hustle image"';
-			$image .= ' alt="Hustle image commonly Hustle-Man doing something fun"';
-
-		if ( ! empty( $image_class ) || '' !== $image_class ) {
-			$image .= ' class="' . $image_class . '"';
-		}
-
-			$image .= ' aria-hidden="true"';
-
-		$image .= '/>';
-
-		return $image;
-	}
-
-
 	// ====================================
 	// MISC?
 	// ====================================
@@ -720,196 +524,6 @@ class Opt_In_Utils {
 		}
 
 		return $data;
-	}
-
-
-	/**
-	 * Return time periods (AM,PM)
-	 *
-	 * @since 4.0
-	 * @return array
-	 */
-	public static function get_time_periods() {
-		$periods = array(
-			'am' => __( 'AM', 'hustle' ),
-			'pm' => __( 'PM', 'hustle' ),
-		);
-
-		return $periods;
-	}
-
-
-	/**
-	 * Return date formats
-	 *
-	 * @since 4.0
-	 * @return array
-	 */
-	public static function get_date_formats() {
-		$formats = array(
-			'yy/mm/dd' => __( '2012/07/31', 'hustle' ),
-			'mm/dd/yy' => __( '07/31/2012', 'hustle' ),
-			'dd/mm/yy' => __( '31/07/2012', 'hustle' ),
-			'yy, MM d' => __( '2012, July 31', 'hustle' ),
-			'd MM, yy' => __( '31 July, 2012', 'hustle' ),
-			'MM d, yy' => __( 'July 31, 2012', 'hustle' ),
-			'dd-mm-yy' => __( '31-07-2012', 'hustle' ),
-			'mm-dd-yy' => __( '07-31-2012', 'hustle' ),
-			'yy-mm-dd' => __( '2012-07-31', 'hustle' ),
-			'dd.mm.yy' => __( '31.07.2012', 'hustle' ),
-			'mm.dd.yy' => __( '07.31.2012', 'hustle' ),
-			'yy.mm.dd' => __( '2012.07.31', 'hustle' ),
-		);
-
-		$formats = apply_filters( 'hustle_date_formats', $formats );
-
-		return $formats;
-	}
-
-	/**
-	 * Get the months as translatable strings.
-	 *
-	 * @since 4.0.4
-	 * @param string $version full|short
-	 * @return array
-	 */
-	public static function get_months( $version = 'full' ) {
-
-		if ( 'full' === $version ) {
-			$months = array(
-				esc_html__( 'January', 'hustle' ),
-				esc_html__( 'February', 'hustle' ),
-				esc_html__( 'March', 'hustle' ),
-				esc_html__( 'April', 'hustle' ),
-				esc_html__( 'May', 'hustle' ),
-				esc_html__( 'June', 'hustle' ),
-				esc_html__( 'July', 'hustle' ),
-				esc_html__( 'August', 'hustle' ),
-				esc_html__( 'September', 'hustle' ),
-				esc_html__( 'October', 'hustle' ),
-				esc_html__( 'November', 'hustle' ),
-				esc_html__( 'December', 'hustle' ),
-			);
-
-		} else {
-			$months = array(
-				esc_html__( 'Jan', 'hustle' ),
-				esc_html__( 'Feb', 'hustle' ),
-				esc_html__( 'Mar', 'hustle' ),
-				esc_html__( 'Apr', 'hustle' ),
-				esc_html__( 'May', 'hustle' ),
-				esc_html__( 'Jun', 'hustle' ),
-				esc_html__( 'Jul', 'hustle' ),
-				esc_html__( 'Aug', 'hustle' ),
-				esc_html__( 'Sep', 'hustle' ),
-				esc_html__( 'Oct', 'hustle' ),
-				esc_html__( 'Nov', 'hustle' ),
-				esc_html__( 'Dec', 'hustle' ),
-			);
-		}
-
-		return apply_filters( 'hustle_get_months', $months, $version );
-	}
-
-	/**
-	 * Get the week days as translatable strings.
-	 *
-	 * @since 4.0.4
-	 * @param string $version full|short|min
-	 * @return array
-	 */
-	public static function get_week_days( $version = 'full' ) {
-
-		if ( 'full' === $version ) {
-			$days = array(
-				esc_html__( 'Sunday', 'hustle' ),
-				esc_html__( 'Monday', 'hustle' ),
-				esc_html__( 'Tuesday', 'hustle' ),
-				esc_html__( 'Wednesday', 'hustle' ),
-				esc_html__( 'Thursday', 'hustle' ),
-				esc_html__( 'Friday', 'hustle' ),
-				esc_html__( 'Saturday', 'hustle' ),
-			);
-
-		} elseif ( 'short' === $version ) {
-			$days = array(
-				esc_html__( 'Sun', 'hustle' ),
-				esc_html__( 'Mon', 'hustle' ),
-				esc_html__( 'Tue', 'hustle' ),
-				esc_html__( 'Wed', 'hustle' ),
-				esc_html__( 'Thu', 'hustle' ),
-				esc_html__( 'Fri', 'hustle' ),
-				esc_html__( 'Sat', 'hustle' ),
-			);
-
-		} else {
-			$days = array(
-				esc_html__( 'Su', 'hustle' ),
-				esc_html__( 'Mo', 'hustle' ),
-				esc_html__( 'Tu', 'hustle' ),
-				esc_html__( 'We', 'hustle' ),
-				esc_html__( 'Th', 'hustle' ),
-				esc_html__( 'Fr', 'hustle' ),
-				esc_html__( 'Sa', 'hustle' ),
-			);
-		}
-
-		return apply_filters( 'hustle_get_months', $days, $version );
-	}
-
-	/**
-	 * Convert some unit of time to microseconds.
-	 *
-	 * @since 4.0
-	 *
-	 * @param int    $value
-	 * @param string $unit
-	 * @return int
-	 */
-	public static function to_microseconds( $value, $unit ) {
-
-		if ( 'seconds' === $unit ) {
-			return intval( $value, 10 ) * 1000;
-
-		} elseif ( 'minutes' === $unit ) {
-			return intval( $value, 10 ) * 60 * 1000;
-
-		} else {
-			return intval( $value, 10 ) * 60 * 60 * 1000;
-		}
-	}
-
-	/**
-	 * Get social patform names
-	 *
-	 * @return array
-	 */
-	public static function get_social_platform_names() {
-		$social_platform_names = array(
-			'facebook'      => esc_html__( 'Facebook', 'hustle' ),
-			'twitter'       => esc_html__( 'Twitter', 'hustle' ),
-			'pinterest'     => esc_html__( 'Pinterest', 'hustle' ),
-			'reddit'        => esc_html__( 'Reddit', 'hustle' ),
-			'linkedin'      => esc_html__( 'LinkedIn', 'hustle' ),
-			'vkontakte'     => esc_html__( 'Vkontakte', 'hustle' ),
-			'fivehundredpx' => esc_html__( '500px', 'hustle' ),
-			'houzz'         => esc_html__( 'Houzz', 'hustle' ),
-			'instagram'     => esc_html__( 'Instagram', 'hustle' ),
-			'twitch'        => esc_html__( 'Twitch', 'hustle' ),
-			'youtube'       => esc_html__( 'YouTube', 'hustle' ),
-			'telegram'      => esc_html__( 'Telegram', 'hustle' ),
-			'whatsapp'      => esc_html__( 'WhatsApp', 'hustle' ),
-			'email'         => esc_html__( 'Email', 'hustle' ),
-		);
-
-		/**
-		 * Social networks list
-		 *
-		 * @since 4.0.4
-		 *
-		 * @param array $social_platform_names {slug} => {name}
-		 */
-		return apply_filters( 'hustle_social_platform_names', $social_platform_names );
 	}
 
 	/**
@@ -1031,110 +645,9 @@ class Opt_In_Utils {
 		}
 	}
 
-	/**
-	 * Return local timestamp
-	 *
-	 * @since 4.0.4
-	 * @param int $timestamp
-	 * @return mixed
-	 */
-	public static function get_local_timestamp( $timestamp = null ) {
-		// If no timestamp, get it current.
-		if ( is_null( $timestamp ) ) {
-			$timestamp = time();
-		}
-
-		return $timestamp + ( get_option( 'gmt_offset' ) * 3600 );
-	}
-
 	// ====================================
 	// MODULES HELPERS
 	// ====================================
-
-
-	/**
-	 * Get Time of latest tracked conversion based on $module_id
-	 *
-	 * @since 4.0
-	 *
-	 * @param $module_id
-	 * @param string    $subtype
-	 * @param string    $cta_or_optin Optional. cta_conversion|optin_conversion|all_conversion CTA or Opt-in conversion
-	 * @return string
-	 */
-	public static function get_latest_conversion_time_by_module_id( $module_id, $subtype = '', $cta_or_optin = 'all_conversion' ) {
-		$tracking_model = Hustle_Tracking_Model::get_instance();
-		$latest_entry   = $tracking_model->get_latest_conversion_date_by_module_id( $module_id, $subtype, $cta_or_optin );
-		if ( $latest_entry ) {
-			$entry_date = date_i18n( 'j M Y @ H:i A', strtotime( $latest_entry ) );
-			return $entry_date;
-		} else {
-			return esc_html__( 'Never', 'hustle' );
-		}
-	}
-
-	/**
-	 * Get the time of the latest tracked conversion based on $entry_type
-	 * [popup,slide-in,embedded]
-	 *
-	 * @since 4.0
-	 *
-	 * @param $entry_type
-	 * @return string
-	 */
-	public static function get_latest_conversion_time( $entry_type ) {
-		$tracking_model = Hustle_Tracking_Model::get_instance();
-		$date           = $tracking_model->get_latest_conversion_date( $entry_type );
-
-		if ( $date ) {
-			$last_entry_time = mysql2date( 'U', $date );
-			$time_diff       = human_time_diff( current_time( 'timestamp' ), $last_entry_time );
-			$last_entry_time = sprintf( __( '%s ago', 'hustle' ), $time_diff );
-
-			return $last_entry_time;
-		} else {
-			return __( 'Never', 'hustle' );
-		}
-	}
-
-	/**
-	 * Get Time of latest entry created based on $module_id
-	 *
-	 * @since 4.0
-	 *
-	 * @param $module_id
-	 * @return string
-	 */
-	public static function get_latest_entry_time_by_module_id( $module_id ) {
-		$latest_entry = Hustle_Entry_Model::get_latest_entry_by_module_id( $module_id );
-		if ( $latest_entry instanceof Hustle_Entry_Model ) {
-			return $latest_entry->time_created;
-		} else {
-			return esc_html__( 'Never', 'hustle' );
-		}
-	}
-
-	/**
-	 * Get Time of latest entry created based on $entry_type
-	 * [popup,slide-in,embedded]
-	 *
-	 * @since 4.0
-	 *
-	 * @param $entry_type
-	 * @return string
-	 */
-	public static function get_latest_entry_time( $entry_type ) {
-		$latest_entry = Hustle_Entry_Model::get_latest_entry( $entry_type );
-		if ( $latest_entry instanceof Hustle_Entry_Model ) {
-			$last_entry_time = mysql2date( 'U', $latest_entry->date_created_sql );
-			$time_diff       = human_time_diff( current_time( 'timestamp' ), $last_entry_time );
-			$last_entry_time = sprintf( __( '%s ago', 'hustle' ), $time_diff );
-
-			return $last_entry_time;
-		} else {
-			return __( 'Never', 'hustle' );
-		}
-	}
 
 	/**
 	 * Get current post id
@@ -1145,18 +658,6 @@ class Opt_In_Utils {
 	 */
 	public static function get_post_id() {
 		return get_post() ? get_the_ID() : '0';
-	}
-
-	/**
-	 * get formated date
-	 *
-	 * @since 4.0.0
-	 *
-	 * return string $date Current date, formated bu i18n.
-	 */
-	public static function get_current_date() {
-		$date = date_i18n( 'Y-m-d H:i:s' );
-		return $date;
 	}
 
 	/**
@@ -1261,6 +762,26 @@ class Opt_In_Utils {
 			$page_templates[ $template_filename ] = $template_name;
 		}
 		return $page_templates;
+	}
+
+	/**
+	 * Add special scripts for IE if it's detected
+	 *
+	 * @global bool $is_IE
+	 * @global bool $is_edge
+	 */
+	public static function maybe_add_scripts_for_ie() {
+		global $is_IE, $is_edge;
+
+		if ( $is_IE || $is_edge ) {
+			wp_enqueue_script(
+				'optin_admin_fitie',
+				Opt_In::$plugin_url . 'assets/js/vendor/fitie/fitie.js',
+				array(),
+				Opt_In::VERSION,
+				true
+			);
+		}
 	}
 
 	/**

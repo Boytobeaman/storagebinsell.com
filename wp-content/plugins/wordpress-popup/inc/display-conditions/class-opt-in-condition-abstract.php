@@ -72,11 +72,7 @@ abstract class Opt_In_Condition_Abstract {
 	 */
 	public function utils() {
 		if ( empty( $this->utils ) ) {
-			if ( empty( $this->geo ) ) {
-				$this->geo = new Opt_In_Geo();
-			}
-
-			$this->utils = new Opt_In_Utils( $this->geo );
+			$this->utils = new Opt_In_Utils();
 		}
 
 		return $this->utils;

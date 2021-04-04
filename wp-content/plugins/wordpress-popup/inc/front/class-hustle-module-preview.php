@@ -53,11 +53,11 @@ class Hustle_Module_Preview {
 		$vars = array(
 			'ajaxurl'         => admin_url( 'admin-ajax.php', is_ssl() ? 'https' : 'http' ),
 			'days_and_months' => array(
-				'days_full'    => Opt_In_Utils::get_week_days(),
-				'days_short'   => Opt_In_Utils::get_week_days( 'short' ),
-				'days_min'     => Opt_In_Utils::get_week_days( 'min' ),
-				'months_full'  => Opt_In_Utils::get_months(),
-				'months_short' => Opt_In_Utils::get_months( 'short' ),
+				'days_full'    => Hustle_Time_Helper::get_week_days(),
+				'days_short'   => Hustle_Time_Helper::get_week_days( 'short' ),
+				'days_min'     => Hustle_Time_Helper::get_week_days( 'min' ),
+				'months_full'  => Hustle_Time_Helper::get_months(),
+				'months_short' => Hustle_Time_Helper::get_months( 'short' ),
 			),
 		);
 

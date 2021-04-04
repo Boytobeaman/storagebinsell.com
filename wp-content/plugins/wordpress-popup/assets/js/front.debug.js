@@ -1718,7 +1718,7 @@ Optin.Models = {};
     // Saves the value into a cookie.
     set: function set(name, value, days) {
       var date, expires;
-      value = $.isArray(value) || $.isPlainObject(value) ? JSON.stringify(value) : value;
+      value = Array.isArray(value) || $.isPlainObject(value) ? JSON.stringify(value) : value;
 
       if (!isNaN(days)) {
         date = new Date();
@@ -1782,7 +1782,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
    * Log module view when it's being viewed
    */
 
-  $(document).on('hustle:module:displayed', function (e, module) {
+  $(document).on('hustle:module:loaded', function (e, module) {
     if ('object' === _typeof(module)) {
       var type = module.moduleType; // set cookies used for "show less than" display condition
 
@@ -1902,6 +1902,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     return false;
   });
 })(jQuery);
+function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
 /* global incOpt, Modules, grecaptcha */
 // the semi-colon before function invocation is a safety net against concatenated
 // scripts and/or other plugins which may not be closed properly.
@@ -2075,10 +2081,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       this.displayOnTrigger();
     },
     displayOnTrigger: function displayOnTrigger() {
-      var triggerName = this.settings.triggers.trigger; // Queue the display for each trigger.
+      var triggersArray = this.settings.triggers.trigger;
 
-      if ('function' === typeof this[triggerName + 'Trigger']) {
-        this[triggerName + 'Trigger']();
+      var _iterator = _createForOfIteratorHelper(triggersArray),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var triggerName = _step.value;
+
+          // Queue the display for each trigger.
+          if ('function' === typeof this[triggerName + 'Trigger']) {
+            this[triggerName + 'Trigger']();
+          }
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
       }
     },
     beforeListenForDisplay: function beforeListenForDisplay() {
@@ -2117,8 +2137,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
 
       this.beforeShowModule();
+      $(document).trigger('hustle:module:before_show', this);
       this.showModule();
-      $(document).trigger('hustle:module:displayed', this); // It's being shown.
+      $(document).trigger('hustle:module:loaded', this); // It's being shown.
 
       this.isShown = true;
     },
@@ -2165,10 +2186,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       _.delay($.proxy(this, 'display'), delay);
     },
     clickTrigger: function clickTrigger() {
-      var self = this;
-      var selector = '';
+      var self = this,
+          selector = this.triggers.on_click_element.trim();
 
-      if ('1' === this.triggers.enable_on_click_element && '' !== (selector = $.trim(this.triggers.on_click_element))) {
+      if ('1' === this.triggers.enable_on_click_element && '' !== selector) {
         var $clickable = $(selector);
 
         if ($clickable.length) {
@@ -2195,7 +2216,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       var moduleShown = false;
 
       if ('scrolled' === this.triggers.on_scroll) {
-        $(win).scroll(_.debounce(function () {
+        $(win).on('scroll', _.debounce(function () {
           if (moduleShown) {
             return;
           }
@@ -2211,7 +2232,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
         var $el = $(this.triggers.on_scroll_css_selector);
 
         if ($el.length) {
-          $(win).scroll(_.debounce(function () {
+          $(win).on('scroll', _.debounce(function () {
             if (moduleShown) {
               return;
             }
@@ -2229,7 +2250,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
       var self = this;
       var delay = 0; // handle delay
 
-      if ('1' === this.triggers.on_exit_intent_delayed) {
+      if ('0' !== this.triggers.on_exit_intent_delayed_time) {
         delay = parseInt(this.triggers.on_exit_intent_delayed_time, 10) * 1000;
 
         if ('minutes' === this.triggers.on_exit_intent_delayed_unit) {
@@ -2286,8 +2307,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
 
       var adblock = !$('#hustle_optin_adBlock_detector').length;
 
-      if (adblock && '1' === this.triggers.on_adblock) {
-        if ('1' !== this.triggers.enable_on_adblock_delay) {
+      if (adblock && this.triggers.trigger.includes('adblock')) {
+        if ('0' === this.triggers.on_adblock_delay) {
           this.display();
         } else {
           var value = this.triggers.on_adblock_delay,
@@ -2674,7 +2695,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
           return false;
         }
 
-        if ('am' !== $.trim(regs[4].toLowerCase()) && 'pm' !== $.trim(regs[4].toLowerCase())) {
+        if ('am' !== regs[4].toLowerCase().trim() && 'pm' !== regs[4].toLowerCase().trim()) {
           return false;
         }
 
@@ -2771,6 +2792,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "functi
     showModule: function showModule() {
       if ('0' === this.settings.allow_scroll_page) {
         $('html').addClass('hustle-no-scroll');
+        this.$el.addClass('hustle-scroll-forbidden');
       }
 
       var autohideDelay = 'false' === String(this.$el.data('close-delay')) ? false : this.$el.data('close-delay');

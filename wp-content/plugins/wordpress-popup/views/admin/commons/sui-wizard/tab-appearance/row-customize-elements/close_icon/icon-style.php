@@ -1,4 +1,6 @@
 <?php
+// TODO: USE THE SUI COMPONENT.
+
 $name     = 'close_icon_style' . ( $device ? '_' . $device : '' );
 $settings = $settings[ $name ];
 ?>

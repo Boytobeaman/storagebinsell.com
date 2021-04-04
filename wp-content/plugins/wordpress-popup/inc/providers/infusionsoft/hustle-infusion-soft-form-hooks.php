@@ -83,7 +83,7 @@ class Hustle_InfusionSoft_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 				)
 			);
 
-			$module = Hustle_Module_Model::instance()->get( $module_id );
+			$module = new Hustle_Module_Model( $module_id );
 			if ( is_wp_error( $module ) ) {
 				throw new Exception( $module->get_error_message() );
 			}
@@ -104,6 +104,8 @@ class Hustle_InfusionSoft_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 				$extra_custom_fields = array_diff_key( $submitted_data, array_fill_keys( $custom_fields, 1 ) );
 				$found_extra         = array();
 				$not_added_fields    = array();
+
+				$unmatched_custom_fields_datatypes = $this->find_unmatched_custom_fields_datatypes( $submitted_data, $api->custom_fields_with_data_type );
 
 				if ( ! empty( $extra_custom_fields ) ) {
 
@@ -196,8 +198,15 @@ class Hustle_InfusionSoft_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 					throw new Exception( __( "The contact was subscribed but it couldn't be tagged. Please make sure the selected tag exists.", 'hustle' ) );
 				}
 
+				$is_sent = true;
+
+				if ( $unmatched_custom_fields_datatypes ) {
+					$is_sent = false;
+					$message = __( "The contact was subscribed but these custom fields' might not have been saved: ", 'hustle' ) . implode( ', ', $unmatched_custom_fields_datatypes );
+				}
+
 				$response = array(
-					'is_sent'       => true,
+					'is_sent'       => $is_sent,
 					'description'   => $message,
 					'tags_names'    => $tags,
 					'data_sent'     => $utils->get_last_data_sent(),
@@ -331,4 +340,29 @@ class Hustle_InfusionSoft_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract
 
 		return $this->_subscriber[ md5( $data ) ];
 	}
+
+	/**
+	 * Check datatype of custom fields
+	 *
+	 * @param array $submitted_data Form data submitted by user.
+	 * @param array $custom_fields Custom fields with their datatype.
+	 *
+	 * @return array
+	 */
+	private function find_unmatched_custom_fields_datatypes( $submitted_data, $custom_fields ) {
+		$unmatched_fields = array();
+
+		// 1  => phone. 15 => text. 16 => textarea. 18 => url. 19 => email.
+		// 4 => percent. 7 => year. 11 => decimal number. 12 => whole number.
+		$flexible_fields = array( 1, 15, 16, 18, 19, 4, 7, 11, 12 );
+
+		foreach ( $submitted_data as $key => $value ) {
+			if ( isset( $custom_fields[ $key ] ) && ! in_array( $custom_fields[ $key ], $flexible_fields, true ) ) {
+				$unmatched_fields[] = $key;
+			}
+		}
+
+		return $unmatched_fields;
+	}
+
 }

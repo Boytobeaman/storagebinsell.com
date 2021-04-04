@@ -6,7 +6,6 @@
  * @since 4.3.0
  */
 
-$image_base = self::$plugin_url . 'assets/images/templates/';
 ?>
 
 <div class="sui-box">
@@ -40,7 +39,7 @@ $image_base = self::$plugin_url . 'assets/images/templates/';
 				/* translators: 1. number of templates, 2. opening 'a' tag to the templates' docs, 3. closing 'a' tag. */
 				esc_html__( 'Please choose one of our %1$s pre-designed templates and customize it to fit your needs or start from scratch. %2$sLearn more%3$s.', 'hustle' ),
 				count( $templates ),
-				'<a href="https://premium.wpmudev.org/docs/wpmu-dev-plugins/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=choose_template_learnmore_link#choosing-a-template" target="_blank">',
+				'<a href="' . esc_url( Opt_In_Utils::get_link( 'docs', 'choose_template_learnmore_link' ) . '#choosing-a-template' ) . '" target="_blank">',
 				'</a>'
 			);
 			?>
@@ -58,7 +57,7 @@ $image_base = self::$plugin_url . 'assets/images/templates/';
 
 				<button
 					class="hustle-template-select-button hustle-template-option--none"
-					aria-label="Build your template from scratch"
+					aria-label="<?php esc_html_e( 'Build your template from scratch', 'hustle' ); ?>"
 					data-template="none"
 				>
 					<span class="sui-icon-pencil sui-lg" aria-hidden="true"></span>
@@ -80,15 +79,17 @@ $image_base = self::$plugin_url . 'assets/images/templates/';
 
 					<p class="hui-screen-reader-highlight" tabindex="0"><?php echo esc_html( $data['description'] ); ?></p>
 
-					<!--<button
+					<button
 						class="sui-button sui-button-ghost sui-button-white hustle-template-preview-button"
 						<?php /* translators: template name. */ ?>
-						aria-label="<?php // printf( esc_html__( 'Live preview %s template', 'hustle' ), esc_html( $data['label'] ) ); ?>"
-						data-template="<?php // echo esc_attr( $template_name ); ?>"
+						aria-label="<?php printf( esc_html__( 'Live preview %s template', 'hustle' ), esc_html( $data['label'] ) ); ?>"
+						data-template="<?php echo esc_attr( $template_name ); ?>"
+						data-module-type="<?php echo esc_attr( $this->admin->module_type ); ?>"
+						data-module-mode="<?php echo esc_attr( $mode ); ?>"
 					>
 						<span class="sui-icon-eye" aria-hidden="true"></span>
-						<?php // esc_html_e( 'Preview', 'hustle' ); ?>
-					</button>-->
+						<?php esc_html_e( 'Preview', 'hustle' ); ?>
+					</button>
 
 					<button
 						class="sui-button sui-button-blue hustle-template-select-button"

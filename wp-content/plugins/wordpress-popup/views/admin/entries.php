@@ -77,7 +77,7 @@ if ( $is_module_selected ) :
 
 		<div class="sui-box sui-message">
 
-			<?php Opt_In_Utils::hustle_image( $empty_image, 'png', '', true ); ?>
+			<?php $this->hustle_image( $empty_image, 'png', '', true ); ?>
 
 			<div class="sui-message-content">
 
@@ -93,7 +93,7 @@ if ( $is_module_selected ) :
 
 		<div class="sui-box sui-message">
 
-			<?php Opt_In_Utils::hustle_image( $empty_image, 'png', '', true ); ?>
+			<?php $this->hustle_image( $empty_image, 'png', '', true ); ?>
 
 			<div class="sui-message-content">
 
@@ -114,7 +114,7 @@ if ( $is_module_selected ) :
 
 		<div class="sui-box sui-message">
 
-			<?php Opt_In_Utils::hustle_image( $empty_image, 'png', '', true ); ?>
+			<?php $this->hustle_image( $empty_image, 'png', '', true ); ?>
 
 			<div class="sui-message-content">
 
@@ -130,7 +130,7 @@ if ( $is_module_selected ) :
 
 		<div class="sui-box sui-message">
 
-			<?php Opt_In_Utils::hustle_image( $choose_image, 'png', '', true ); ?>
+			<?php $this->hustle_image( $choose_image, 'png', '', true ); ?>
 
 			<div class="sui-message-content">
 

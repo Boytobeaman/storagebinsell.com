@@ -21,7 +21,7 @@ $notifications = ( isset( $notifications ) && ! empty( $notifications ) ) ? $not
 		<div class="sui-actions-right">
 
 			<a
-				href="https://premium.wpmudev.org/docs/wpmu-dev-plugins/hustle/#<?php echo esc_attr( $docs_section ); ?>"
+				href="<?php echo esc_url( Opt_In_Utils::get_link( 'docs' ) . '#' . $docs_section ); ?>"
 				target="_blank"
 				class="sui-button sui-button-ghost"
 			>

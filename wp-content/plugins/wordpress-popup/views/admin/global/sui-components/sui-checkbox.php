@@ -11,12 +11,13 @@
 $class  = 'sui-checkbox';
 $class .= ( isset( $small ) && true === $small ) ? ' sui-checkbox-sm' : '';
 $class .= ( isset( $stacked ) && true === $stacked ) ? ' sui-checkbox-stacked' : '';
-$class .= ( isset( $custom_class ) && '' !== $custom_class ) ? ' ' . $custom_class : '';
+$class .= ! empty( $custom_class ) ? ' ' . $custom_class : '';
 ?>
 
 <label
 	for="hustle-option-<?php echo esc_attr( $name ); ?>"
 	class="<?php echo esc_attr( $class ); ?>"
+	<?php echo empty( $attributes ) ? '' : esc_attr( $attributes ); ?>
 >
 	<input
 		type="checkbox"

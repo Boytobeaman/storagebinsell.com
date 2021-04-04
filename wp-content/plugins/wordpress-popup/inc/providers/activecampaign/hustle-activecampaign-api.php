@@ -22,7 +22,7 @@ class Hustle_Activecampaign_Api {
 	 * @param array  $args
 	 * @return object|WP_Error
 	 */
-	private function _request( $verb = 'GET', $action, $args = array() ) {
+	private function _request( $action, $verb = 'GET', $args = array() ) {
 
 		$utils = Hustle_Provider_Utils::get_instance();
 
@@ -114,7 +114,7 @@ class Hustle_Activecampaign_Api {
 	 * @return array|mixed|object|WP_Error
 	 */
 	private function _get( $action, $args = array() ) {
-		return $this->_request( 'GET', $action, $args );
+		return $this->_request( $action, 'GET', $args );
 	}
 
 	/**
@@ -125,7 +125,7 @@ class Hustle_Activecampaign_Api {
 	 * @return array|mixed|object|WP_Error
 	 */
 	private function _post( $action, $args = array() ) {
-		return $this->_request( 'POST', $action, $args );
+		return $this->_request( $action, 'POST', $args );
 	}
 
 	/**

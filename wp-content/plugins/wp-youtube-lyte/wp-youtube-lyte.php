@@ -4,7 +4,7 @@ Plugin Name: WP YouTube Lyte
 Plugin URI: http://blog.futtta.be/wp-youtube-lyte/
 Description: Lite and accessible YouTube audio and video embedding.
 Author: Frank Goossens (futtta)
-Version: 1.7.14
+Version: 1.7.15
 Author URI: http://blog.futtta.be/
 Text Domain: wp-youtube-lyte
 */
@@ -12,7 +12,7 @@ Text Domain: wp-youtube-lyte
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 $debug=false;
-$lyte_version="1.7.14";
+$lyte_version   = '1.7.15';
 $lyte_db_version=get_option('lyte_version','none');
 
 /** have we updated? */
@@ -123,9 +123,11 @@ function lyte_parse($the_content,$doExcerpt=false) {
         if (apply_filters('lyte_remove_wpautop',false)) {
             remove_filter('the_content','wpautop');
         }
-        $char_codes = array('&#215;','&#8211;','\u002d');
-        $replacements = array("x", "--", "-");
-        $the_content=str_replace($char_codes, $replacements, $the_content);
+        if ( apply_filters( 'lyte_kinda_textureize', true ) ) {
+            $char_codes = array('&#215;','&#8211;','\u002d');
+            $replacements = array("x", "--", "-");
+            $the_content=str_replace($char_codes, $replacements, $the_content);
+        }
         $lyte_feed=is_feed();
 
         $hidefClass = ($lyteSettings['hidef']==="1") ? " hidef" : "";
@@ -404,10 +406,12 @@ function lyte_parse($the_content,$doExcerpt=false) {
         }
     }
 
-    // replace remaining double dash but restore it in comment tags (this is getting ugly though).
-    $the_content = str_replace( array( ' -- ', '-- ', ' --' ), ' &#8211; ', $the_content );
-    $the_content = str_replace( '<! &#8211;', '<!--', $the_content );
-    $the_content = str_replace( '&#8211; >', '-->', $the_content );
+    if ( apply_filters( 'lyte_kinda_textureize', true ) ) {
+        // replace remaining double dash but restore it in comment tags (this is getting ugly though).
+        $the_content = str_replace( array( ' -- ', '-- ', ' --' ), ' &#8211; ', $the_content );
+        $the_content = str_replace( '<! &#8211;', '<!--', $the_content );
+        $the_content = str_replace( '&#8211; >', '-->', $the_content );
+    }
 
     /** API: filter hook to postparse the_content before returning */
     $the_content = apply_filters( 'lyte_content_postparse',$the_content );
@@ -445,7 +449,7 @@ function captions_lookup($postID, $cachekey, $vid) {
     }
 }
 
-function lyte_get_YT_resp($vid,$playlist=false,$cachekey,$apiTestKey="",$isWidget=false) {
+function lyte_get_YT_resp( $vid, $playlist=false, $cachekey='', $apiTestKey='', $isWidget=false ) {
     /** logic to get video info from cache or get it from YouTube and set it */
     global $postID, $cachekey, $toCache_index;
 
@@ -471,8 +475,12 @@ function lyte_get_YT_resp($vid,$playlist=false,$cachekey,$apiTestKey="",$isWidge
         }
     }
 
-    if ( empty( $_thisLyte ) ) {
-        // get info from youtube
+    // set caching duration used to check if data is fresh enough, default max cachetime is 2 months.
+    $_lyte_cache_gracetime    = apply_filters( 'lyte_ytapi_cache_gracetime', 2 * 30 * 24 * 60 * 60 );
+    $_lyte_cache_time_expired = time() - $_lyte_cache_gracetime;
+
+    if ( empty( $_thisLyte ) || ( apply_filters( 'lyte_ytapi_check_cache', true ) && $_thisLyte['lyte_date_added'] < $_lyte_cache_time_expired ) ) {
+        // no result from cache or expired so fetch info from youtube
         // first get yt api key
         $lyte_yt_api_key = get_option('lyte_yt_api_key','');
         $lyte_yt_api_key = apply_filters('lyte_filter_yt_api_key', $lyte_yt_api_key);

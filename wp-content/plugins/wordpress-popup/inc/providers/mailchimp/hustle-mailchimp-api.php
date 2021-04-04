@@ -37,7 +37,7 @@ class Hustle_Mailchimp_Api {
 	 * @param array  $args
 	 * @return object|WP_Error
 	 */
-	private function _request( $verb = 'GET', $action, $args = array() ) {
+	private function _request( $action, $verb = 'GET', $args = array() ) {
 		$url = trailingslashit( $this->_endpoint ) . $action;
 
 		$_args = array(
@@ -51,7 +51,7 @@ class Hustle_Mailchimp_Api {
 
 		if ( 'GET' === $verb ) {
 			$url .= ( '?' . http_build_query( $args ) );
-		} else {
+		} elseif ( ! empty( $args['body'] ) ) {
 			$_args['body'] = wp_json_encode( $args['body'] );
 		}
 
@@ -83,7 +83,7 @@ class Hustle_Mailchimp_Api {
 	 * @return array|mixed|object|WP_Error
 	 */
 	private function _get( $action, $args = array() ) {
-		return $this->_request( 'GET', $action, $args );
+		return $this->_request( $action, 'GET', $args );
 	}
 
 	/**
@@ -94,7 +94,7 @@ class Hustle_Mailchimp_Api {
 	 * @return array|mixed|object|WP_Error
 	 */
 	private function _delete( $action, $args = array() ) {
-		return $this->_request( 'DELETE', $action, $args );
+		return $this->_request( $action, 'DELETE', $args );
 	}
 
 	/**
@@ -105,7 +105,7 @@ class Hustle_Mailchimp_Api {
 	 * @return array|mixed|object|WP_Error
 	 */
 	private function _post( $action, $args = array() ) {
-		return $this->_request( 'POST', $action, $args );
+		return $this->_request( $action, 'POST', $args );
 	}
 
 	 /**
@@ -116,7 +116,7 @@ class Hustle_Mailchimp_Api {
 	  * @return array|mixed|object|WP_Error
 	  */
 	private function _put( $action, $args = array() ) {
-		return $this->_request( 'PUT', $action, $args );
+		return $this->_request( $action, 'PUT', $args );
 	}
 
 	 /**
@@ -127,7 +127,7 @@ class Hustle_Mailchimp_Api {
 	  * @return array|mixed|object|WP_Error
 	  */
 	private function _patch( $action, $args = array() ) {
-		return $this->_request( 'PATCH', $action, $args );
+		return $this->_request( $action, 'PATCH', $args );
 	}
 
 	/**
@@ -142,8 +142,8 @@ class Hustle_Mailchimp_Api {
 		}
 
 		return $this->_request(
-			'GET',
 			'',
+			'GET',
 			array(
 				'fields' => implode( ',', $fields ),
 			)

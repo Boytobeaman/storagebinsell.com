@@ -331,6 +331,12 @@ return array(
 	'layout_content_border_right_mobile'              => '',
 	'layout_content_border_bottom_mobile'             => '',
 	'layout_content_border_left_mobile'               => '',
+	'layout_content_radius_are_sides_linked_mobile'   => '1',
+	'layout_content_radius_unit_mobile'               => 'px',
+	'layout_content_radius_top_left_mobile'           => '',
+	'layout_content_radius_top_right_mobile'          => '',
+	'layout_content_radius_bottom_left_mobile'        => '',
+	'layout_content_radius_bottom_right_mobile'       => '',
 
 	'layout_footer_padding_are_sides_linked_mobile'   => '1',
 	'layout_footer_padding_unit_mobile'               => 'px',

@@ -63,7 +63,7 @@ class Hustle_Module_Front_Ajax {
 				'{site_url}'   => site_url(),
 				'{site_title}' => get_bloginfo( 'name' ),
 			);
-			$module              = Hustle_Module_Model::instance()->get( $module_id );
+			$module              = new Hustle_Module_Model( $module_id );
 			$local_list_settings = ! is_wp_error( $module ) ? $module->get_provider_settings( 'local_list' ) : '';
 			if ( ! empty( $local_list_settings['local_list_name'] ) ) {
 				$site_placeholders['{local_list}'] = $local_list_settings['local_list_name'];
@@ -226,7 +226,7 @@ class Hustle_Module_Front_Ajax {
 			'success'  => false,
 			'behavior' => array(),
 		);
-		$module   = Hustle_Module_Model::instance()->get( $module_id );
+		$module   = new Hustle_Module_Model( $module_id );
 		if ( is_wp_error( $module ) ) {
 			return $response;
 		}
@@ -379,13 +379,26 @@ class Hustle_Module_Front_Ajax {
 			$fields_array    = wp_list_pluck( $field_data_array, 'value', 'name' );
 			$success_message = $this->parse_message_with_fields_placeholders( $emails_settings['success_message'], $placeholder_array );
 			$success_message = apply_filters( 'hustle_parsed_success_message', $success_message, $module_id, $module_sub_type, $form_data );
-			$response        = array(
+
+			/**
+			 * Filters the URL to redirect to on success.
+			 *
+			 * @since 4.4.1
+			 *
+			 * @param string $redirect_url    The URL to redirect to. Will be passed trough esc_url_raw().
+			 * @param string $module_id       ID of the current module.
+			 * @param string $module_sub_type Subtype of the current module.
+			 * @param array  $form_data       The submitted data.
+			 */
+			$redirect_url = apply_filters( 'hustle_success_redirect_url', $emails_settings['redirect_url'], $module_id, $module_sub_type, $form_data );
+
+			$response = array(
 				'message'  => do_shortcode( wp_kses_post( $success_message ) ),
 				'success'  => true,
 				'errors'   => array(),
 				'behavior' => array(
 					'after_submit' => $emails_settings['after_successful_submission'],
-					'url'          => esc_url_raw( $emails_settings['redirect_url'] ), // using raw here to honor url params
+					'url'          => esc_url_raw( $redirect_url ), // Using raw here to honor url params.
 				),
 			);
 		}
@@ -688,13 +701,15 @@ class Hustle_Module_Front_Ajax {
 
 						Opt_In_Utils::maybe_log( $error );
 					}
+
 					$account_settings = $connected_addon->get_settings_values();
 					if ( ! empty( $connected_addon->selected_global_multi_id ) ) {
 						$addon_fields[0]['value']['account_name'] = isset( $account_settings[ $connected_addon->selected_global_multi_id ]['name'] )
 								? $account_settings[ $connected_addon->selected_global_multi_id ]['name'] . ' (' . $connected_addon->selected_global_multi_id . ')'
 								: $connected_addon->selected_global_multi_id;
 					}
-					// reformat additional fields
+
+					// Reformat additional fields.
 					$addon_fields           = self::format_addon_additional_fields( $connected_addon, $addon_fields );
 					$additional_fields_data = array_merge( $additional_fields_data, $addon_fields );
 				}
@@ -781,7 +796,7 @@ class Hustle_Module_Front_Ajax {
 				$entry      = new Hustle_Entry_Model();
 				$modules_id = $entry->get_modules_id_by_email_in_local_list( $email );
 				// The lists are not defined yet. Show the list for the user to select them.
-				$module = Hustle_Module_Model::instance();
+				$module = new Hustle_Module_Model();
 
 				// If not showing all, show only the ones defined in the shortcode.
 				if ( '-1' !== $sanitized_data['form_module_id'] && ! empty( $sanitized_data['form_module_id'] ) ) {
@@ -846,7 +861,8 @@ class Hustle_Module_Front_Ajax {
 			wp_send_json_error();
 		}
 
-		$networks_shares = Hustle_SShare_Model::instance()->retrieve_networks_shares( $networks, $post_id );
+		$module_instance = new Hustle_SShare_Model();
+		$networks_shares = $module_instance->retrieve_networks_shares( $networks, $post_id );
 
 		wp_send_json_success(
 			array(
@@ -910,7 +926,7 @@ class Hustle_Module_Front_Ajax {
 			wp_send_json_error( __( 'Invalid Request: Module id invalid', 'hustle' ) );
 		}
 
-		$module = Hustle_Module_Model::instance()->get( $module_id );
+		$module = new Hustle_Module_Model( $module_id );
 		if ( is_wp_error( $module ) ) {
 			wp_send_json_error( __( 'Invalid module!', 'hustle' ) );
 		}

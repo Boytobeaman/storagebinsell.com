@@ -73,17 +73,27 @@ switch ( $type ) :
 
 	// ELEMENT: Select.
 	case 'select':
+		if ( self::$dont_init_selects &&
+			0 !== strpos( $name, 'custom_height_unit' ) && 0 !== strpos( $name, 'custom_width_unit' ) ) {
+			$new_class = ' none-sui';
+			$class     = empty( $class ) ? $new_class : $class . $new_class;
+		}
 		?>
 		<select
 			id="<?php echo empty( $id ) ? 'hustle-select-' . esc_attr( $name ) : esc_attr( $id ); ?>"
 			name="<?php echo esc_attr( $name ); ?>"
 			<?php echo empty( $class ) ? '' : 'class="' . esc_attr( $class ) . '"'; ?>
+			<?php echo empty( $placeholder ) ? '' : 'data-placeholder="' . esc_attr( $placeholder ) . '"'; ?>
 			<?php $this->render_attributes( $attributes ); ?>
 			tabindex="-1"
 			aria-hidden="true"
 		>
 
-			<?php
+			<?php if ( ! empty( $placeholder ) ) : ?>
+				<option></option>
+				<?php
+			endif;
+
 			// Fully server's side rendered field.
 			if ( ! $is_template ) :
 

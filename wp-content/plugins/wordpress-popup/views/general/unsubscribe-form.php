@@ -43,7 +43,7 @@ if ( ! $ajax_step ) : ?>
 
 	<?php foreach ( $modules_id as $module_id ) : ?>
 		<?php
-			$current_module = $module->get( $module_id );
+			$current_module = new Hustle_Module_Model( $module_id );
 			$list_name      = __( 'Undefined', 'hustle' );
 		if ( ! is_wp_error( $current_module ) ) {
 			$local_list = $current_module->get_provider_settings( 'local_list' );

@@ -107,7 +107,7 @@
 	<p><?php esc_html_e( 'Pretty much everything you need for developing and managing WordPress based websites, and then some.', 'hustle' ); ?></p>
 
 	<a
-		href="https://premium.wpmudev.org/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_footer_upsell_notice"
+		href="<?php echo esc_url( Opt_In_Utils::get_link( 'wpmudev', 'hustle_footer_upsell_notice' ) ); ?>"
 		rel="dialog"
 		id="dash-uptime-update-membership"
 		class="sui-button sui-button-green"

@@ -10,6 +10,12 @@
       var _this = this;
 
       var previewData = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+      // Abort if we don't have an ID.
+      if ('undefined' === typeof id) {
+        return;
+      }
+
       var isInline = 'embedded' === type || 'social_sharing' === type,
           $previewContainer = isInline ? $('#module-preview-inline-container') : $('#module-preview-container');
       $.ajax({
@@ -65,12 +71,6 @@
       }).then(function (_ref) {
         var moduleId = _ref.id,
             data = _ref.data;
-
-        // If no ID, abort.
-        if (!moduleId) {
-          return;
-        }
-
         _this.moduleId = moduleId;
         _this.moduleData = data; // Display the module.
 

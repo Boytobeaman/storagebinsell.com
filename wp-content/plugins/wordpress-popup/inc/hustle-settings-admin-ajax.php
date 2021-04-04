@@ -434,7 +434,7 @@ class Hustle_Settings_Admin_Ajax {
 
 			foreach ( $modules_ids as $module_id ) {
 
-				$module = Hustle_Module_Model::instance()->get( $module_id );
+				$module = new Hustle_Module_Model( $module_id );
 				if ( ! is_wp_error( $module ) ) {
 
 					$selected_roles = isset( $modules_roles[ $module_id ] ) ? $modules_roles[ $module_id ] : array();
@@ -656,7 +656,7 @@ class Hustle_Settings_Admin_Ajax {
 		$action     = filter_input( INPUT_POST, 'hustleAction', FILTER_SANITIZE_STRING );
 
 		$args = array(
-			'page'    => Hustle_Module_Admin::SETTINGS_PAGE,
+			'page'    => Hustle_Data::SETTINGS_PAGE,
 			'section' => 'palettes',
 		);
 
@@ -728,7 +728,7 @@ class Hustle_Settings_Admin_Ajax {
 
 				$module_id = filter_input( INPUT_POST, 'module_id', FILTER_SANITIZE_STRING );
 
-				$module = Hustle_Module_Model::instance()->get( $module_id );
+				$module = new Hustle_Module_Model( $module_id );
 
 				if ( is_wp_error( $module ) ) {
 					$palette_array = $fallback_palette;

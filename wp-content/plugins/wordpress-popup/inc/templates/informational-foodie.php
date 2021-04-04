@@ -18,7 +18,7 @@ return array(
 		'never_see_link_text' => 'Never see this message again.',
 		'show_cta'            => '1',
 		'cta_label'           => 'Find me food',
-		'cta_url'             => '',
+		'cta_url'             => '#',
 		'cta_target'          => 'self',
 	),
 	'design'  => array(

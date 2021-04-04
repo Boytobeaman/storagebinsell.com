@@ -326,6 +326,12 @@ return array(
 	'layout_content_border_right'              => 0,
 	'layout_content_border_bottom'             => 0,
 	'layout_content_border_left'               => 0,
+	'layout_content_radius_are_sides_linked'   => '1',
+	'layout_content_radius_unit'               => 'px',
+	'layout_content_radius_top_left'           => 0,
+	'layout_content_radius_top_right'          => 0,
+	'layout_content_radius_bottom_left'        => 0,
+	'layout_content_radius_bottom_right'       => 0,
 
 	'layout_footer_padding_are_sides_linked'   => $is_optin ? '1' : '0',
 	'layout_footer_padding_unit'               => 'px',

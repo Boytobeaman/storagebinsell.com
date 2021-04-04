@@ -79,7 +79,7 @@
 								'type'  => 'inline_notice',
 								'icon'  => 'info',
 								/* translators: 1: opening 'strong' tag, 2: closing 'strong' tag */
-								'value' => sprintf( esc_html__( 'You have not created any custom color palette yet. Click on the %1$s“Create Color Palette”%2$s button to create your first custom palette.', 'hustle' ), '<strong>', '</strong>' ),
+								'value' => sprintf( esc_html__( 'You have not created any custom color palette yet. Click on the %1$s“Create Custom Palette”%2$s button to create your first custom palette.', 'hustle' ), '<strong>', '</strong>' ),
 							),
 						)
 					);

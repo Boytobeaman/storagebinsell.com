@@ -130,7 +130,9 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'start_hour',
 											'options'     => $hour_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
+												'data-search' => 'true',
 												'data-checkbox-content' => 'not-schedule-start',
 											),
 										),
@@ -139,7 +141,9 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'start_minute',
 											'options'     => $minute_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
+												'data-search' => 'true',
 												'data-checkbox-content' => 'not-schedule-start',
 											),
 										),
@@ -148,6 +152,7 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'start_meridiem_offset',
 											'options'     => $meridiem_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
 												'data-checkbox-content' => 'not-schedule-start',
 											),
@@ -228,6 +233,7 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'end_hour',
 											'options'     => $hour_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
 												'data-checkbox-content' => 'not-schedule-end',
 											),
@@ -237,6 +243,7 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'end_minute',
 											'options'     => $minute_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
 												'data-checkbox-content' => 'not-schedule-end',
 											),
@@ -246,6 +253,7 @@ $meridiem_options = array(
 											'is_template' => true,
 											'name'        => 'end_meridiem_offset',
 											'options'     => $meridiem_options,
+											'class'       => 'sui-select sui-select-inline',
 											'attributes'  => array(
 												'data-checkbox-content' => 'not-schedule-end',
 											),
@@ -363,7 +371,7 @@ $meridiem_options = array(
 											'type'        => 'checkboxes',
 											'name'        => 'week_days',
 											'class'       => 'sui-checkbox-sm sui-checkbox-stacked',
-											'options'     => Opt_In_Utils::get_week_days( 'full' ),
+											'options'     => Hustle_Time_Helper::get_week_days( 'full' ),
 										),
 									)
 								);

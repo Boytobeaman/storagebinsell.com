@@ -858,14 +858,20 @@ abstract class Hustle_Provider_Abstract implements Hustle_Provider_Interface {
 	 * @since 4.0.0 $module_id param added
 	 *
 	 * @param string $module_id ID of the module to get the settings steps for.
+	 * @param bool   $check_steps_exist Check are steps available?.
 	 * @return array
 	 */
-	final private function get_form_settings_steps( $module_id ) {
+	private function get_form_settings_steps( $module_id, $check_steps_exist = false ) {
 
 		$form_settings_instance = $this->get_provider_form_settings( $module_id );
 		$form_settings_steps    = array();
 		if ( $this->is_allow_multi_on_global() ) {
 			$form_settings_steps = $form_settings_instance->get_form_settings_global_multi_id_step();
+		}
+
+		if ( $check_steps_exist && ! empty( $form_settings_steps ) ) {
+			// If we already got some steps and we're checking are steps available - just return these steps whithout additional work.
+			return $form_settings_steps;
 		}
 
 		if ( ! is_null( $form_settings_instance ) && $form_settings_instance instanceof Hustle_Provider_Form_Settings_Abstract ) {
@@ -915,13 +921,9 @@ abstract class Hustle_Provider_Abstract implements Hustle_Provider_Interface {
 		if ( ! is_admin() ) {
 			return false;
 		}
-		$steps = $this->get_form_settings_steps( $module_id );
+		$steps = $this->get_form_settings_steps( $module_id, true );
 
-		if ( ! is_array( $steps ) ) {
-			return false;
-		}
-
-		if ( count( $steps ) < 1 ) {
+		if ( ! is_array( $steps ) || count( $steps ) < 1 ) {
 			return false;
 		}
 
@@ -1521,7 +1523,7 @@ abstract class Hustle_Provider_Abstract implements Hustle_Provider_Interface {
 	 * Gets the provider's data.
 	 * General function to get the provider's details from database based on a module_id and field key.
 	 * This method required an instance of Hustle_Module_Model. Now it accepts the module_id in order to prevent
-	 * third party integrations from having to use Hustle_Module_Model::instance()->get( $module_id ) just to use this method.
+	 * third party integrations from having to use new Hustle_Module_Model( $module_id ) just to use this method.
 	 * -Helper.
 	 *
 	 * @param int|Hustle_Module_Model $module_id The ID of the module from which the data will be retrieved.
@@ -1538,7 +1540,7 @@ abstract class Hustle_Provider_Abstract implements Hustle_Provider_Interface {
 			if ( ! ( $module_id instanceof Hustle_Module_Model ) || 0 === (int) $module_id ) {
 				return $details;
 			}
-			$module = Hustle_Module_Model::instance()->get( $module_id );
+			$module = new Hustle_Module_Model( $module_id );
 			if ( is_wp_error( $module ) ) {
 				return $details;
 			}

@@ -14,6 +14,24 @@
 class Hustle_Meta_Base_Settings extends Hustle_Meta {
 
 	/**
+	 * Returns the defaults for merging purposes.
+	 * Avoid overwritting the triggers when the saved value is an empty array.
+	 *
+	 * @since 4.4.1
+	 *
+	 * @return array
+	 */
+	protected function get_defaults_for_merge() {
+		$defaults = $this->get_defaults();
+
+		// Avoid overwritting the saved form elements when the default fields aren't present.
+		if ( ! empty( $this->data['triggers'] ) && isset( $defaults['triggers']['trigger'] ) && is_array( $this->data['triggers']['trigger'] ) ) {
+			unset( $defaults['triggers']['trigger'] );
+		}
+		return $defaults;
+	}
+
+	/**
 	 * Retrieves the base defaults for the 'settings' meta.
 	 * Extended by embeds, popups, and slideins.
 	 *
@@ -24,8 +42,8 @@ class Hustle_Meta_Base_Settings extends Hustle_Meta {
 		return array(
 			'auto_close_success_message' => '0',
 			'triggers'                   => array(
-				'trigger'                     => 'time',
-				'on_time_delay'               => 0,
+				'trigger'                     => array( 'time' ),
+				'on_time_delay'               => '0',
 				'on_time_unit'                => 'seconds',
 				'on_scroll'                   => 'scrolled',
 				'on_scroll_page_percent'      => 20,
@@ -34,12 +52,9 @@ class Hustle_Meta_Base_Settings extends Hustle_Meta {
 				'on_click_element'            => '',
 				'enable_on_click_shortcode'   => '1',
 				'on_exit_intent_per_session'  => '1',
-				'on_exit_intent_delayed'      => '0',
-				'on_exit_intent_delayed_time' => 5,
+				'on_exit_intent_delayed_time' => '0',
 				'on_exit_intent_delayed_unit' => 'seconds',
-				'on_adblock'                  => '0',
-				'enable_on_adblock_delay'     => '0',
-				'on_adblock_delay'            => 5,
+				'on_adblock_delay'            => '0',
 				'on_adblock_delay_unit'       => 'seconds',
 			),
 			'animation_in'               => 'no_animation',

@@ -28,7 +28,7 @@ if ( isset( $page_title ) ) {
 }
 $sql_month_start_date = date( 'Y-m-d H:i:s', strtotime( '-30 days midnight' ) ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date
 $tracking_model       = Hustle_Tracking_Model::get_instance();
-$free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_type );
+$free_limit_reached   = Hustle_Data::was_free_limit_reached( $module_type );
 ?>
 
 <div class="sui-header">
@@ -64,8 +64,6 @@ $free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_ty
 
 	<?php } ?>
 
-	<?php $this->render( 'admin/commons/view-documentation', array( 'docs_section' => 'module-dashboards' ) ); ?>
-
 	<?php if ( false && 0 < count( $modules ) ) : ?>
 
 		<div class="sui-actions-right">
@@ -74,7 +72,7 @@ $free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_ty
 
 				<label><?php esc_html_e( 'Reporting Period', 'hustle' ); ?></label>
 
-				<select>
+				<select class="sui-select sui-select-inline" data-width="160">
 					<option value="7"><?php esc_html_e( 'Last 7 days', 'hustle' ); ?></option>
 					<option value="15"><?php esc_html_e( 'Last 15 days', 'hustle' ); ?></option>
 					<option value="30" selected><?php esc_html_e( 'Last 30 days', 'hustle' ); ?></option>
@@ -82,7 +80,21 @@ $free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_ty
 
 			</div>
 
+			<?php
+			$this->render(
+				'admin/commons/view-documentation',
+				array(
+					'unwrap'       => true,
+					'docs_section' => 'module-dashboards',
+				)
+			);
+			?>
+
 		</div>
+
+	<?php else : ?>
+
+		<?php $this->render( 'admin/commons/view-documentation', array( 'docs_section' => 'module-dashboards' ) ); ?>
 
 	<?php endif; ?>
 
@@ -100,7 +112,7 @@ $free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_ty
 			'active_modules_count' => $active,
 			'capitalize_singular'  => $capitalize_singular,
 			'capitalize_plural'    => $capitalize_plural,
-			'latest_entry_time'    => Opt_In_Utils::get_latest_conversion_time( $module_type ),
+			'latest_entry_time'    => $tracking_model->get_latest_conversion_time( $module_type ),
 			'latest_entries_count' => $tracking_model->count_newer_conversions_by_module_type( $module_type, $sql_month_start_date ),
 			'sui'                  => $sui,
 		)
@@ -135,9 +147,7 @@ $free_limit_reached   = ! Hustle_Module_Admin::can_create_new_module( $module_ty
 					'module_type'         => $module_type,
 					'smallcaps_singular'  => $smallcaps_singular,
 					'capitalize_singular' => $capitalize_singular,
-					'capability'          => $capability,
 					'tracking_types'      => $module->get_tracking_types(),
-					'can_create'          => ! $free_limit_reached,
 				)
 			);
 			?>
@@ -197,9 +207,6 @@ $this->render(
 	array(
 		'capitalize_singular' => $capitalize_singular,
 		'smallcaps_singular'  => $smallcaps_singular,
-		'module_type'         => $module_type,
-		'metas_optin'         => Hustle_Module_Model::instance()->get_module_meta_names( $module_type, Hustle_Module_Model::OPTIN_MODE, true ),
-		'metas_info'          => Hustle_Module_Model::instance()->get_module_meta_names( $module_type, Hustle_Module_Model::INFORMATIONAL_MODE, true ),
 	)
 );
 

@@ -77,7 +77,7 @@
 
 			<div style="margin: 10px 0;">
 
-				<select name="after_close" data-attribute="after_close" class="hustle-select-with-container" data-content-on="no_show_on_post,no_show_all">
+				<select name="after_close" data-attribute="after_close" class="sui-select hustle-select-with-container" data-content-on="no_show_on_post,no_show_all">
 
 					<option value="no_show_on_post"
 						<?php selected( $settings['after_close'], 'no_show_on_post' ); ?>>

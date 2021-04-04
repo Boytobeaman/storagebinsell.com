@@ -190,10 +190,14 @@ if ( version_compare( PHP_VERSION, '5.3', '>=' ) ) {
 			 * Get current account information.
 			 *
 			 * @since 4.0.2
+			 * @throws Exception When there's a conflict with another CTCT plugin.
 			 * @return object
 			 */
 			public function get_account_info() {
 				$cc_api = new Ctct\ConstantContact( self::APIKEY );
+				if ( ! method_exists( $cc_api, 'getAccountInfo' ) ) {
+					throw new Exception( "There's a conflict with another plugin using the CTCT's library." );
+				}
 				return $cc_api->getAccountInfo( $this->get_token( 'access_token' ) );
 			}
 

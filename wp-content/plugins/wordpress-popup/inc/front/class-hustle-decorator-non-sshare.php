@@ -93,13 +93,13 @@ class Hustle_Decorator_Non_Sshare extends Hustle_Decorator_Abstract {
 	);
 
 	protected function get_styles() {
-		$styles  = $this->get_common_styles( $this->is_preview );
+		$styles  = $this->get_common_styles();
 		$styles .= $this->get_custom_css();
 
 		return $styles;
 	}
 
-	private function get_common_styles( $is_preview = false ) {
+	private function get_common_styles() {
 
 		// Global prefix.
 		// @todo @Danae Remove once all styles moved into new prefixes.
@@ -141,18 +141,12 @@ class Hustle_Decorator_Non_Sshare extends Hustle_Decorator_Abstract {
 		$default_advanced   = ( '0' === $design['customize_border_shadow_spacing_mobile'] ); // Applies for mobile settings only.
 
 		$behavior = array();
-		if ( ! $is_preview ) {
-			$content = $this->module->get_content()->to_array();
-			$emails  = $this->module->get_emails()->to_array();
-			if ( $is_slidein ) {
-				$behavior = $this->module->get_settings()->to_array();
-			}
-		} else {
-			$content = (array) $this->module->content;
-			$emails  = (array) $this->module->emails;
-			if ( $is_slidein ) {
-				$behavior = (array) $this->module->settings;
-			}
+		$content  = (array) $this->module->content;
+		if ( $is_optin ) {
+			$emails = (array) $this->module->emails;
+		}
+		if ( $is_slidein ) {
+			$behavior = (array) $this->module->settings;
 		}
 
 		// Get the defaults.

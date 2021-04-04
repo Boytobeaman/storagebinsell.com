@@ -13,8 +13,17 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 
 	const WELCOME_MODAL_NAME   = 'welcome_modal';
 	const MIGRATE_MODAL_NAME   = 'migrate_modal';
-	const HIGHLIGHT_MODAL_NAME = 'release_highlight_modal_431';
+	const HIGHLIGHT_MODAL_NAME = 'release_highlight_modal_441';
 	const MIGRATE_NOTICE_NAME  = 'migrate_notice';
+
+	/**
+	 * Whether we have any module.
+	 *
+	 * @since 4.3.5
+	 *
+	 * @var boolean
+	 */
+	private $has_modules = false;
 
 	/**
 	 * Initiates the page's properties
@@ -40,7 +49,8 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 	 *
 	 * @since 4.0.4
 	 */
-	public function run_action_on_page_load() {
+	public function current_page_loaded() {
+		parent::current_page_loaded();
 		$this->export_module();
 	}
 
@@ -117,6 +127,10 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 			$limit  = self::get_limit( $general_settings, $type );
 
 			$modules[ $type ] = $collection_instance->get_all( $active, array( 'module_type' => $type ), $limit );
+
+			if ( ! empty( $modules[ $type ] ) ) {
+				$this->has_modules = true;
+			}
 		}
 
 		$active_modules = $collection_instance->get_all(
@@ -136,7 +150,6 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 			'embeds'          => $modules['embedded'],
 			'social_sharings' => $modules['social_sharing'],
 			'last_conversion' => $last_conversion ? date_i18n( 'j M Y @ H:i A', strtotime( $last_conversion ) ) : __( 'Never', 'hustle' ),
-			'need_migrate'    => Hustle_Migration::check_tracking_needs_migration(),
 			'sui'             => $this->get_sui_summary_config(),
 		);
 	}
@@ -144,20 +157,20 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 	/**
 	 * Add data to the current json array.
 	 *
-	 * @since 4.1.0
+	 * @since 4.3.1
 	 *
-	 * @param array $current_array Currently registered data.
 	 * @return array
 	 */
-	public function register_current_json( $current_array ) {
+	protected function get_vars_to_localize() {
+		$current_array = parent::get_vars_to_localize();
 
 		// Register translated strings for datepicker preview.
 		$current_array['messages']['days_and_months'] = array(
-			'days_full'    => Opt_In_Utils::get_week_days(),
-			'days_short'   => Opt_In_Utils::get_week_days( 'short' ),
-			'days_min'     => Opt_In_Utils::get_week_days( 'min' ),
-			'months_full'  => Opt_In_Utils::get_months(),
-			'months_short' => Opt_In_Utils::get_months( 'short' ),
+			'days_full'    => Hustle_Time_Helper::get_week_days(),
+			'days_short'   => Hustle_Time_Helper::get_week_days( 'short' ),
+			'days_min'     => Hustle_Time_Helper::get_week_days( 'min' ),
+			'months_full'  => Hustle_Time_Helper::get_months(),
+			'months_short' => Hustle_Time_Helper::get_months( 'short' ),
 		);
 
 		// Also defined in listing.
@@ -252,7 +265,7 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 						$value = __( 'None', 'hustle' );
 						break;
 					}
-					$module = Hustle_Module_Model::instance()->get( $module_id );
+					$module = new Hustle_Module_Model( $module_id );
 					if ( ! is_wp_error( $module ) ) {
 						$value = $module->module_name;
 						$url   = add_query_arg( 'page', $module->get_wizard_page() );
@@ -296,6 +309,59 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 	}
 
 	/**
+	 * Renders the modals for the Dashboard page.
+	 *
+	 * @since 4.3.5
+	 *
+	 * @todo Move global modals to the base abstract page.
+	 *
+	 * @return void
+	 */
+	protected function render_modals() {
+		parent::render_modals();
+
+		$needs_migration = Hustle_Migration::check_tracking_needs_migration();
+
+		// On Boarding (Welcome).
+		if (
+			filter_input( INPUT_GET, 'show-welcome', FILTER_VALIDATE_BOOLEAN ) ||
+			( ! $this->has_modules && ! Hustle_Notifications::was_notification_dismissed( self::WELCOME_MODAL_NAME ) )
+		) {
+			$this->get_renderer()->render( 'admin/dashboard/dialogs/fresh-install' );
+		}
+
+		// Migration.
+		if (
+			filter_input( INPUT_GET, 'show-migrate', FILTER_VALIDATE_BOOLEAN ) ||
+			( $needs_migration && ! Hustle_Notifications::was_notification_dismissed( self::MIGRATE_MODAL_NAME ) )
+		) {
+			$this->get_renderer()->render( 'admin/dashboard/dialogs/migrate-data' );
+		}
+
+		// Release highlights.
+		if ( $this->should_show_highlight_modal( $needs_migration ) ) {
+			$this->get_renderer()->render( 'admin/dashboard/dialogs/release-highlight' );
+		}
+
+		// Dissmiss migrate tracking notice modal confirmation.
+		if ( Hustle_Notifications::is_show_migrate_tracking_notice() ) {
+			$this->get_renderer()->render( 'admin/dialogs/migrate-dismiss-confirmation' );
+		}
+
+		// Visibility behavior updated.
+		if (
+			filter_input( INPUT_GET, 'review-conditions', FILTER_VALIDATE_BOOLEAN ) &&
+			Hustle_Migration::is_migrated( 'hustle_40_migrated' ) &&
+			! Hustle_Notifications::was_notification_dismissed( '41_visibility_behavior_update' )
+		) {
+			$this->get_renderer()->render( 'admin/dashboard/dialogs/review-conditions' );
+		}
+
+		// Delete.
+		$this->get_renderer()->render( 'admin/commons/sui-listing/dialogs/delete-module' );
+	}
+
+	/**
 	 * Returns whether the highlight modal should show up, enqueues scripts, or dismiss otherwise.
 	 *
 	 * @todo Separate the check from the enqueueing and the dismissal.
@@ -303,11 +369,10 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 	 *
 	 * @since 4.3.0
 	 *
-	 * @param boolean $has_modules Whether there are any modules created in hustle.
 	 * @param boolean $need_migrate Whether the metas migration from 3.x to 4.x is pending.
 	 * @return boolean
 	 */
-	public function should_show_highlight_modal( $has_modules, $need_migrate ) {
+	private function should_show_highlight_modal( $need_migrate ) {
 
 		$is_force_highlight      = filter_input( INPUT_GET, 'show-release-highlight', FILTER_VALIDATE_BOOLEAN );
 		$was_highlight_dismissed = Hustle_Notifications::was_notification_dismissed( self::HIGHLIGHT_MODAL_NAME );
@@ -316,7 +381,7 @@ class Hustle_Dashboard_Admin extends Hustle_Admin_Page_Abstract {
 
 			// Only display when it's not a fresh install and no 3.x to 4.x migration is needed.
 			// Check for $previous_installed_version in 4.2.1. For now, we assume that if there are modules it's not a fresh install.
-			if ( $is_force_highlight || ( $has_modules && ! $need_migrate ) ) {
+			if ( $is_force_highlight || ( $this->has_modules && ! $need_migrate ) ) {
 				return true;
 			} else {
 				// Fresh install or focus on migration. Dismiss the notification.

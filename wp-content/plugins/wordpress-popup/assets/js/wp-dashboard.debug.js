@@ -210,13 +210,7 @@
 
       try {
         if (['popup', 'slidein', 'overall'].includes(moduleType) || 'total' === displayType) {
-          moduleTypeData = data[dataKey]; // Data for this module type isn't defined. Display the message and abort.
-
-          if ('undefined' === typeof moduleTypeData) {
-            throw false;
-          }
-
-          showNoDataMessage = 0 === this.totalsData[dataKey][trackingType].total;
+          moduleTypeData = data[dataKey];
         } else {
           // Social sharing modules are the only with 'floating' display type.
           if ('floating' === displayType && 'social_sharing' !== moduleType) {
@@ -225,8 +219,14 @@
 
           dataKey = moduleType + '_' + displayType;
           moduleTypeData = data[dataKey];
-        } // There's no data for this module type.
+        } // Data for this module type isn't defined. Display the message and abort.
 
+
+        if ('undefined' === typeof moduleTypeData) {
+          throw false;
+        }
+
+        showNoDataMessage = 0 === this.totalsData.overall.view.total && 0 === this.totalsData.overall.conversion.total; // There's no data for this module type.
 
         if (!moduleTypeData || !Object.keys(moduleTypeData).length) {
           throw false;

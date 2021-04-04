@@ -118,8 +118,9 @@ printf(
 											'options'    => $units,
 											'id'         => 'hustle-' . $size_width_unit,
 											'selected'   => $settings[ $size_width_unit ],
-											'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+											'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 											'attributes' => array(
+												'data-width'     => '50',
 												'data-attribute' => $size_width_unit,
 												'aria-label'     => esc_html__( 'Choose value unit from the options', 'hustle' ),
 											),
@@ -174,8 +175,9 @@ printf(
 											'options'    => $units,
 											'id'         => 'hustle-' . $size_height_unit,
 											'selected'   => $settings[ $size_height_unit ],
-											'class'      => 'sui-inlabel sui-dropdown-align--right-desktop hustle-select-with-dependency-to-disable',
+											'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel hustle-select-with-dependency-to-disable',
 											'attributes' => array(
+												'data-width'     => '70',
 												'data-attribute' => $size_height_unit,
 												'aria-label'     => esc_html__( 'Choose value unit from the options', 'hustle' ),
 												'data-disable'   => esc_attr( $size_height_unit ),

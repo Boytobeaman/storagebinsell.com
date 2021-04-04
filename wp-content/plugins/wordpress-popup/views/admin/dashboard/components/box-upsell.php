@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<li><span class="sui-icon-check sui-lg" aria-hidden="true"></span><?php esc_html_e( 'The WPMU DEV Guarantee', 'hustle' ); ?></li>
 		</ul>
 
-		<p><a href="https://premium.wpmudev.org/project/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_dashboard_upsellwidget_button" class="sui-button sui-button-purple" target="_blank"><?php esc_html_e( 'Try Pro for FREE today!', 'hustle' ); ?></a></p>
+		<p><a href="<?php echo esc_url( Opt_In_Utils::get_link( 'plugin', 'hustle_dashboard_upsellwidget_button' ) . '#choosing-a-template' ); ?>" class="sui-button sui-button-purple" target="_blank"><?php esc_html_e( 'Try Pro for FREE today!', 'hustle' ); ?></a></p>
 
 	</div>
 

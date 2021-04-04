@@ -216,7 +216,7 @@ if ( true === $advertising ) {
 
 				<?php
 				if ( ! empty( $provider['icon_2x'] ) ) {
-					echo Opt_In_Utils::render_image_markup( $provider['icon_2x'], '', 'sui-image', '', '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo $this->render_image_markup( $provider['icon_2x'], '', 'sui-image', '', '' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				} else {
 					echo '<span class="hui-noicon" aria-hidden="true">' . esc_html__( 'Icon', 'hustle' ) . '</span>';
 				}

@@ -17,10 +17,81 @@
 $docs_section = Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module_type ? 'content' : 'social-sharing';
 ?>
 
-<div class="sui-header sui-header-inline sui-with-floating-input">
-	<?php /* translators: module type capitalized and in singular */ ?>
-	<h1 class="sui-header-title"><?php printf( esc_html__( 'Edit %s', 'hustle' ), esc_html( $capitalize_singular ) ); ?></h1>
-	<?php $this->render( 'admin/commons/view-documentation', array( 'docs_section' => $docs_section ) ); ?>
+<div class="sui-header hui-header-with-settings">
+
+	<div class="hui-header-title">
+
+		<?php /* translators: module type capitalized and in singular */ ?>
+		<h1 class="sui-header-title"><?php printf( esc_html__( 'Edit %s', 'hustle' ), esc_html( $capitalize_singular ) ); ?></h1>
+
+		<?php $this->render( 'admin/commons/view-documentation', array( 'docs_section' => $docs_section ) ); ?>
+
+	</div>
+
+	<div class="hui-header-settings">
+
+		<div class="sui-actions-left">
+
+			<div id="hustle-module-name-wrapper" class="sui-form-field">
+
+				<label for="hustle-module-name" id="hustle-module-name-label" class="sui-screen-reader-text"><?php esc_html_e( 'Name your form', 'hustle' ); ?></label>
+
+				<input
+					type="text"
+					name="module_name"
+					value="<?php echo htmlspecialchars( $module_name, ENT_QUOTES, 'UTF-8' ); ?>"
+					placeholder="<?php esc_html_e( 'E.g. Newsletter', 'hustle' ); ?>"
+					id="hustle-module-name"
+					class="sui-form-control"
+					data-attribute="module_name"
+					aria-labelledby="hustle-module-name-label"
+					aria-describedby="hustle-module-name-message"
+				/>
+
+				<p role="alert" id="hustle-module-name-error" class="sui-error-message" style="display: none; margin-bottom: 0px;" data-error-message="<?php esc_html_e( 'This field is required.', 'hustle' ); ?>"></p>
+
+			</div>
+
+			<?php // Dropdown list. ?>
+			<div id="hustle-module-more-options" class="sui-dropdown sui-accordion-item-action">
+
+				<?php
+				$this->render(
+					'admin/commons/sui-listing/elements/actions',
+					array(
+						'edit_page'            => true,
+						'module'               => $module,
+						'smallcaps_singular'   => $smallcaps_singular,
+						'capitalize_singular'  => $capitalize_singular,
+					)
+				);
+				?>
+
+			</div>
+
+			<?php
+			// Create button.
+			$args = array(
+				'page'          => Hustle_Data::get_listing_page_by_module_type( $module->module_type ),
+				'create-module' => 'true',
+			);
+
+			$tooltip = sprintf( __( 'Create New %s', 'hustle' ), $capitalize_singular );
+			?>
+			<a
+				href="<?php echo esc_url( add_query_arg( $args, 'admin.php' ) ); ?>"
+				class="sui-button-icon sui-tooltip sui-tooltip-bottom"
+				data-tooltip="<?php echo esc_attr( $tooltip ); ?>"
+			>
+				<span class="sui-icon-plus sui-md" aria-hidden="true"></span>
+			</a>
+
+		</div>
+
+		<?php $this->render( 'admin/commons/view-documentation', array( 'docs_section' => $docs_section ) ); ?>
+
+	</div>
+
 </div>
 
 <div id="hustle-floating-notifications-wrapper" class="sui-floating-notices"></div>
@@ -32,11 +103,14 @@ $docs_section = Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module_type ? 'c
 	$this->render(
 		'admin/commons/sui-wizard/navigation',
 		array(
-			'is_optin'    => isset( $module_mode ) ? $module_mode : false,
-			'section'     => $page_tab,
-			'wizard_tabs' => $wizard_tabs,
-			'module_name' => $module_name,
-			'module_type' => $module_type,
+			'is_optin'             => isset( $module_mode ) ? $module_mode : false,
+			'section'              => $page_tab,
+			'wizard_tabs'          => $wizard_tabs,
+			'module_name'          => $module_name,
+			'module_type'          => $module_type,
+			'module'               => $module,
+			'smallcaps_singular'   => $smallcaps_singular,
+			'capitalize_singular'  => $capitalize_singular,
 		)
 	);
 	?>
@@ -47,7 +121,10 @@ $docs_section = Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module_type ? 'c
 		// ELEMENT: Status Bar.
 		$this->render(
 			'admin/commons/sui-wizard/status-bar',
-			array( 'is_active' => $module_status )
+			array(
+				'is_active' => $module_status,
+				'module_type' => $module_type,
+			)
 		);
 		?>
 
@@ -112,9 +189,6 @@ $docs_section = Hustle_Module_Model::SOCIAL_SHARING_MODULE !== $module_type ? 'c
 		)
 	);
 
-	// DIALOG: delete confirmation.
-	$this->render( 'admin/commons/sui-listing/dialogs/delete-module' );
-
 	// DIALOG: Final Field.
 	$this->render( 'admin/dialogs/final-integration-form-delete', array() );
 
@@ -175,6 +249,9 @@ $this->render(
 		'smallcaps_singular'  => $smallcaps_singular,
 	)
 );
+
+// DIALOG: delete confirmation. For tracking.
+$this->render( 'admin/commons/sui-listing/dialogs/delete-module' );
 
 // DIALOG: Dissmiss migrate tracking notice modal confirmation.
 if ( Hustle_Notifications::is_show_migrate_tracking_notice() ) {

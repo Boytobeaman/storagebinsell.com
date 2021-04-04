@@ -151,9 +151,4 @@ $this->render(
 		'palettes' => Hustle_Palettes_Helper::get_all_palettes_slug_and_name(),
 	)
 );
-
-// DIALOG: Downgrade to 4.0.4.
-if ( $has_40x_backup ) {
-	$this->render( 'admin/settings/dialogs/modal-404-downgrade' );
-}
 ?>

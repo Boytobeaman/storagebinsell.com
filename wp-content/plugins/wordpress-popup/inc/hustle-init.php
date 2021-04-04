@@ -1,4 +1,11 @@
 <?php
+/**
+ * File for the Hustle_Init class.
+ *
+ * @package Hustle
+ * @since unknown
+ */
+
 if ( ! class_exists( 'Hustle_Init' ) ) {
 
 	/**
@@ -12,6 +19,8 @@ if ( ! class_exists( 'Hustle_Init' ) ) {
 		public function __construct() {
 
 			Hustle_Db::maybe_create_tables();
+
+			new Hustle_Installer();
 
 			// Hustle Migration.
 			new Hustle_Migration();

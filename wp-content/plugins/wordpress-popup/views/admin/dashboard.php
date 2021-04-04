@@ -19,8 +19,6 @@ $capability = array(
 	'hustle_access_emails' => current_user_can( 'hustle_access_emails' ),
 );
 
-$has_modules = ( count( $popups ) + count( $slideins ) + count( $embeds ) ) > 0;
-
 $is_free = Opt_In_Utils::_is_free();
 
 $header = array(
@@ -47,11 +45,6 @@ $footer = array(
 	'is_large' => true,
 	'is_free'  => $is_free,
 );
-
-$dialogs = array(
-	'has_modules'  => $has_modules,
-	'need_migrate' => $need_migrate,
-);
 ?>
 
 <?php
@@ -66,8 +59,6 @@ if ( $is_free ) {
 }
 
 $this->render( 'admin/global/sui-components/sui-footer', $footer );
-
-$this->render( 'admin/dashboard/components/dialogs', $dialogs );
 
 // Preview.
 $this->render( 'admin/dialogs/modal-preview', array( 'module_type' => __( 'Module', 'hustle' ) ) );

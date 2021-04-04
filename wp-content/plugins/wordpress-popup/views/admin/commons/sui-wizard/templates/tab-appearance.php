@@ -74,6 +74,7 @@ $args = array(
 	<div class="sui-box-body">
 
 		<?php
+		self::$dont_init_selects = true;
 		$this->render(
 			'admin/global/sui-components/sui-tabs',
 			array(
@@ -93,6 +94,7 @@ $args = array(
 				),
 			)
 		);
+		self::$dont_init_selects = false;
 		?>
 
 	</div>

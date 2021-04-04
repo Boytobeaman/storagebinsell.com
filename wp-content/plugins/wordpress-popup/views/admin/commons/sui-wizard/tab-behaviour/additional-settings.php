@@ -66,7 +66,7 @@
 				<?php /* translators: module type in small caps and in singular */ ?>
 				<span class="sui-description" style="margin-bottom: 10px;"><?php printf( esc_html__( "Choose the %s visibility once a visitor has opted-in Hustle's form.", 'hustle' ), esc_html( $smallcaps_singular ) ); ?></span>
 
-				<select data-attribute="hide_after_subscription">
+				<select class="sui-select" data-attribute="hide_after_subscription">
 					<option value="keep_show" <?php selected( $settings['hide_after_subscription'], 'keep_show' ); ?>>
 						<?php esc_html_e( 'Keep showing this module', 'hustle' ); ?>
 					</option>
@@ -90,7 +90,7 @@
 			<?php /* translators: module type in small caps and in singular */ ?>
 			<span class="sui-description" style="margin-bottom: 10px;"><?php printf( esc_html__( 'Choose the %s visibility once a visitor has clicked on the CTA button.', 'hustle' ), esc_html( $smallcaps_singular ) ); ?></span>
 
-			<select data-attribute="hide_after_cta">
+			<select class="sui-select" data-attribute="hide_after_cta">
 				<option value="keep_show" <?php selected( $settings['hide_after_cta'], 'keep_show' ); ?>><?php esc_html_e( 'Keep showing this module', 'hustle' ); ?></option>
 				<option value="no_show_all" <?php selected( $settings['hide_after_cta'], 'no_show_all' ); ?>><?php esc_html_e( 'No longer show this module across the site', 'hustle' ); ?></option>
 				<option value="no_show_on_post" <?php selected( $settings['hide_after_cta'], 'no_show_on_post' ); ?>><?php esc_html_e( 'No longer show this module on this post/page', 'hustle' ); ?></option>
@@ -110,7 +110,7 @@
 
 				<div style="margin-bottom: 10px;">
 
-					<select data-attribute="on_submit" >
+					<select class="sui-select" data-attribute="on_submit" >
 
 						<?php if ( 'embedded' !== $module_type ) { ?>
 							<option value="close"

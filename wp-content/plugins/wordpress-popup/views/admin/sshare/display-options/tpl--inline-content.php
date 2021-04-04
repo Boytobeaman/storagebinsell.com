@@ -25,7 +25,8 @@
 			'admin/sshare/display-options/tpl--position-settings',
 			array(
 				'label'       => esc_html__( 'inline module', 'hustle' ),
-				'description' => esc_html__( "By enabling this you can add a social bar above, below or both above and below of your website's posts, pages etc.", 'hustle' ),
+				/* translators: strong HTML-tag. */
+				'description' => sprintf( esc_html__( 'Add your social bar above the page content, below it, or at both locations on any page that uses the %1$s"the_content()"%2$s method (e.g. Posts, Pages, etc.) for displaying content.', 'hustle' ), '<strong>', '</strong>' ),
 				'prefix'      => 'inline',
 				'settings'    => $settings,
 				'offset_x'    => false,

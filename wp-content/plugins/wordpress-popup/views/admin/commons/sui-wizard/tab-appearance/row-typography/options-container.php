@@ -16,9 +16,7 @@ $general_options = array(
 	'title'          => __( 'Title', 'hustle' ),
 	'subtitle'       => __( 'Subtitle', 'hustle' ),
 	'main_content'   => __( 'Main Content', 'hustle' ),
-	'cta'            => __( 'Call to Action - Button', 'hustle' ),
-	// 'cta_two'     => __( 'Call to Action - Button 2', 'hustle' ),
-	// 'cta_helper'  => __( 'Call to Action - Helper Text', 'hustle' ),
+	'cta'            => __( 'Call to Action', 'hustle' ),
 	'never_see_link' => __( '"Never see this again" Link', 'hustle' ),
 );
 

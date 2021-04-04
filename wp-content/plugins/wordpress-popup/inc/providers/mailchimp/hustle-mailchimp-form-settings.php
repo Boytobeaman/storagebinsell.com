@@ -401,7 +401,7 @@ class Hustle_Mailchimp_Form_Settings extends Hustle_Provider_Form_Settings_Abstr
 	 * @return boolean
 	 */
 	private function is_optin_gpdr() {
-		$module = Hustle_Module_Model::instance()->get( $this->module_id );
+		$module = new Hustle_Module_Model( $this->module_id );
 		if ( is_wp_error( $module ) ) {
 			return false;
 		}
@@ -545,7 +545,7 @@ class Hustle_Mailchimp_Form_Settings extends Hustle_Provider_Form_Settings_Abstr
 			$response = $api->get_lists( $offset, $limit );
 
 			if ( is_wp_error( $response ) ) {
-				$integrations_global_url = add_query_arg( 'page', Hustle_Module_Admin::INTEGRATIONS_PAGE, admin_url( 'admin.php' ) );
+				$integrations_global_url = add_query_arg( 'page', Hustle_Data::INTEGRATIONS_PAGE, admin_url( 'admin.php' ) );
 				$message                 = sprintf( __( 'There was an error fetching the lists. Please make sure the %1$sselected account settings%2$s are correct.', 'hustle' ), '<a href="' . $integrations_global_url . '" target="_blank">', '</a>' );
 
 				// TODO: handle errors from here on all providers gracefully.
@@ -822,7 +822,7 @@ class Hustle_Mailchimp_Form_Settings extends Hustle_Provider_Form_Settings_Abstr
 
 			case 'dropdown':
 				$field_type = 'select';
-				$class      = 'sui-select';
+				$class      = '';
 				break;
 
 			case 'checkboxes':
@@ -842,7 +842,7 @@ class Hustle_Mailchimp_Form_Settings extends Hustle_Provider_Form_Settings_Abstr
 				break;
 
 			case 'hidden':
-				$class         = 'sui-select';
+				$class         = '';
 				$choose_prompt = __( 'Default Interest', 'hustle' );
 				break;
 

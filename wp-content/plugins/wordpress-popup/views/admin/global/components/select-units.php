@@ -37,8 +37,9 @@ $html .= Hustle_Layout_Helper::get_html_for_options(
 			'options'    => $units,
 			'id'         => 'hustle-' . $name,
 			'selected'   => $selected,
-			'class'      => 'sui-inlabel sui-dropdown-align--right-desktop sui-styled',
+			'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 			'attributes' => array(
+				'data-width'      => '50',
 				'data-attribute'  => $name,
 				'aria-labelledby' => 'hustle-' . $name . '-label',
 			),

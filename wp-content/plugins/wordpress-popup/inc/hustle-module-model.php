@@ -8,12 +8,8 @@
 
 class Hustle_Module_Model extends Hustle_Model {
 
-	/**
-	 * @var $_provider_details object
-	 */
-	private $_provider_details;
-
 	public static function instance() {
+		_deprecated_function( __METHOD__, '4.3.0', 'new Hustle_Module_Model' );
 		return new self();
 	}
 
@@ -47,40 +43,20 @@ class Hustle_Module_Model extends Hustle_Model {
 	public function get_sub_types( $with_titles = false ) {
 		if ( self::EMBEDDED_MODULE === $this->module_type ) {
 			return self::get_embedded_types( $with_titles );
-		} elseif ( self::SOCIAL_SHARING_MODULE === $this->module_type ) {
-			return Hustle_SShare_Model::get_sshare_types( $with_titles );
 		}
 
 		return array();
 	}
 
 	/**
-	 * Get the possible module types.
+	 * Gets the instance of the decorator class for this module type.
 	 *
-	 * @since 4.0
+	 * @since 4.3.0
 	 *
-	 * @return array
+	 * @return Hustle_Decorator_Non_Sshare
 	 */
-	public static function get_module_types() {
-		return array( self::POPUP_MODULE, self::SLIDEIN_MODULE, self::EMBEDDED_MODULE, self::SOCIAL_SHARING_MODULE );
-	}
-
-	/**
-	 * Decorates current model
-	 *
-	 * @return Hustle_Module_Decorator
-	 */
-	public function get_decorated() {
-
-		if ( ! $this->_decorator ) {
-			if ( self::SOCIAL_SHARING_MODULE !== $this->module_type ) {
-				$this->_decorator = new Hustle_Decorator_Non_Sshare( $this );
-			} else {
-				$this->_decorator = new Hustle_Decorator_Sshare( $this );
-			}
-		}
-
-		return $this->_decorator;
+	public function get_decorator_instance() {
+		return new Hustle_Decorator_Non_Sshare( $this );
 	}
 
 	/**
@@ -90,10 +66,6 @@ class Hustle_Module_Model extends Hustle_Model {
 	 */
 	public function get_content() {
 		$data = $this->get_settings_meta( self::KEY_CONTENT, '{}', true );
-		// If redirect url is set then esc it.
-		if ( isset( $data['redirect_url'] ) ) {
-			$data['redirect_url'] = esc_url( $data['redirect_url'] );
-		}
 
 		return new Hustle_Meta_Base_Content( $data, $this );
 	}
@@ -169,27 +141,15 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Get the stored settings for the "Visibility" tab.
-	 *
-	 * @since 4.0
-	 *
-	 * @return Hustle_Popup_Visibility
-	 */
-	public function get_visibility() {
-		return new Hustle_Meta_Base_Visibility( $this->get_settings_meta( self::KEY_VISIBILITY, '{}', true ), $this );
-	}
-
-	/**
 	 * Used when populating data with "get".
 	 */
 	public function get_settings() {
 		$saved = $this->get_settings_meta( self::KEY_SETTINGS, '{}', true );
 
-		// The default value for 'triggers' was an empty string in old versions.
-		// This will bring php errors if it persists.
-		// Let's remove that troubling value and let the module grab the new defaults.
-		if ( isset( $saved['triggers'] ) && empty( $saved['triggers'] ) ) {
-			unset( $saved['triggers'] );
+		// Fallback for partial migrations on very very edge cases.
+		// TODO: force the migration in 4.4.3 and remove this.
+		if ( isset( $saved['triggers'] ) && isset( $saved['triggers']['trigger'] ) && ! is_array( $saved['triggers']['trigger'] ) ) {
+			$saved['triggers']['trigger'] = array( $saved['triggers']['trigger'] );
 		}
 
 		if ( self::POPUP_MODULE === $this->module_type ) {
@@ -231,60 +191,16 @@ class Hustle_Module_Model extends Hustle_Model {
 		$this->update_meta( 'schedule_flags', $flags );
 	}
 
-	public function get_shortcode_id() {
-		return $this->id;
-	}
-
-	public function get_custom_field( $key, $value ) {
-		$custom_fields = $this->get_content()->__get( 'form_elements' );
-
-		if ( is_array( $custom_fields ) ) {
-			foreach ( $custom_fields as $field ) {
-				if ( isset( $field[ $key ] ) && $value === $field[ $key ] ) {
-					return $field;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Get wizard page for this module type.
-	 *
-	 * @since 4.0
-	 * @return string
-	 */
-	public function get_wizard_page() {
-		return Hustle_Module_Admin::get_wizard_page_by_module_type( $this->module_type );
-	}
-
-	/**
-	 * Get the listing page for this module type.
-	 *
-	 * @since 4.0
-	 * @return string
-	 */
-	public function get_listing_page() {
-		return Hustle_Module_Admin::get_listing_page_by_module_type( $this->module_type );
-	}
-
 	/**
 	 * Get the module's data. Used to display it.
 	 *
 	 * @since 3.0.7
 	 *
-	 * @param bool is_preview
 	 * @return array
 	 */
 	public function get_module_data_to_display() {
-
-		if ( 'social_sharing' === $this->module_type ) {
-			$data = $this->get_data();
-
-		} else {
-			$settings = array( 'settings' => $this->get_settings()->to_array() );
-			$data     = array_merge( $settings, $this->get_data() );
-
-		}
+		$settings = array( 'settings' => $this->get_settings()->to_array() );
+		$data     = array_merge( $settings, $this->get_data() );
 
 		return $data;
 	}
@@ -324,7 +240,31 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @return int|false Module ID if successfully saved. False otherwise.
 	 */
 	public function create_new( $data ) {
+		$module_populated = $this->populate_module_from_data( $data );
+		if ( ! $module_populated ) {
+			return false;
+		}
 
+		// Save to modules table.
+		$this->save();
+
+		// Save the new module's meta.
+		$this->store_new_module_meta( $data );
+
+		$this->activate_providers( $data );
+
+		return $this->id;
+	}
+
+	/**
+	 * Populates the current model with the given data.
+	 *
+	 * @since 4.3.4
+	 *
+	 * @param array $data Data to populate the module with.
+	 * @return bool
+	 */
+	private function populate_module_from_data( $data ) {
 		// Verify it's a valid module type.
 		if ( ! in_array( $data['module_type'], array( self::POPUP_MODULE, self::SLIDEIN_MODULE, self::EMBEDDED_MODULE ), true ) ) {
 			return false;
@@ -335,64 +275,69 @@ class Hustle_Module_Model extends Hustle_Model {
 			return false;
 		}
 
-		// Save to modules table.
 		$this->module_name = sanitize_text_field( $data['module_name'] );
 		$this->module_type = $data['module_type'];
 		$this->active      = 0;
 		$this->module_mode = $data['module_mode'];
-		$this->save();
 
-		// Save the new module's meta.
-		$this->store_new_module_meta( $data );
-
-		// Activate providers.
-		$this->activate_providers( $data );
-
-		return $this->id;
+		return true;
 	}
 
 	/**
-	 * Store the defaults meta when creating a new module.
+	 * Store the metas in the db when creating a new module.
 	 *
 	 * @since 4.0.0
 	 *
-	 * @param array $data Data to store.
+	 * @param array $data Module's data to store.
 	 */
 	private function store_new_module_meta( $data ) {
-		$def_content  = apply_filters( 'hustle_module_get_' . self::KEY_CONTENT . '_defaults', $this->get_content()->to_array(), $this, $data );
-		$content_data = empty( $data['content'] ) ? $def_content : array_merge( $def_content, $data['content'] );
+		$def_content = apply_filters( 'hustle_module_get_' . self::KEY_CONTENT . '_defaults', $this->get_content()->to_array(), $this, $data );
+		$content     = empty( $data['content'] ) ? $def_content : array_merge( $def_content, $data['content'] );
 
-		$def_emails  = apply_filters( 'hustle_module_get_' . self::KEY_EMAILS . '_defaults', $this->get_emails()->to_array(), $this, $data );
-		$emails_data = empty( $data['emails'] ) ? $def_emails : array_merge( $def_emails, $data['emails'] );
+		$def_emails = apply_filters( 'hustle_module_get_' . self::KEY_EMAILS . '_defaults', $this->get_emails()->to_array(), $this, $data );
+		$emails     = empty( $data['emails'] ) ? $def_emails : array_merge( $def_emails, $data['emails'] );
 
-		$def_design  = apply_filters( 'hustle_module_get_' . self::KEY_DESIGN . '_defaults', $this->get_design()->to_array(), $this, $data );
-		$design_data = empty( $data['design'] ) ? $def_design : array_merge( $def_design, $data['design'] );
+		$def_design = apply_filters( 'hustle_module_get_' . self::KEY_DESIGN . '_defaults', $this->get_design()->to_array(), $this, $data );
+		$design     = empty( $data['design'] ) ? $def_design : array_merge( $def_design, $data['design'] );
 
-		$def_integrations_settings  = apply_filters( 'hustle_module_get_' . self::KEY_INTEGRATIONS_SETTINGS . '_defaults', $this->get_integrations_settings()->to_array(), $this, $data );
-		$integrations_settings_data = empty( $data['integrations_settings'] ) ? $def_integrations_settings : array_merge( $def_integrations_settings, $data['integrations_settings'] );
+		$def_integrations_settings = apply_filters( 'hustle_module_get_' . self::KEY_INTEGRATIONS_SETTINGS . '_defaults', $this->get_integrations_settings()->to_array(), $this, $data );
+		$integrations_settings     = empty( $data['integrations_settings'] ) ? $def_integrations_settings : array_merge( $def_integrations_settings, $data['integrations_settings'] );
 
-		$def_settings  = apply_filters( 'hustle_module_get_' . self::KEY_SETTINGS . '_defaults', $this->get_settings()->to_array(), $this, $data );
-		$settings_data = empty( $data['settings'] ) ? $def_settings : array_merge( $def_settings, $data['settings'] );
+		$def_settings = apply_filters( 'hustle_module_get_' . self::KEY_SETTINGS . '_defaults', $this->get_settings()->to_array(), $this, $data );
+		$settings     = empty( $data['settings'] ) ? $def_settings : array_merge( $def_settings, $data['settings'] );
 
-		// Visibility settings.
-		$def_visibility  = apply_filters( 'hustle_module_get_' . self::KEY_VISIBILITY . '_defaults', $this->get_visibility()->to_array(), $this, $data );
-		$visibility_data = empty( $data['visibility'] ) ? $def_visibility : array_merge( $def_visibility, $data['visibility'] );
+		$def_visibility = apply_filters( 'hustle_module_get_' . self::KEY_VISIBILITY . '_defaults', $this->get_visibility()->to_array(), $this, $data );
+		$visibility     = empty( $data['visibility'] ) ? $def_visibility : array_merge( $def_visibility, $data['visibility'] );
 
-		// Save to meta table.
-		$this->update_meta( self::KEY_CONTENT, $content_data );
-		$this->update_meta( self::KEY_EMAILS, $emails_data );
-		$this->update_meta( self::KEY_INTEGRATIONS_SETTINGS, $integrations_settings_data );
-		$this->update_meta( self::KEY_DESIGN, $design_data );
-		$this->update_meta( self::KEY_SETTINGS, $settings_data );
-		$this->update_meta( self::KEY_VISIBILITY, $visibility_data );
+		$this->update_meta( self::KEY_CONTENT, $content );
+		$this->update_meta( self::KEY_EMAILS, $emails );
+		$this->update_meta( self::KEY_INTEGRATIONS_SETTINGS, $integrations_settings );
+		$this->update_meta( self::KEY_DESIGN, $design );
+		$this->update_meta( self::KEY_SETTINGS, $settings );
+		$this->update_meta( self::KEY_VISIBILITY, $visibility );
 
 		// Embedded only. Display options.
 		if ( self::EMBEDDED_MODULE === $this->module_type ) {
-			$def_display  = apply_filters( 'hustle_module_get_' . self::KEY_DISPLAY_OPTIONS . '_defaults', $this->get_display()->to_array(), $this, $data );
-			$display_data = empty( $data['display'] ) ? $def_display : array_merge( $def_display, $data['display'] );
+			$def_display = apply_filters( 'hustle_module_get_' . self::KEY_DISPLAY_OPTIONS . '_defaults', $this->get_display()->to_array(), $this, $data );
+			$display     = empty( $data['display'] ) ? $def_display : array_merge( $def_display, $data['display'] );
 
-			$this->update_meta( self::KEY_DISPLAY_OPTIONS, $display_data );
+			$this->update_meta( self::KEY_DISPLAY_OPTIONS, $display );
 		}
+	}
+
+	/**
+	 * Populates an instance of a module for a template preview.
+	 * This is only used for displaying a preview. We're using a saved
+	 * module nor creating a new one, thus we don't have an ID.
+	 *
+	 * @since 4.3.4
+	 *
+	 * @param array $data Module data to be populated.
+	 */
+	public function populate_module_for_template( $data ) {
+		$this->module_id = 0;
+
+		$this->populate_module_from_data( $data );
 	}
 
 	/**
@@ -465,81 +410,6 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Duplicate a module.
-	 *
-	 * @since 3.0.5
-	 * @since 4.0 moved from Hustle_Popup_Admin_Ajax to here. New settings added.
-	 *
-	 * @return bool
-	 */
-	public function duplicate_module() {
-
-		if ( ! $this->id ) {
-			return false;
-		}
-
-		// TODO: make use of the sshare model to extend this instead.
-		if ( self::SOCIAL_SHARING_MODULE !== $this->module_type ) {
-
-			$data = array(
-				'content'                       => $this->get_content()->to_array(),
-				'emails'                        => $this->get_emails()->to_array(),
-				'design'                        => $this->get_design()->to_array(),
-				'settings'                      => $this->get_settings()->to_array(),
-				'visibility'                    => $this->get_visibility()->to_array(),
-				self::KEY_INTEGRATIONS_SETTINGS => $this->get_integrations_settings()->to_array(),
-			);
-
-			if ( self::EMBEDDED_MODULE === $this->module_type ) {
-				$data['display'] = $this->get_display()->to_array();
-			}
-
-			// Pass integrations.
-			if ( 'optin' === $this->module_mode ) {
-				$integrations = array();
-				$providers    = Hustle_Providers::get_instance()->get_providers();
-				foreach ( $providers as $slug => $provider ) {
-					$provider_data = $this->get_provider_settings( $slug, false );
-					// if ( 'local_list' !== $slug && $provider_data && $provider->is_connected()
-					if ( $provider_data && $provider->is_connected()
-							&& $provider->is_form_connected( $this->module_id ) ) {
-						$integrations[ $slug ] = $provider_data;
-					}
-				}
-
-				$data['integrations'] = $integrations;
-			}
-		} else {
-			$data = array(
-				'content'    => $this->get_content()->to_array(),
-				'display'    => $this->get_display()->to_array(),
-				'design'     => $this->get_design()->to_array(),
-				'visibility' => $this->get_visibility()->to_array(),
-			);
-		}
-
-		unset( $this->id );
-
-		// rename
-		$this->module_name .= __( ' (copy)', 'hustle' );
-
-		// Turn status off.
-		$this->active = 0;
-
-		// Save.
-		$result = $this->save();
-
-		if ( $result && ! is_wp_error( $result ) ) {
-
-			$this->update_module( $data );
-
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
 	 * Updates the metas specific for Non Social Sharing modules.
 	 *
 	 * @since 4.3.0
@@ -594,6 +464,8 @@ class Hustle_Module_Model extends Hustle_Model {
 		if ( isset( $data['integrations'] ) ) {
 			$this->activate_providers( $data );
 		}
+
+		$this->maybe_update_custom_fields();
 	}
 
 	/**
@@ -623,6 +495,10 @@ class Hustle_Module_Model extends Hustle_Model {
 			}
 		}
 
+		if ( ! empty( $data['module']['module_name'] ) ) {
+			$data['module']['module_name'] = sanitize_text_field( $data['module']['module_name'] );
+		}
+
 		return $data;
 	}
 
@@ -638,7 +514,7 @@ class Hustle_Module_Model extends Hustle_Model {
 		$errors = array();
 
 		// Name validation.
-		if ( empty( sanitize_text_field( $data['module']['module_name'] ) ) ) {
+		if ( empty( $data['module']['module_name'] ) ) {
 			$errors['error']['name_error'] = __( 'This field is required', 'hustle' );
 
 			return $errors;
@@ -744,45 +620,8 @@ class Hustle_Module_Model extends Hustle_Model {
 		return false;
 	}
 
-	/**
-	 * Render the module.
-	 *
-	 * @since 4.0
-	 *
-	 * @param string $sub_type
-	 * @param string $custom_classes
-	 * @param bool   $is_preview
-	 * @return string
-	 */
-	public function display( $sub_type = null, $custom_classes = '', $is_preview = false ) {
-		if ( ! $this->id ) {
-			return;
-		}
-		$renderer = $this->get_renderer();
-		return $renderer->display( $this, $sub_type, $custom_classes, $is_preview );
-	}
-
 	public function get_renderer() {
 		return new Hustle_Module_Renderer();
-	}
-
-	/**
-	 * Return whether the module's sub_type is active.
-	 *
-	 * @since the beginning of time
-	 * @since 4.0 method name changed.
-	 *
-	 * @param string $type
-	 * @return boolean
-	 */
-	public function is_display_type_active( $type ) {
-		$settings = $this->get_display()->to_array();
-
-		if ( isset( $settings[ $type . '_enabled' ] ) && in_array( $settings[ $type . '_enabled' ], array( '1', 1, 'true' ), true ) ) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	/**
@@ -793,26 +632,10 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @param string $name
 	 * @return string
 	 */
-	public static function sanitize_form_field_name( $name ) {
+	private function sanitize_form_field_name( $name ) {
 		$sanitized_name = apply_filters( 'hustle_sanitize_form_field_name', str_replace( ' ', '_', trim( $name ) ), $name );
-		return $sanitized_name;
-	}
 
-	public static function sanitize_form_fields_names( $names_to_sanitize, $form_fields ) {
-
-		// Replace the name without changing the array's order.
-		$names_array = array_keys( $form_fields );
-		foreach ( $names_to_sanitize as $name ) {
-			$index                        = array_search( $name, $names_array, true );
-			$sanitized_name               = self::sanitize_form_field_name( $name );
-			$form_fields[ $name ]['name'] = $sanitized_name;
-
-			$names_array[ $index ] = $sanitized_name;
-
-		}
-		$sanitized_fields = array_combine( $names_array, array_values( $form_fields ) );
-
-		return $sanitized_fields;
+		return sanitize_text_field( $sanitized_name );
 	}
 
 	public function sanitize_form_elements( $form_elements ) {
@@ -834,27 +657,41 @@ class Hustle_Module_Model extends Hustle_Model {
 			$form_elements['gdpr']['gdpr_message'] = wp_kses( wp_unslash( $form_elements['gdpr']['gdpr_message'] ), $allowed_html );
 		}
 
-		$names_to_sanitize = array();
-		foreach ( $form_elements as $name => $field_data ) {
-			if ( false !== stripos( $name, ' ' ) ) {
-				$names_to_sanitize[] = $name;
+		$sanitized_fields = array();
+
+		// Loop through each form field.
+		foreach ( $form_elements as $field_data ) {
+			$name = $this->sanitize_form_field_name( $field_data['name'] );
+
+			// After sanitize if name become empty then create array key from label.
+			if ( ! $name ) {
+				$name = $this->sanitize_form_field_name( $field_data['label'] );
+
+				// If still key is empty then go to next iteration.
+				if ( ! $name ) {
+					continue;
+				}
 			}
+
+			// Check field name already exists or not. If exists then create a new name.
+			$name = $this->get_unique_field_name( $sanitized_fields, $name );
+
+			// Sanitize necessary fields.
+			$field_data['name']        = $name;
+			$field_data['label']       = sanitize_text_field( $field_data['label'] );
+			$field_data['placeholder'] = sanitize_text_field( $field_data['placeholder'] );
+
+			// Add new item with field data.
+			$sanitized_fields[ $name ] = $field_data;
 		}
 
-		// All good, return the data.
-		if ( empty( $names_to_sanitize ) ) {
-			return $form_elements;
-		}
-
-		$form_elements = self::sanitize_form_fields_names( $names_to_sanitize, $form_elements );
-
-		return $form_elements;
+		return $sanitized_fields;
 	}
 
 	/**
 	 * Update Custom Fields for Sendgrid New Campaigns
 	 */
-	public function maybe_update_custom_fields() {
+	private function maybe_update_custom_fields() {
 		$connected_addons = Hustle_Provider_Utils::get_addons_instance_connected_with_module( $this->module_id );
 
 		foreach ( $connected_addons as $addon ) {
@@ -893,25 +730,6 @@ class Hustle_Module_Model extends Hustle_Model {
 	}
 
 	/**
-	 * Returns the link to the wizard page into the defined tab.
-	 *
-	 * @since unknown
-	 * @since 4.3.0 Moved from Hustle_Module_Decorator to this class.
-	 *
-	 * @param string $section Slug of the section to go to.
-	 * @return string
-	 */
-	public function get_edit_url( $section = '' ) {
-		$url = 'admin.php?page=' . $this->get_wizard_page() . '&id=' . $this->module_id;
-
-		if ( ! empty( $section ) ) {
-			$url .= '&section=' . $section;
-		}
-
-		return admin_url( $url );
-	}
-
-	/**
 	 * Gets the selected Google fonts for the active elements in the module.
 	 * Used for non-ssharing modules only.
 	 *
@@ -920,29 +738,24 @@ class Hustle_Module_Model extends Hustle_Model {
 	 * @return array
 	 */
 	public function get_google_fonts() {
-		$fonts      = array();
-		$is_preview = ! empty( $this->design );
+		$fonts = array();
 
-		$design = ! $is_preview ? $this->get_design()->to_array() : (array) $this->design;
-
-		if ( '1' === $design['use_vanilla'] ) {
+		if ( '1' === $this->design->use_vanilla ) {
 			return $fonts;
 		}
 
-		$content = ! $is_preview ? $this->get_content()->to_array() : (array) $this->content;
-
 		$elements = array(
-			'title'                      => '' !== $content['title'],
-			'subtitle'                   => '' !== $content['sub_title'],
-			'main_content_paragraph'     => '' !== $content['main_content'],
-			'main_content_heading_one'   => '' !== $content['main_content'],
-			'main_content_heading_two'   => '' !== $content['main_content'],
-			'main_content_heading_three' => '' !== $content['main_content'],
-			'main_content_heading_four'  => '' !== $content['main_content'],
-			'main_content_heading_five'  => '' !== $content['main_content'],
-			'main_content_heading_six'   => '' !== $content['main_content'],
-			'cta'                        => '0' !== $content['show_cta'],
-			'never_see_link'             => '0' !== $content['show_never_see_link'],
+			'title'                      => '' !== $this->content->title,
+			'subtitle'                   => '' !== $this->content->sub_title,
+			'main_content_paragraph'     => '' !== $this->content->main_content,
+			'main_content_heading_one'   => '' !== $this->content->main_content,
+			'main_content_heading_two'   => '' !== $this->content->main_content,
+			'main_content_heading_three' => '' !== $this->content->main_content,
+			'main_content_heading_four'  => '' !== $this->content->main_content,
+			'main_content_heading_five'  => '' !== $this->content->main_content,
+			'main_content_heading_six'   => '' !== $this->content->main_content,
+			'cta'                        => '0' !== $this->content->show_cta,
+			'never_see_link'             => '0' !== $this->content->show_never_see_link,
 		);
 
 		// Only list the font of the elements that are shown, and aren't using a 'custom' font.
@@ -951,9 +764,9 @@ class Hustle_Module_Model extends Hustle_Model {
 				continue;
 			}
 
-			$font = $design[ $element_name . '_font_family' ];
+			$font = $this->design->{ $element_name . '_font_family' };
 			if ( 'custom' !== $font ) {
-				$font_weight = $design[ $element_name . '_font_weight' ];
+				$font_weight = $this->design->{ $element_name . '_font_weight' };
 				if ( ! isset( $fonts[ $font ] ) ) {
 					$fonts[ $font ] = array();
 				}
@@ -970,9 +783,8 @@ class Hustle_Module_Model extends Hustle_Model {
 
 		$has_mailchimp = ! empty( $this->get_provider_settings( 'mailchimp' ) );
 
-		$emails              = ! $is_preview ? $this->get_emails()->to_array() : (array) $this->emails;
 		$form_fields         = $this->get_form_fields();
-		$has_success_message = 'show_success' === $emails['after_successful_submission'];
+		$has_success_message = 'show_success' === $this->emails->after_successful_submission;
 
 		$elements_optin = array(
 			'form_extras'                   => $has_mailchimp,
@@ -998,9 +810,9 @@ class Hustle_Module_Model extends Hustle_Model {
 				continue;
 			}
 
-			$font = $design[ $element_name . '_font_family' ];
+			$font = $this->design->{ $element_name . '_font_family' };
 			if ( 'custom' !== $font ) {
-				$font_weight = $design[ $element_name . '_font_weight' ];
+				$font_weight = $this->design->{ $element_name . '_font_weight' };
 				if ( ! isset( $fonts[ $font ] ) ) {
 					$fonts[ $font ] = array();
 				}
@@ -1011,4 +823,27 @@ class Hustle_Module_Model extends Hustle_Model {
 		}
 		return $fonts;
 	}
+
+	/**
+	 * Find the unique name of field without overriding others.
+	 *
+	 * @since 4.3.3
+	 *
+	 * @param array  $sanitized_fields Array for fields that are previously sanitized.
+	 * @param string $field_name field name which will be compare.
+	 *
+	 * @return array
+	 */
+	private function get_unique_field_name( $sanitized_fields, $field_name ) {
+		$new_name = $field_name;
+		$i        = 0;
+
+		while ( array_key_exists( $new_name, $sanitized_fields ) ) {
+			$i++;
+			$new_name = $field_name . '-' . $i;
+		}
+
+		return $new_name;
+	}
+
 }

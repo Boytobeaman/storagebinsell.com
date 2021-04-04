@@ -23,14 +23,14 @@ if ( ! class_exists( 'Hustle_SShare_Admin' ) ) :
 		 */
 		protected function get_wizard_js_variables_to_localize() {
 			$variables = array(
-				'social_platforms'                => Opt_In_Utils::get_social_platform_names(),
+				'social_platforms'                => Hustle_SShare_Model::get_social_platform_names(),
 				'social_platforms_with_endpoints' => Hustle_SShare_Model::get_sharing_endpoints(),
 				'social_platforms_with_api'       => Hustle_SShare_Model::get_networks_counter_endpoint(),
 				'social_platforms_data'           => array(
-					'email_message_default' => __( "I've found an excellent article on {page_url} which may interest you.", 'hustle' ),
+					'email_message_default' => __( "I've found an excellent article on {post_url} which may interest you.", 'hustle' ),
 				),
 				'palettes'                        => array(
-					'sshare_defaults' => $this->module->get_design()->defaults,
+					'sshare_defaults' => $this->module->get_design()->get_defaults(),
 				),
 			);
 			return $variables;
@@ -43,11 +43,8 @@ if ( ! class_exists( 'Hustle_SShare_Admin' ) ) :
 		 * @return array
 		 */
 		protected function get_page_edit_template_args() {
-
-			$current_section = Hustle_Module_Admin::get_current_section();
-
 			return array(
-				'section'   => ( ! $current_section ) ? 'services' : $current_section,
+				'section'   => $this->get_current_section( 'services' ),
 				'module_id' => $this->module->module_id,
 				'module'    => $this->module,
 				'is_active' => (bool) $this->module->active,

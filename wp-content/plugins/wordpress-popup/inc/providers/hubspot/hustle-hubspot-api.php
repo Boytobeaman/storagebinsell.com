@@ -358,10 +358,9 @@ if ( ! class_exists( 'Hustle_HubSpot_Api' ) ) :
 		 * @return bool|mixed
 		 */
 		public function email_exists( $email ) {
-			$args     = array( 'showListMemberships' => true );
 			$endpoint = 'contacts/v1/contact/email/' . $email . '/profile';
 
-			$res = $this->send_authenticated_get( $endpoint, $args );
+			$res = $this->send_authenticated_get( $endpoint );
 
 			if ( ! is_wp_error( $res ) && ! empty( $res->vid ) ) {
 				return $res; }

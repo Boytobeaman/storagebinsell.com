@@ -13,7 +13,7 @@ ob_start();
 	<label class="sui-label hustle-icon-border-color-label sui-hidden"><?php esc_html_e( 'Icon border', 'hustle' ); ?></label>
 	<label class="sui-label hustle-icon-bg-color-label"><?php esc_html_e( 'Icon background', 'hustle' ); ?></label>
 
-	<?php Opt_In_Utils::sui_colorpicker( $key . '_icon_bg_color', $key . '_icon_bg_color', 'true', false, $settings[ $key . '_icon_bg_color' ] ); ?>
+	<?php $this->sui_colorpicker( $key . '_icon_bg_color', $key . '_icon_bg_color', 'true', false, $settings[ $key . '_icon_bg_color' ] ); ?>
 
 </div>
 
@@ -21,7 +21,7 @@ ob_start();
 
 	<label class="sui-label"><?php esc_html_e( 'Icon color', 'hustle' ); ?></label>
 
-	<?php Opt_In_Utils::sui_colorpicker( $key . '_icon_color', $key . '_icon_color', 'true', false, $settings[ $key . '_icon_color' ] ); ?>
+	<?php $this->sui_colorpicker( $key . '_icon_color', $key . '_icon_color', 'true', false, $settings[ $key . '_icon_color' ] ); ?>
 
 </div>
 
@@ -145,7 +145,7 @@ $options = array(
 
 									<label class="sui-label"><?php esc_html_e( 'Border', 'hustle' ); ?></label>
 
-									<?php Opt_In_Utils::sui_colorpicker( $key . '_counter_border', $key . '_counter_border', 'true', false, $settings[ $key . '_counter_border' ] ); ?>
+									<?php $this->sui_colorpicker( $key . '_counter_border', $key . '_counter_border', 'true', false, $settings[ $key . '_counter_border' ] ); ?>
 
 								</div>
 
@@ -153,7 +153,7 @@ $options = array(
 
 									<label class="sui-label"><?php esc_html_e( 'Text', 'hustle' ); ?></label>
 
-									<?php Opt_In_Utils::sui_colorpicker( $key . '_counter_color', $key . '_counter_color', 'true', false, $settings[ $key . '_counter_color' ] ); ?>
+									<?php $this->sui_colorpicker( $key . '_counter_color', $key . '_counter_color', 'true', false, $settings[ $key . '_counter_color' ] ); ?>
 
 								</div>
 
@@ -190,7 +190,7 @@ $options = array(
 
 									<label class="sui-label"><?php esc_html_e( 'Background color', 'hustle' ); ?></label>
 
-									<?php Opt_In_Utils::sui_colorpicker( $key . '_bg_color', $key . '_bg_color', 'true', false, $settings[ $key . '_bg_color' ] ); ?>
+									<?php $this->sui_colorpicker( $key . '_bg_color', $key . '_bg_color', 'true', false, $settings[ $key . '_bg_color' ] ); ?>
 
 								</div>
 
@@ -320,7 +320,7 @@ $options = array(
 
 							<label class="sui-label"><?php esc_html_e( 'Color', 'hustle' ); ?></label>
 
-							<?php Opt_In_Utils::sui_colorpicker( $key . '_drop_shadow_color', $key . '_drop_shadow_color', 'true', false, $settings[ $key . '_drop_shadow_color' ] ); ?>
+							<?php $this->sui_colorpicker( $key . '_drop_shadow_color', $key . '_drop_shadow_color', 'true', false, $settings[ $key . '_drop_shadow_color' ] ); ?>
 
 						</div>
 

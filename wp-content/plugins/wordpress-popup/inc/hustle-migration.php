@@ -252,14 +252,14 @@ class Hustle_Migration {
 	private function migrate_sshare_module( $old_module ) {
 
 		if ( ! $this->is_multisite || is_main_site( get_current_blog_id() ) ) {
-			$module = Hustle_SShare_Model::instance()->get( $old_module->module_id );
+			$module = new Hustle_SShare_Model( $old_module->module_id );
 			$module->save();
 
 		} else {
 
 			// The tables in multisite are no longer shared between the sites of the network.
 			// Instead, each site has its own tables, so they're empty and we should move the content there.
-			$module = Hustle_SShare_Model::instance();
+			$module = new Hustle_SShare_Model();
 
 			$module->module_id   = $old_module->module_id;
 			$module->active      = $old_module->active;
@@ -340,7 +340,7 @@ class Hustle_Migration {
 
 			$platforms_with_counter_endpoint = Hustle_SShare_Model::get_networks_counter_endpoint();
 
-			$social_platforms = Opt_In_Utils::get_social_platform_names();
+			$social_platforms = Hustle_SShare_Model::get_social_platform_names();
 
 			foreach ( $content['social_icons'] as $platform => $data ) {
 
@@ -464,7 +464,7 @@ class Hustle_Migration {
 	private function migrate_non_sshare_module( $old_module ) {
 
 		if ( ! $this->is_multisite || is_main_site( get_current_blog_id() ) ) {
-			$module = Hustle_Module_Model::instance()->get( $old_module->module_id );
+			$module = new Hustle_Module_Model( $old_module->module_id );
 
 			// Modules with 'test mode' enabled should be drafts.
 			if ( $this->is_true( $old_module->test_mode ) ) {
@@ -479,7 +479,7 @@ class Hustle_Migration {
 
 			// The tables in multisite are no longer shared between the sites of the network.
 			// Instead, each site has its own tables, so they're empty and we should move the content there.
-			$module = Hustle_Module_Model::instance();
+			$module = new Hustle_Module_Model();
 
 			// Modules with 'test mode' enabled should be drafts.
 			$module->active = ! $this->is_true( $old_module->test_mode ) ? $old_module->active : '0';
@@ -1275,7 +1275,7 @@ class Hustle_Migration {
 			return false;
 		}
 
-		$total_entries = self::get_tracking_submissions_count( false, $blog_modules_id );
+		$total_entries = self::get_tracking_submissions_count( $blog_modules_id );
 
 		// If we don't have tracking nor submissions, finish.
 		if ( ! $total_entries ) {
@@ -1315,7 +1315,7 @@ class Hustle_Migration {
 				$this->finish_tracking_subscription_migration();
 			}
 
-			$total_entries = self::get_tracking_submissions_count( $wpdb, $blog_modules_id );
+			$total_entries = self::get_tracking_submissions_count( $blog_modules_id, $wpdb );
 
 			// If we don't have tracking nor submissions, finish.
 			if ( ! $total_entries ) {
@@ -1441,7 +1441,7 @@ class Hustle_Migration {
 		return $metas;
 	}
 
-	private static function get_tracking_submissions_count( $wpdb = false, $modules_id ) {
+	private static function get_tracking_submissions_count( $modules_id, $wpdb = false ) {
 
 		if ( ! $wpdb ) {
 			global $wpdb;

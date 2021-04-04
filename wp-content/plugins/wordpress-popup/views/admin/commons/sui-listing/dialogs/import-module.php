@@ -6,38 +6,36 @@
  * @since 4.0.0
  */
 
-$is_ssharing = Hustle_Module_Model::SOCIAL_SHARING_MODULE === $module_type;
+$is_ssharing     = Hustle_Module_Model::SOCIAL_SHARING_MODULE === $this->admin->module_type;
+$module_instance = new Hustle_Module_Model();
 
 if ( ! $is_ssharing ) {
 
-	$smallcaps_singular = Opt_In_Utils::get_module_type_display_name( $module_type );
+	$smallcaps_singular = Opt_In_Utils::get_module_type_display_name( $this->admin->module_type );
 
-	$metas_optin           = Hustle_Module_Model::instance()->get_module_meta_names( $module_type, Hustle_Module_Model::OPTIN_MODE, true );
 	$optin_settings_markup = $this->render(
 		'admin/commons/sui-listing/dialogs/import-module-settings-section',
 		array(
-			'metas' => $metas_optin,
+			'metas' => $module_instance->get_module_meta_names( $this->admin->module_type, Hustle_Module_Model::OPTIN_MODE, true ),
 			'id'    => 'optin',
 		),
 		true
 	);
 
-	$metas_info           = Hustle_Module_Model::instance()->get_module_meta_names( $module_type, Hustle_Module_Model::INFORMATIONAL_MODE, true );
 	$info_settings_markup = $this->render(
 		'admin/commons/sui-listing/dialogs/import-module-settings-section',
 		array(
-			'metas' => $metas_info,
+			'metas' => $module_instance->get_module_meta_names( $this->admin->module_type, Hustle_Module_Model::INFORMATIONAL_MODE, true ),
 			'id'    => 'info',
 		),
 		true
 	);
 
 } else {
-	$metas                    = Hustle_Module_Model::instance()->get_module_meta_names( $module_type, '', true );
 	$ssharing_settings_markup = $this->render(
 		'admin/commons/sui-listing/dialogs/import-module-settings-section',
 		array(
-			'metas' => $metas,
+			'metas' => $module_instance->get_module_meta_names( $this->admin->module_type, '', true ),
 			'id'    => 'ssharing',
 		),
 		true
@@ -132,7 +130,7 @@ $attributes = array(
 				'attributes' => array(
 					'data-hustle-action' => 'import',
 					'data-form-id'       => 'hustle-import-module-form',
-					'data-type'          => $module_type,
+					'data-type'          => $this->admin->module_type,
 					'disabled'           => 'disabled',
 				),
 			),

@@ -182,7 +182,12 @@ class Hustle_Aweber_Form_Hooks extends Hustle_Provider_Form_Hooks_Abstract {
 
 			} elseif ( ! empty( $subscriber->error ) ) {
 
-				$error_message = $subscriber->error->message;
+				$error_message = __( 'Something went wrong', 'hustle' );
+				if ( is_string( $subscriber->error ) ) {
+					$error_message = $subscriber->error;
+				} elseif ( ! empty( $subscriber->error->message ) ) {
+					$error_message = $subscriber->error->message;
+				}
 
 				throw new Exception( $error_message );
 			}

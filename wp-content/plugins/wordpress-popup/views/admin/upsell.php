@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<?php /* translators: 1. opening 'strong' tag, 2. closing 'strong' tag */ ?>
 				<p><?php printf( esc_html__( 'Build %1$sunlimited%2$s pop-ups, slide-ins, embeds, and social sharing modules with Hustle Pro. No limits on your marketing efforts = more leads and increased sales. Nice!', 'hustle' ), '<strong>', '</strong>' ); ?></p>
 				<p><?php esc_html_e( 'Plus – you’ll get WPMU DEV membership, which includes our award-winning Smush Pro plugin for image optimization, 24/7 live WordPress support, and unlimited usage of all our premium plugins.', 'hustle' ); ?></p>
-				<a href="https://premium.wpmudev.org/project/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_propage_topbutton" class="sui-button sui-button-lg sui-button-purple" target="_blank">
+				<a href="<?php echo esc_url( Opt_In_Utils::get_link( 'plugin', 'hustle_propage_topbutton' ) ); ?>" class="sui-button sui-button-lg sui-button-purple" target="_blank">
 					<?php esc_html_e( 'Try Hustle Pro for Free Today', 'hustle' ); ?>
 				</a>
 				<div class="sui-reviews">
@@ -82,13 +82,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="sui-upgrade-page-cta__inner">
 			<h2><?php esc_html_e( 'Join 771,093 Happy Members', 'hustle' ); ?></h2>
 			<p><?php esc_html_e( "97% of customers are happy with WPMU DEV's service, and it’s a great time to join them: as a Hustle user you’ll get a free trial period, so you can see what all the fuss is about. ", 'hustle' ); ?></p>
-			<a href="https://premium.wpmudev.org/project/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_propage_bottombutton" class="sui-button sui-button-lg sui-button-purple" target="_blank">
+			<a href="<?php echo esc_url( Opt_In_Utils::get_link( 'plugin', 'hustle_propage_bottombutton' ) ); ?>" class="sui-button sui-button-lg sui-button-purple" target="_blank">
 				<?php esc_html_e( 'Get Hustle Pro and and get a better WordPress', 'hustle' ); ?>
 			</a>
 			<button type="button" class="sui-button sui-button-lg sui-button-purple sui-hidden-desktop">
 				<?php esc_html_e( 'Get Hustle Pro and Get a Better WordPress', 'hustle' ); ?>
 			</button>
-			<a href="https://premium.wpmudev.org/project/hustle/?utm_source=hustle&utm_medium=plugin&utm_campaign=hustle_propage_bottombutton" target="_blank">
+			<a href="<?php echo esc_url( Opt_In_Utils::get_link( 'plugin', 'hustle_propage_bottombutton' ) ); ?>" target="_blank">
 				<?php esc_html_e( 'Try Pro for Free Today', 'hustle' ); ?>
 			</a>
 		</div>

@@ -18,7 +18,7 @@ return array(
 		'never_see_link_text' => 'Thanks, I’m not interested',
 		'show_cta'            => '0',
 		'cta_label'           => '',
-		'cta_url'             => 'https://',
+		'cta_url'             => '#',
 		'cta_target'          => 'blank',
 	),
 	'design'   => array(

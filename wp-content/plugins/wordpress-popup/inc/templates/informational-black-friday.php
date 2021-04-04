@@ -18,7 +18,7 @@ return array(
 		'never_see_link_text' => 'No thanks, I’m not interested!',
 		'show_cta'            => '1',
 		'cta_label'           => 'View Offers',
-		'cta_url'             => 'https://',
+		'cta_url'             => '#',
 		'cta_target'          => 'self',
 	),
 	'design'  => array(

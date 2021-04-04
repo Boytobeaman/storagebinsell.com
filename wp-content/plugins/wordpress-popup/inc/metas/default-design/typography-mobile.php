@@ -127,6 +127,7 @@ return array(
 	'cta_letter_spacing_unit_mobile'                       => 'px',
 	'cta_text_transform_mobile'                            => 'none',
 	'cta_text_decoration_mobile'                           => 'none',
+	'cta_font_size_mobile'                                 => '',
 
 	'never_see_link_font_size_mobile'                      => '',
 	'never_see_link_font_size_unit_mobile'                 => 'px',

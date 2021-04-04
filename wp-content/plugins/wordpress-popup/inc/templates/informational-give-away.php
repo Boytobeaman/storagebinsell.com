@@ -18,7 +18,7 @@ return array(
 		'never_see_link_text' => 'No thanks, I’m not interested!',
 		'show_cta'            => '1',
 		'cta_label'           => 'Win Gift Card',
-		'cta_url'             => '',
+		'cta_url'             => '#',
 		'cta_target'          => 'blank',
 	),
 	'design'  => array(

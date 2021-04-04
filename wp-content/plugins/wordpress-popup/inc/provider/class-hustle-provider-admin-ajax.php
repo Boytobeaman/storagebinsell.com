@@ -471,7 +471,7 @@ class Hustle_Provider_Admin_Ajax {
 		$this->validate_ajax();
 
 		$id     = filter_input( INPUT_POST, 'id', FILTER_VALIDATE_INT );
-		$module = Hustle_Module_Model::instance()->get( $id );
+		$module = new Hustle_Module_Model( $id );
 
 		if ( 0 < $id && ! is_wp_error( $module ) ) {
 			$module->update_meta( 'local_list_provider_settings', array( 'local_list_name' => 'hustle-' . wp_rand() ) );
@@ -611,6 +611,10 @@ class Hustle_Provider_Admin_Ajax {
 
 		// Aand filter.
 		$sanitized_data = filter_var_array( $data, $filters );
+
+		if ( ! empty( $sanitized_data['name'] ) ) {
+			$sanitized_data['name'] = wp_strip_all_tags( $sanitized_data['name'] );
+		}
 
 		return $sanitized_data;
 	}

@@ -70,7 +70,7 @@ foreach ( $properties as $property ) {
 $properties_without_margin        = array( 'popup_cont', 'success_message', 'input', 'checkbox', 'layout_header', 'cta', 'layout_content', 'layout_footer', 'submit_button' );
 $properties_without_padding       = array( 'embed_cont', 'error_message', 'nsa_link', 'checkbox', 'gdpr' );
 $properties_without_border        = array( 'popup_cont', 'embed_cont', 'error_message', 'nsa_link' );
-$properties_without_border_radius = array( 'popup_cont', 'embed_cont', 'error_message', 'nsa_link', 'main_content', 'cta_cont', 'layout_content' );
+$properties_without_border_radius = array( 'popup_cont', 'embed_cont', 'error_message', 'nsa_link', 'main_content', 'cta_cont' );
 $properties_without_shadow        = array( 'popup_cont', 'embed_cont', 'error_message', 'nsa_link', 'main_content', 'cta_cont', 'content_wrap', 'form_cont', 'gdpr', 'checkbox', 'layout_content' );
 
 $units = array(
@@ -150,9 +150,10 @@ $units = array(
 										'options'    => $units,
 										'id'         => 'hustle-' . $margin_unit,
 										'selected'   => $settings[ $margin_unit ],
-										'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+										'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 										'attributes' => array(
-											'data-attribute'  => $margin_unit,
+											'data-width' => '50',
+											'data-attribute' => $margin_unit,
 											'aria-labelledby' => 'hustle-' . $margin_unit . '-label',
 										),
 									),
@@ -266,9 +267,10 @@ $units = array(
 										'options'    => $units,
 										'id'         => 'hustle-' . $padding_unit,
 										'selected'   => $settings[ $padding_unit ],
-										'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+										'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 										'attributes' => array(
-											'data-attribute'  => $padding_unit,
+											'data-width' => '50',
+											'data-attribute' => $padding_unit,
 											'aria-labelledby' => 'hustle-' . $padding_unit . '-label',
 										),
 									),
@@ -383,9 +385,10 @@ $units = array(
 										'options'    => $units,
 										'id'         => 'hustle-' . $border_unit,
 										'selected'   => $settings[ $border_unit ],
-										'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+										'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 										'attributes' => array(
-											'data-attribute'  => $border_unit,
+											'data-width' => '50',
+											'data-attribute' => $border_unit,
 											'aria-labelledby' => 'hustle-' . $border_unit . '-label',
 										),
 									),
@@ -446,6 +449,7 @@ $units = array(
 										'none'   => 'None',
 									),
 									'id'         => 'hustle-' . $border_type,
+									'class'      => 'sui-select',
 									'selected'   => $settings[ $border_type ],
 									'attributes' => array(
 										'data-attribute'  => $border_type,
@@ -532,9 +536,10 @@ $units = array(
 										'options'    => $units,
 										'id'         => 'hustle-' . $radius_unit,
 										'selected'   => $settings[ $radius_unit ],
-										'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+										'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 										'attributes' => array(
-											'data-attribute'  => $radius_unit,
+											'data-width' => '50',
+											'data-attribute' => $radius_unit,
 											'aria-labelledby' => 'hustle-' . $radius_unit . '-label',
 										),
 									),
@@ -556,20 +561,24 @@ $units = array(
 							'has_min'       => true,
 							'options'       => array(
 								array(
-									'name' => __( 'Top Left', 'hustle' ),
-									'slug' => $radius_top_left,
+									'name'         => __( 'Top Left', 'hustle' ),
+									'slug'         => $radius_top_left,
+									'label-nowrap' => true,
 								),
 								array(
-									'name' => __( 'Top Right', 'hustle' ),
-									'slug' => $radius_top_right,
+									'name'         => __( 'Top Right', 'hustle' ),
+									'slug'         => $radius_top_right,
+									'label-nowrap' => true,
 								),
 								array(
-									'name' => __( 'Bottom Right', 'hustle' ),
-									'slug' => $radius_bottom_right,
+									'name'         => __( 'Bottom Right', 'hustle' ),
+									'slug'         => $radius_bottom_right,
+									'label-nowrap' => true,
 								),
 								array(
-									'name' => __( 'Bottom Left', 'hustle' ),
-									'slug' => $radius_bottom_left,
+									'name'         => __( 'Bottom Left', 'hustle' ),
+									'slug'         => $radius_bottom_left,
+									'label-nowrap' => true,
 								),
 
 							),
@@ -611,9 +620,10 @@ $units = array(
 										'options'    => $units,
 										'id'         => 'hustle-' . $shadow_unit,
 										'selected'   => $settings[ $shadow_unit ],
-										'class'      => 'sui-inlabel sui-dropdown-align--right-desktop',
+										'class'      => 'sui-select sui-select-sm sui-select-inline sui-inlabel',
 										'attributes' => array(
-											'data-attribute'  => $shadow_unit,
+											'data-width' => '50',
+											'data-attribute' => $shadow_unit,
 											'aria-labelledby' => 'hustle-' . $shadow_unit . '-label',
 										),
 									),

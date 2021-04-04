@@ -34,7 +34,7 @@
 				>
 
 					<?php
-					echo Opt_In_Utils::render_image_markup( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo $this->render_image_markup( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 						self::$plugin_url . 'assets/images/' . $position['image1x'],
 						self::$plugin_url . 'assets/images/' . $position['image2x']
 					);

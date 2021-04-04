@@ -293,26 +293,7 @@ class Hustle_Module_Collection {
 	 * @return Hustle_Module_Model|WP_Error
 	 */
 	public function return_model_from_id( $id ) {
-
-		$error = new WP_Error( 'not_found', __( 'Module not found.', 'hustle' ) );
-		if ( empty( $id ) ) {
-			return $error;
-		}
-
-		$module      = Hustle_Module_Model::instance();
-		$module_type = $module->get_module_type_by_module_id( $id );
-
-		if ( 'social_sharing' === $module_type ) {
-			$model_instance = Hustle_SShare_Model::instance()->get( $id );
-		} else {
-			$model_instance = $module->get( $id );
-		}
-
-		if ( ! is_wp_error( $model_instance ) ) {
-			return $model_instance;
-		}
-
-		return $error;
+		return Hustle_Model::get_module( $id );
 	}
 
 	/**

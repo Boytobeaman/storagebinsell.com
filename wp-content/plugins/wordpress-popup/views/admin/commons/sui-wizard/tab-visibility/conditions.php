@@ -22,7 +22,8 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 				<div class="sui-builder-conditions-rule">
 					<select
 						name="show_or_hide_conditions"
-						class="sui-select-sm visibility-group-show-hide"
+						class="sui-select sui-select-sm sui-select-inline visibility-group-show-hide"
+						data-width="110"
 						data-group-attribute="show_or_hide_conditions"
 						data-group-id="{{ groupId }}"
 					>
@@ -36,7 +37,8 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 
 					<select
 						name="filter_type"
-						class="sui-select-sm visibility-group-filter-type"
+						class="sui-select sui-select-sm sui-select-inline visibility-group-filter-type"
+						data-width="110"
 						data-group-attribute="filter_type"
 						data-group-id="{{ groupId }}"
 					>
@@ -162,7 +164,7 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 
 				<?php
 				if ( ! $this->is_branding_hidden ) :
-					echo Opt_In_Utils::render_image_markup( $image_1x, $image_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo $this->render_image_markup( $image_1x, $image_2x, 'sui-image sui-image-center' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				endif;
 				?>
 
@@ -927,12 +929,14 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 
 			<div class="sui-tab-content active">
 
-				<select multiple="multiple"
-					data-placeholder="<?php esc_attr_e( 'Start typing the name of browsers...', 'hustle' ); ?>"
+				<select
+					multiple="multiple"
 					id="not_in_a_browser_browsers"
-					class="sui-select sui-select-lg"
+					class="sui-select"
+					data-placeholder="<?php esc_attr_e( 'Start typing the name of browsers...', 'hustle' ); ?>"
 					data-val="browsers"
-					data-attribute="browsers">
+					data-attribute="browsers"
+				>
 
 						<# _.each( _.keys( optinVars.browsers ), function( key ) { #>
 
@@ -1040,10 +1044,11 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 
 			<div class="sui-tab-content active">
 
-				<select multiple="multiple"
-					data-placeholder="<?php esc_attr_e( 'Start typing the name of countries...', 'hustle' ); ?>"
+				<select
+					multiple="multiple"
 					id="not_in_a_country_countries"
-					class="sui-select sui-select-lg"
+					class="sui-select"
+					data-placeholder="<?php esc_attr_e( 'Start typing the name of countries...', 'hustle' ); ?>"
 					data-val="countries"
 					data-attribute="countries">
 
@@ -1695,7 +1700,7 @@ $image_2x = self::$plugin_url . 'assets/images/hustle-visibility@2x.png';
 						<select
 							id="{{ groupId }}-{{ type }}-cookie_value_conditions"
 							name="{{ groupId }}-{{ type }}-cookie_value_conditions"
-							class="select-content-switcher"
+							class="sui-select select-content-switcher"
 							data-val="cookie_value_conditions"
 							data-attribute="cookie_value_conditions"
 							data-content-on="equals,contains,matches_pattern,doesnt_match_pattern,less_than,less_equal_than,greater_than,greater_equal_than,doesnt_contains,doesnt_equals"

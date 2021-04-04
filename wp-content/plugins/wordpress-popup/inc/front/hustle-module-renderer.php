@@ -37,7 +37,6 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 		$content        = $this->module->content;
 		$design         = $this->module->design;
 		$settings       = $this->module->settings;
-		$trigger        = $this->module->triggers;
 		$module_type    = $this->module->module_type;
 		$module_subtype = $subtype ? $subtype : $module_type;
 
@@ -88,7 +87,7 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 			$animation_intro = ( '' !== $settings->animation_in ) ? $settings->animation_in : 'no_animation';
 			$animation_outro = ( '' !== $settings->animation_out ) ? $settings->animation_out : 'no_animation';
 
-			$auto_close = '1' === $settings->auto_hide ? Opt_In_Utils::to_microseconds( $settings->auto_hide_time, $settings->auto_hide_unit ) : 'false';
+			$auto_close = '1' === $settings->auto_hide ? Hustle_Time_Helper::to_microseconds( $settings->auto_hide_time, $settings->auto_hide_unit ) : 'false';
 
 			// TODO: remove when the preview view is updated.
 			// This is forced on preview so modules like 'Adblock' can still be closed when previewing.
@@ -111,7 +110,7 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 
 			$position = $settings->display_position;
 
-			$auto_close = '1' === $settings->auto_hide ? Opt_In_Utils::to_microseconds( $settings->auto_hide_time, $settings->auto_hide_unit ) : 'false';
+			$auto_close = '1' === $settings->auto_hide ? Hustle_Time_Helper::to_microseconds( $settings->auto_hide_time, $settings->auto_hide_unit ) : 'false';
 
 			$module_data .= sprintf(
 				'
@@ -333,6 +332,19 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 			} elseif ( 'close' !== $content->cta_target && '' === $content->cta_url ) {
 				return false;
 			}
+		} else {
+
+			// Make both buttons have a label.
+			// And make sure they have an URL if their action isn't to close the module.
+			if ( '' === $content->cta_label || '' === $content->cta_two_label ) {
+				return false;
+
+			} elseif (
+				( 'close' !== $content->cta_target && '' === $content->cta_url ) ||
+				( 'close' !== $content->cta_two_target && '' === $content->cta_two_url )
+			) {
+				return false;
+			}
 		}
 
 		return true;
@@ -352,28 +364,33 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 
 		$html = $this->get_cta_markup( $label, $target, $link );
 
-		// if ( '2' === $content->show_cta ) {
+		if ( '2' === $this->module->content->show_cta ) {
 			// CTA #2.
-		// $html .= $this->get_cta_markup( $content->cta_two_label, $content->cta_two_target, $content->cta_two_url, 'cta_2' );
-		// }
+			$html .= $this->get_cta_markup(
+				$this->module->content->cta_two_label,
+				$this->module->content->cta_two_target,
+				$this->module->content->cta_two_url,
+				'cta_2'
+			);
+		}
 
 		// Display CTA helper text if enabled and not empty.
-		// if ( '1' === $content->cta_helper_show && '' === $content->cta_helper_text ) {
-		// $allowed_html = array(
-		// 'a'      => array(
-		// 'href'   => true,
-		// 'title'  => true,
-		// 'target' => true,
-		// 'alt'    => true,
-		// ),
-		// 'b'      => array(),
-		// 'strong' => array(),
-		// 'i'      => array(),
-		// 'em'     => array(),
-		// 'del'    => array(),
-		// );
+		if ( '1' === $this->module->content->cta_helper_show && '' === $this->module->content->cta_helper_text ) {
+			$allowed_html = array(
+				'a'      => array(
+					'href'   => true,
+					'title'  => true,
+					'target' => true,
+					'alt'    => true,
+				),
+				'b'      => array(),
+				'strong' => array(),
+				'i'      => array(),
+				'em'     => array(),
+				'del'    => array(),
+			);
 
-		// $cta_helper = '<p>' . wp_kses( $content->cta_helper_text, $allowed_html ) . '</p>';
+			$cta_helper = '<p>' . wp_kses( $this->module->content->cta_helper_text, $allowed_html ) . '</p>';
 
 			/**
 			 * Filter the whole markup for the CTA helper text
@@ -382,8 +399,8 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 			 *
 			 * @param $cta_helper CTA helper text markup to be shown.
 			 */
-		// $html .= apply_filters( 'hustle_get_cta_helper_text', $cta_helper );
-		// }
+			$html .= apply_filters( 'hustle_get_cta_helper_text', $cta_helper );
+		}
 
 		/**
 		 * Filter the markup for the CTA buttons.
@@ -409,8 +426,8 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 	 */
 	private function get_cta_markup( $label, $target, $url, $cta_type = 'cta' ) {
 
-		$extra_class = 'cta_2' === $cta_type ? 'hustle-last-button' : ''; // or something. For ya @leigh.
-		$class       = 'hustle-cta-close ' . $extra_class; // This class doesn't do anything yet either @leigh.
+		$extra_class = 'cta_2' === $cta_type ? 'hustle-last-button' : '';
+		$class       = 'hustle-cta-close ' . $extra_class;
 		$data        = '';
 
 		if ( 'close' !== $target ) {
@@ -819,7 +836,7 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 		$emails          = $this->module->emails;
 		$success_option  = $emails->after_successful_submission;
 		$success_message = $emails->success_message;
-		$auto_close      = '1' === $emails->auto_close_success_message ? Opt_In_Utils::to_microseconds( $emails->auto_close_time, $emails->auto_close_unit ) : 'false';
+		$auto_close      = '1' === $emails->auto_close_success_message ? Hustle_Time_Helper::to_microseconds( $emails->auto_close_time, $emails->auto_close_unit ) : 'false';
 
 		if ( 'show_success' === $success_option || ( 'redirect' === $success_option && '' === $emails->redirect_url ) ) {
 
@@ -1513,10 +1530,10 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 				$value = Opt_In_Geo::get_user_ip();
 				break;
 			case 'date_mdy':
-				$value = date_i18n( 'm/d/Y', Opt_In_Utils::get_local_timestamp(), true );
+				$value = date_i18n( 'm/d/Y', Hustle_Time_Helper::get_local_timestamp(), true );
 				break;
 			case 'date_dmy':
-				$value = date_i18n( 'd/m/Y', Opt_In_Utils::get_local_timestamp(), true );
+				$value = date_i18n( 'd/m/Y', Hustle_Time_Helper::get_local_timestamp(), true );
 				break;
 			case 'embed_id':
 				$value = Opt_In_Utils::get_post_data( 'ID' );
@@ -2017,8 +2034,7 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 		$styles = Hustle_Module_Front::print_front_fonts( $module->get_google_fonts(), true );
 
 		// Add the recaptcha script inline for previews.
-		if ( $is_preview ) {
-
+		if ( $is_preview && Hustle_Model::OPTIN_MODE === $this->module->module_mode ) {
 			$fields = $this->module->emails->form_elements;
 
 			// Load the recaptcha script if the module has it, and if the credentials are stored.
@@ -2034,7 +2050,7 @@ class Hustle_Module_Renderer extends Hustle_Renderer_Abstract {
 
 		// This might be used later for ajax loading.
 		ob_start();
-		$this->print_styles( $is_preview );
+		$this->print_styles();
 		$styles           .= ob_get_clean();
 		$response['style'] = $styles;
 

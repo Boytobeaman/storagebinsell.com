@@ -31,6 +31,7 @@ $options = array(
 					'name'       => $name,
 					'options'    => $options,
 					'id'         => 'hustle-' . $name,
+					'class'      => 'sui-select',
 					'selected'   => $settings[ $name ],
 					'attributes' => array(
 						'data-attribute'  => $name,

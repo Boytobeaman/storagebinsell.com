@@ -63,6 +63,8 @@ class Hustle_Notifications {
 		$cap = is_multisite() ? 'manage_network_plugins' : 'update_plugins';
 
 		$this->user_can_update_plugins = current_user_can( $cap );
+
+		add_action( 'wp_ajax_hustle_dismiss_notification', array( $this, 'dismiss_notification' ) );
 	}
 
 	/**
@@ -92,15 +94,6 @@ class Hustle_Notifications {
 		add_action( 'admin_notices', array( $this, 'show_sendgrid_update_notice' ) );
 
 		add_action( 'admin_notices', array( $this, 'show_provider_migration_notice' ) );
-	}
-
-	/**
-	 * Adds ajax actionz.
-	 *
-	 * @since 4.2.0
-	 */
-	public function add_ajax_actions() {
-		add_action( 'wp_ajax_hustle_dismiss_notification', array( $this, 'dismiss_notification' ) );
 	}
 
 	/**
@@ -213,7 +206,7 @@ class Hustle_Notifications {
 		$page       = filter_input( INPUT_GET, 'page', FILTER_SANITIZE_STRING );
 		$show_modal = filter_input( INPUT_GET, 'show-migrate', FILTER_VALIDATE_BOOLEAN );
 
-		if ( $show_modal || ( Hustle_Module_Admin::ADMIN_PAGE === $page && ! self::was_notification_dismissed( Hustle_Dashboard_Admin::MIGRATE_MODAL_NAME ) ) ) {
+		if ( $show_modal || ( Hustle_Data::ADMIN_PAGE === $page && ! self::was_notification_dismissed( Hustle_Dashboard_Admin::MIGRATE_MODAL_NAME ) ) ) {
 			return false;
 		}
 
@@ -235,7 +228,7 @@ class Hustle_Notifications {
 
 		$migrate_url = add_query_arg(
 			array(
-				'page'                    => Hustle_Module_Admin::INTEGRATIONS_PAGE,
+				'page'                    => Hustle_Data::INTEGRATIONS_PAGE,
 				'show_provider_migration' => $provider,
 				'integration_id'          => isset( $provider_data['id'] ) ? $provider_data['id'] : '',
 			),
@@ -459,7 +452,7 @@ class Hustle_Notifications {
 		}
 
 		// Show the notice only to users who can do something about this and who are members.
-		if ( ! $this->user_can_update_plugins || ! lib3()->is_member() ) {
+		if ( ! $this->user_can_update_plugins || ! Opt_In_Utils::is_hustle_included_in_membership() ) {
 			return;
 		}
 
@@ -467,7 +460,7 @@ class Hustle_Notifications {
 			array(
 				'type'  => 'html_link',
 				'value' => esc_html__( 'Upgrade' ),
-				'url'   => esc_url( lib3()->get_link( 'hustle', 'install_plugin', '' ) ),
+				'url'   => esc_url( Opt_In_Utils::get_link( 'install_plugin' ) ),
 				'class' => 'button-primary',
 			),
 			true
@@ -500,7 +493,7 @@ class Hustle_Notifications {
 
 		$migrate_url = add_query_arg(
 			array(
-				'page'         => Hustle_Module_Admin::ADMIN_PAGE,
+				'page'         => Hustle_Data::ADMIN_PAGE,
 				'show-migrate' => 'true',
 			),
 			'admin.php'
@@ -561,7 +554,7 @@ class Hustle_Notifications {
 		}
 
 		$integrations_url = add_query_arg(
-			array( 'page' => Hustle_Module_Admin::INTEGRATIONS_PAGE ),
+			array( 'page' => Hustle_Data::INTEGRATIONS_PAGE ),
 			'admin.php'
 		);
 
@@ -620,7 +613,7 @@ class Hustle_Notifications {
 			return;
 		}
 		$url_params = array(
-			'page'              => Hustle_Module_Admin::ADMIN_PAGE,
+			'page'              => Hustle_Data::ADMIN_PAGE,
 			'review-conditions' => 'true',
 		);
 		$url        = add_query_arg( $url_params, 'admin.php' );

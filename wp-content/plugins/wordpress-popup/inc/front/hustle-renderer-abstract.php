@@ -35,8 +35,6 @@ abstract class Hustle_Renderer_Abstract {
 		$this->is_admin = is_admin();
 	}
 
-	// abstract public function display( Hustle_Module_Model $module, $sub_type = null, $custom_classes = '' );
-
 	/**
 	 * Generate an ID for the current module
 	 * represented as an integer, starting from 0.
@@ -58,21 +56,20 @@ abstract class Hustle_Renderer_Abstract {
 	 *
 	 * @since 4.0
 	 *
-	 * @param Hustle_Module_Model $module
-	 * @param string              $sub_type The sub_type for embedded and social sharing modules: widget, shortcode, etc.
-	 * @param string              $custom_classes
-	 * @param bool                $is_preview
+	 * @param Hustle_Model $module Module to display.
+	 * @param string       $sub_type The sub_type for embedded and social sharing modules: widget, shortcode, etc.
+	 * @param string       $custom_classes
+	 * @param bool         $is_preview
 	 */
-	public function display( Hustle_Module_Model $module, $sub_type = null, $custom_classes = '', $is_preview = false ) {
+	public function display( Hustle_Model $module, $sub_type = null, $custom_classes = '', $is_preview = false ) {
 
 		$this->module   = $module;
-		$id             = $this->module->id;
 		$this->sub_type = $sub_type;
-		$this->generate_render_id( $id );
+		$this->generate_render_id( $this->module->module_id );
 
 		self::$is_preview = $is_preview;
 
-		if ( $is_preview || ( $this->module->active && $this->module->visibility->is_allowed_to_display( $module->module_type, $sub_type ) ) ) {
+		if ( $is_preview || ( $this->module->active && $this->module->get_visibility()->is_allowed_to_display( $module->module_type, $sub_type ) ) ) {
 
 			// Render form
 			echo $this->get_module( $sub_type, $custom_classes ); // wpcs: xss ok.
@@ -120,12 +117,11 @@ abstract class Hustle_Renderer_Abstract {
 
 		$html .= '</div>'; // Closing wrapper main.
 
-		$post_id = $this->get_post_id();
 		/**
 		 * Tracking
 		 */
-		$form_view = Hustle_Tracking_Model::get_instance();
-		$post_id   = $this->get_post_id();
+		//$form_view = Hustle_Tracking_Model::get_instance();
+		$post_id = $this->get_post_id();
 
 		/**
 		 * Output
@@ -145,37 +141,61 @@ abstract class Hustle_Renderer_Abstract {
 		return get_queried_object_id();
 	}
 
-	public function print_styles( $is_preview = false ) {
+	public function print_styles() {
 
 		$disable_styles = apply_filters( 'hustle_disable_front_styles', false, $this->module, $this );
 
 		if ( ! $disable_styles ) {
-			$render_id = self::$render_ids[ $this->module->id ];
-			$style     = $this->module->get_decorated()->get_module_styles( $this->module->module_type, $is_preview );
+			$render_id = self::$render_ids[ $this->module->module_id ];
+			$style     = $this->module->get_decorated()->get_module_styles( $this->module->module_type );
 
 			printf(
 				'<style type="text/css" id="hustle-module-%1$s-%2$s-styles" class="hustle-module-styles hustle-module-styles-%3$s">%4$s</style>',
-				esc_attr( $this->module->id ),
+				esc_attr( $this->module->module_id ),
 				esc_attr( $render_id ),
-				esc_attr( $this->module->id ),
+				esc_attr( $this->module->module_id ),
 				wp_strip_all_tags( $style )
 			);
 		}
 
 	}
 
-
+	/**
+	 * Loads a module via ajax.
+	 * Currently used for preview only.
+	 *
+	 * @since 4.0.0
+	 */
 	public static function ajax_load_module() {
-
-		$data = $_REQUEST; // phpcs:ignore
-		$id           = filter_input( INPUT_POST, 'id', FILTER_VALIDATE_INT );
 		$preview_data = filter_input( INPUT_POST, 'previewData', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
 
+		$id = filter_input( INPUT_POST, 'id', FILTER_VALIDATE_INT );
+
 		if ( ! $id && empty( $preview_data ) ) {
-			wp_send_json_error( __( 'Invalid data', 'hustle' ) );
+			return false;
 		}
 
-		$module = Hustle_Module_Collection::instance()->return_model_from_id( $id );
+		if ( empty( $preview_data['template_name'] ) ) {
+			// Previewing an already saved module.
+			$module = Hustle_Module_Collection::instance()->return_model_from_id( $id );
+		} else {
+			// Previewing a template.
+			// Only non-ssharing modules have templates.
+			$module = new Hustle_Module_Model();
+
+			$template_mode = $preview_data['template_mode'];
+			$template_name = $preview_data['template_name'];
+			$module_type   = $preview_data['module_type'];
+
+			$templates_helper = new Hustle_Templates_Helper();
+			$preview_data     = $templates_helper->get_template( $template_name, $template_mode );
+
+			$preview_data['module_mode'] = $template_mode;
+			$preview_data['module_type'] = $module_type;
+			$preview_data['module_name'] = $template_name;
+
+			$module->populate_module_for_template( $preview_data );
+		}
 
 		if ( empty( $module ) || is_wp_error( $module ) ) {
 			wp_send_json_error( __( 'Invalid module.' ), 'hustle' );
@@ -187,12 +207,7 @@ abstract class Hustle_Renderer_Abstract {
 		$is_preview = true;
 
 		// Add filter for Forminator to load as a preview.
-		add_filter(
-			'forminator_render_shortcode_is_preview',
-			function() {
-				return true;
-			}
-		);
+		add_filter( 'forminator_render_shortcode_is_preview', '__return_true' );
 
 		// Define constant for other plugins to hook in preview.
 		if ( ! defined( 'HUSTLE_RENDER_PREVIEW' ) || ! HUSTLE_RENDER_PREVIEW ) {

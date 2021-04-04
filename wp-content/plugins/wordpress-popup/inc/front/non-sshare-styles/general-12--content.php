@@ -250,7 +250,7 @@ foreach ( $typos as $key => $prop ) {
 			$style     .= '}';
 
 			$style     .= $prefix_mobile . $component . ' ul:not([class*="forminator-"]) ' . $key . ':before {';
-				$style .= 'color: ' . $colors['ul_bullets'];
+				$style .= 'background-color: ' . $colors['ul_bullets'];
 			$style     .= '}';
 
 		}

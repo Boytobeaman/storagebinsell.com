@@ -10,7 +10,7 @@
 $connect_msg = sprintf( esc_html__( 'Send this %s’s data to a third party applications.' ), esc_html( $smallcaps_singular ) );
 if ( current_user_can( 'hustle_edit_integrations' ) ) {
 
-	$integrations_url = add_query_arg( 'page', Hustle_Module_Admin::INTEGRATIONS_PAGE, 'admin.php' );
+	$integrations_url = add_query_arg( 'page', Hustle_Data::INTEGRATIONS_PAGE, 'admin.php' );
 	$connect_msg     .= sprintf(
 		/* translators: 1. opening 'a' tag to the integrations page, 2. closing 'a' tag */
 		esc_html__( ' Connect to more 3rd party applications via the %1$sIntegrations%2$s page.', 'hustle' ),

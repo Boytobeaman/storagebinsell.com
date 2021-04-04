@@ -123,7 +123,7 @@ $templates_helper = new Hustle_Templates_Helper();
 		array(
 			'templates'          => $templates_helper->get_optin_templates_data(),
 			'smallcaps_singular' => $smallcaps_singular,
-			'mode'               => 'optin',
+			'mode'               => Hustle_Module_Model::OPTIN_MODE,
 		)
 	);
 	?>
@@ -143,7 +143,7 @@ $templates_helper = new Hustle_Templates_Helper();
 		array(
 			'templates'          => $templates_helper->get_informational_templates_data(),
 			'smallcaps_singular' => $smallcaps_singular,
-			'mode'               => 'informational',
+			'mode'               => Hustle_Module_Model::INFORMATIONAL_MODE,
 		)
 	);
 	?>

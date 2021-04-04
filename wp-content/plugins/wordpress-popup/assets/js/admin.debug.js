@@ -201,7 +201,7 @@ Optin.Models = {};
     // Saves the value into a cookie.
     set: function set(name, value, days) {
       var date, expires;
-      value = $.isArray(value) || $.isPlainObject(value) ? JSON.stringify(value) : value;
+      value = Array.isArray(value) || $.isPlainObject(value) ? JSON.stringify(value) : value;
 
       if (!isNaN(days)) {
         date = new Date();
@@ -247,22 +247,8 @@ Optin.Models = {};
         $elements.show();
         $elements.prop('tabindex', '0');
         $elements.removeProp('hidden');
-      }; // Init select
+      }; // Init tabs (new markup)
 
-
-      view.$('select:not([multiple])').each(function () {
-        SUI.suiSelect(this);
-      }); // Init select2
-
-      view.$('.sui-select:not(.hustle-select-ajax)').SUIselect2({
-        dropdownCssClass: 'sui-select-dropdown'
-      }); // Init accordion
-
-      view.$('.sui-accordion').each(function () {
-        SUI.suiAccordion(this);
-      }); // Init tabs (old markup)
-
-      SUI.suiTabs(); // Init tabs (new markup)
 
       SUI.tabs({
         callback: function callback(tab, panel) {
@@ -300,9 +286,7 @@ Optin.Models = {};
             wrapper.find('#input-' + scheduleCustom).click();
           }
         }
-      }); // Init float input
-
-      SUI.floatInput();
+      });
       /**
        * Hides and shows the content of the settings using sui-side-tabs.
        * For us, non-designers: sui-side-tabs are the "buttons" that work as labels for radio inputs.
@@ -575,32 +559,40 @@ Optin.Models = {};
   }); // TODO: probably move this to the view where it's actually used.
 
   $(document).ready(function () {
-    if ($('#hustle-email-day').length) {
-      $('#hustle-email-day').datepicker({
-        beforeShow: function beforeShow() {
-          $('#ui-datepicker-div').addClass('sui-calendar');
-        },
-        dateFormat: 'MM dd, yy'
-      });
-    }
+    // Delete module
+    $('.hustle-delete-module-button').on('click', function (e) {
+      e.preventDefault();
+      var $this = $(e.currentTarget),
+          data = {
+        id: $this.data('id'),
+        nonce: $this.data('nonce'),
+        action: 'delete',
+        title: $this.data('title'),
+        description: $this.data('description'),
+        actionClass: 'hustle-single-module-button-action'
+      };
+      Module.deleteModal.open(data, $this[0]);
+    });
+    /**
+     * The "are you sure?" modal from before resetting the tracking data of modules.
+     *
+     * @since 4.0.0
+     * @param {Event} e Event.
+     */
 
-    if ($('#hustle-email-time').length) {
-      $('#hustle-email-time').timepicker({
-        timeFormat: 'h:mm p',
-        interval: '1',
-        minTime: '0',
-        maxTime: '11:59pm',
-        defaultTime: null,
-        startTime: '00:00',
-        dynamic: false,
-        dropdown: true,
-        scrollbar: true,
-        change: function change() {
-          $('#hustle-email-time').trigger('change');
-        }
-      });
-    } // Makes the 'copy' button work.
-
+    $('.hustle-module-tracking-reset-button').on('click', function (e) {
+      e.preventDefault();
+      var $this = $(e.target),
+          data = {
+        id: $this.data('module-id'),
+        nonce: optinVars.single_module_action_nonce,
+        action: 'reset-tracking',
+        title: $this.data('title'),
+        description: $this.data('description'),
+        actionClass: 'hustle-single-module-button-action'
+      };
+      Module.deleteModal.open(data, $this[0]);
+    }); // Makes the 'copy' button work.
 
     $('.hustle-copy-shortcode-button').on('click', function (e) {
       e.preventDefault();
@@ -612,14 +604,14 @@ Optin.Models = {};
         // Actions in listing pages.
         var $temp = $('<input />');
         $('body').append($temp);
-        $temp.val(shortcode).select();
+        $temp.val(shortcode).trigger('select');
         document.execCommand('copy');
         $temp.remove();
         Module.Notification.open('success', optinVars.messages.shortcode_copied);
       } else if ($inputWrapper.length) {
         // Copy shortcode in wizard pages.
         var $inputWithCopy = $inputWrapper.find('input[type="text"]');
-        $inputWithCopy.select();
+        $inputWithCopy.trigger('select');
         document.execCommand('copy');
       }
     }); // Dismiss for all the notices using the template from Hustle_Notifications::show_notice().
@@ -630,7 +622,7 @@ Optin.Models = {};
       $.post(ajaxurl, {
         action: 'hustle_dismiss_notification',
         name: $container.data('name'),
-        _ajax_nonce: $container.data('nonce')
+        _ajax_nonce: optinVars.dismiss_notice_nonce
       }).always($container.fadeOut());
     }); // Opens the confirmation modal for dismissing the tracking migration notice.
 
@@ -724,8 +716,7 @@ Hustle.define('Modals.Migration', function ($) {
       'click #hustle-migrate-start': 'migrateStart',
       'click #hustle-create-new-module': 'createModule',
       'click .sui-box-selector': 'enableContinue',
-      'click .hustle-dialog-migrate-skip': 'dismissModal',
-      'click .sui-dialog-overlay': 'dismissModal'
+      'click .hustle-dialog-migrate-skip': 'dismissModal'
     },
     initialize: function initialize() {
       if (!this.$el.length) {
@@ -914,7 +905,7 @@ Hustle.define('Modals.Preview', function ($) {
     },
     displayModuleName: function displayModuleName(previewData) {
       if (previewData) {
-        this.$('#hustle-dialog--preview-description').html(previewData.module_name);
+        this.$('#hustle-dialog--preview-description').html(previewData.module_name || '');
       }
     },
     maybeHideReloadButton: function maybeHideReloadButton(moduleType) {
@@ -938,7 +929,7 @@ Hustle.define('Modals.Preview', function ($) {
 
 
           $previewContainer.show();
-          $previewContainer.removeAttr('aria-hidden');
+          $previewContainer.prop('aria-hidden', false);
 
           _this.$('#hustle-preview-loader').remove();
 
@@ -995,12 +986,6 @@ Hustle.define('Modals.ReleaseHighlight', function ($) {
 
   var welcomeModalView = Backbone.View.extend({
     el: '#hustle-dialog--release-highlight',
-    // TODO: replace these by 'on modal open' action when upgrading SUI.
-    events: {
-      'click #hustle-release-highlight-action-button': 'actionButtonClicked',
-      'click [data-modal-close]': 'dismissModal',
-      keyup: 'maybeDismissModal'
-    },
     initialize: function initialize() {
       var _this = this;
 
@@ -1011,6 +996,9 @@ Hustle.define('Modals.ReleaseHighlight', function ($) {
       setTimeout(function () {
         return _this.show();
       }, 100);
+      this.$el.on('close', function () {
+        return _this.dismissModal();
+      });
     },
     show: function show() {
       var _this2 = this;
@@ -1023,31 +1011,12 @@ Hustle.define('Modals.ReleaseHighlight', function ($) {
       }
 
       SUI.openModal('hustle-dialog--release-highlight', $('.sui-header-title')[0], this.$('.hustle-modal-close'), true);
-      this.$el.siblings('.sui-modal-overlay').on('click', function () {
-        return _this2.dismissModal();
-      });
     },
-    actionButtonClicked: function actionButtonClicked(e) {
-      e.preventDefault();
-      this.dismissModal();
-      SUI.closeModal();
-    },
-    maybeDismissModal: function maybeDismissModal(e) {
-      var key = e.which || e.keyCode;
-
-      if (27 === key) {
-        this.dismissModal();
-      }
-    },
-    dismissModal: function dismissModal(e) {
-      if (e) {
-        e.preventDefault();
-      }
-
-      return $.post(ajaxurl, {
+    dismissModal: function dismissModal() {
+      $.post(ajaxurl, {
         action: 'hustle_dismiss_notification',
-        name: 'release_highlight_modal_431',
-        _ajax_nonce: this.$el.data('nonce')
+        name: this.$el.data('name'),
+        _ajax_nonce: optinVars.dismiss_notice_nonce
       });
     }
   });
@@ -1163,6 +1132,1232 @@ Hustle.define('Modals.Welcome', function ($) {
   });
   new welcomeModalView();
 });
+(function ($) {
+  'use strict';
+
+  Optin.View = {};
+  Optin.View.Conditions = Optin.View.Conditions || {};
+  var ConditionBase = Hustle.View.extend({
+    conditionId: '',
+    className: 'sui-builder-field sui-accordion-item sui-accordion-item--open',
+    _template: Optin.template('hustle-visibility-rule-tpl'),
+    template: false,
+    _defaults: {
+      typeName: '',
+      conditionName: ''
+    },
+    _events: {
+      'change input': 'changeInput',
+      'change textarea': 'changeInput',
+      'change select': 'changeInput'
+    },
+    init: function init(opts) {
+      this.undelegateEvents();
+      this.$el.removeData().off();
+      this.type = opts.type;
+      this.groupId = opts.groupId;
+      this.filter_type = opts.filter_type; // eslint-disable-line camelcase
+
+      this.id = this.conditionId;
+      this.template = 'undefined' !== typeof this.cpt ? Optin.template('hustle-visibility-rule-tpl--post_type') : Optin.template('hustle-visibility-rule-tpl--' + this.conditionId);
+      /**
+       * Defines typeName and conditionName based on type and id so that it can be used in the template later on
+       *
+       * @type {Object}
+       * @private
+       */
+
+      this._defaults = {
+        typeName: optinVars.module_type_name,
+        conditionName: optinVars.messages.conditions[this.conditionId] ? optinVars.messages.conditions[this.conditionId] : this.conditionId,
+        groupId: this.groupId,
+        id: this.conditionId,
+        source: opts.source
+      };
+      this.data = this.getData();
+      this.render();
+      this.events = $.extend(true, {}, this.events, this._events);
+      this.delegateEvents();
+
+      if (this.onInit && _.isFunction(this.onInit)) {
+        this.onInit.apply(this, arguments);
+      }
+
+      return this;
+    },
+    getData: function getData() {
+      return _.extend({}, this._defaults, this.defaults(), this.model.get(this.conditionId), {
+        type: this.type
+      });
+    },
+    getTitle: function getTitle() {
+      return this.title.replace('{type_name}', this.data.typeName);
+    },
+    getBody: function getBody() {
+      return 'function' === typeof this.body ? this.body.apply(this, arguments) : this.body.replace('{type_name}', this.data.typeName);
+    },
+    getHeader: function getHeader() {
+      return this.header;
+    },
+    countLines: function countLines(value) {
+      // trim trailing return char if exists
+      var text = value.replace(/\s+$/g, '');
+      var split = text.split('\n');
+      return split.length;
+    },
+    render: function render() {
+      this.setProperties();
+
+      var html = this._template(_.extend({}, {
+        title: this.getTitle(),
+        body: this.getBody(),
+        header: this.getHeader()
+      }, this._defaults, {
+        type: this.type
+      }));
+
+      this.$el.html('');
+      this.$el.html(html);
+      $('.wph-conditions--box .wph-conditions--item:not(:last-child)').removeClass('wph-conditions--open').addClass('wph-conditions--closed');
+      $('.wph-conditions--box .wph-conditions--item:not(:last-child) section').hide();
+
+      if (this.rendered && 'function' === typeof this.rendered) {
+        this.rendered.apply(this, arguments);
+      }
+
+      return this;
+    },
+
+    /**
+     * Updates attribute value into the condition hash
+     *
+     * @param {string} attribute Name of the attribute to update.
+     * @param {*} val New value of the attribute.
+     */
+    updateAttribute: function updateAttribute(attribute, val) {
+      this.data = this.model.get(this.conditionId);
+      this.data[attribute] = val;
+      this.model.set(this.conditionId, this.data); // TODO: instead of triggering manually, clone the retrieved object so
+      // backbone recognizes the change.
+
+      this.model.trigger('change');
+    },
+    getAttribute: function getAttribute(attribute) {
+      var data = this.model.get(this.conditionId);
+      return data && data[attribute] ? data[attribute] : false;
+    },
+    refreshLabel: function refreshLabel() {
+      var html = this.getHeader();
+      this.$el.find('.wph-condition--preview').html('');
+      this.$el.find('.sui-accordion-item-header .sui-tag').html(html);
+    },
+
+    /**
+     * Triggered on input change
+     *
+     * @param {event} e Event.
+     */
+    changeInput: function changeInput(e) {
+      var el = e.target,
+          $el = $(el);
+      var val = $el.is('.sui-select') ? $el.val() : e.target.value; //stop handler in /assets/js/admin/mixins/model-updater.js
+
+      e.stopImmediatePropagation();
+
+      if ($el.is(':checkbox')) {
+        val = $el.is(':checked');
+      } // skip for input search
+
+
+      if ($el.is('.select2-search__field')) {
+        return false;
+      }
+
+      var attribute = el.getAttribute('data-attribute');
+      this.updateAttribute(attribute, val);
+      this.refreshLabel();
+    },
+
+    /**
+     * Returns configs of condition
+     *
+     * @return {Object|boolean} The configs value, or true if not set.
+     */
+    getConfigs: function getConfigs() {
+      return this.defaults() || true;
+    }
+  });
+
+  var reenableScroll = function reenableScroll() {
+    /**
+     * reenable scrolling for the container
+     * select2 disables scrolling after select so we reenable it
+     */
+    $('.wph-conditions--items').data('select2ScrollPosition', {});
+  },
+      ToggleButtonTogglerMixin = {
+    events: {
+      'change input[type="radio"]': 'setCurrentLi'
+    },
+    setCurrentLi: function setCurrentLi(e) {
+      var $this = $(e.target),
+          $li = $this.closest('li');
+      $li.siblings().removeClass('current');
+      $li.toggleClass('current', $this.is(':checked'));
+    }
+  };
+  /**
+   * Posts
+   */
+
+
+  Optin.View.Conditions.posts = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    conditionId: 'posts',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.posts;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        posts: []
+      };
+    },
+    onInit: function onInit() {//this.listenTo( this.model, 'change', this.render );
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('posts').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('posts').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        tags: 'true',
+        width: '100%',
+        dropdownCssClass: 'sui-select-dropdown',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'post'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * Pages
+   */
+
+  Optin.View.Conditions.pages = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    conditionId: 'pages',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.pages;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        pages: []
+      };
+    },
+    onInit: function onInit() {//this.listenTo( this.model, 'change', this.render );
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('pages').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('pages').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        tags: 'true',
+        width: '100%',
+        dropdownCssClass: 'sui-select-dropdown',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'page'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * Custom Post Types
+   */
+
+  if (optinVars.post_types) {
+    _.each(optinVars.post_types, function (cptDetails, cpt) {
+      Optin.View.Conditions[cptDetails.name] = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+        conditionId: cptDetails.name,
+        cpt: true,
+        setProperties: function setProperties() {
+          this.title = cptDetails.label;
+        },
+        defaults: function defaults() {
+          return {
+            filter_type: 'except',
+            // except | only
+            selected_cpts: [],
+            postType: cpt,
+            postTypeLabel: cptDetails.label
+          };
+        },
+        getHeader: function getHeader() {
+          if (this.getAttribute('selected_cpts').length) {
+            return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('selected_cpts').length);
+          }
+
+          return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+        },
+        body: function body() {
+          return this.template(this.getData());
+        },
+        rendered: function rendered() {
+          this.$('.hustle-select-ajax').SUIselect2({
+            tags: 'true',
+            width: '100%',
+            dropdownCssClass: 'sui-select-dropdown',
+            ajax: {
+              url: ajaxurl,
+              delay: 250,
+              // wait 250 milliseconds before triggering the request
+              dataType: 'json',
+              type: 'POST',
+              data: function data(params) {
+                var query = {
+                  action: 'get_new_condition_ids',
+                  search: params.term,
+                  postType: cpt
+                };
+                return query;
+              },
+              processResults: function processResults(data) {
+                return {
+                  results: data.data
+                };
+              },
+              cache: true
+            },
+            createTag: function createTag() {
+              return false;
+            }
+          }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+        }
+      }));
+    });
+  }
+  /**
+   * Categories
+   */
+
+
+  Optin.View.Conditions.categories = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    conditionId: 'categories',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.categories;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        categories: []
+      };
+    },
+    onInit: function onInit() {//this.listenTo( this.model, 'change', this.render );
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('categories').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('categories').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        tags: 'true',
+        width: '100%',
+        dropdownCssClass: 'sui-select-dropdown',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'category'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * Tags
+   */
+
+  Optin.View.Conditions.tags = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    conditionId: 'tags',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.tags;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        tags: []
+      };
+    },
+    onInit: function onInit() {//this.listenTo( this.model, 'change', this.render );
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('tags').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('tags').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        width: '100%',
+        tags: 'true',
+        dropdownCssClass: 'sui-select-dropdown',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'tag'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * Visitor logged in / not logged in
+   */
+
+  Optin.View.Conditions.visitor_logged_in_status = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'visitor_logged_in_status',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.visitor_logged_in;
+    },
+    defaults: function defaults() {
+      return {
+        show_to: 'logged_in'
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('show_to').length && 'logged_out' === this.getAttribute('show_to')) {
+        return optinVars.messages.condition_labels.logged_out;
+      }
+
+      return optinVars.messages.condition_labels.logged_in;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * Amount of times the module has been shown to the same visitor
+   */
+
+  Optin.View.Conditions.shown_less_than = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'shown_less_than',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.shown_less_than;
+    },
+    defaults: function defaults() {
+      return {
+        less_or_more: 'less_than',
+        less_than: ''
+      };
+    },
+    getHeader: function getHeader() {
+      if (0 < this.getAttribute('less_than')) {
+        if ('less_than' === this.getAttribute('less_or_more')) {
+          return optinVars.messages.condition_labels.number_views.replace('{number}', this.getAttribute('less_than'));
+        }
+
+        return optinVars.messages.condition_labels.number_views_more.replace('{number}', this.getAttribute('less_than'));
+      }
+
+      return optinVars.messages.condition_labels.any;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * Visitor is on mobile / desktop
+   */
+
+  Optin.View.Conditions.visitor_device = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'visitor_device',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.only_on_mobile;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'mobile' // mobile | not_mobile
+
+      };
+    },
+    getHeader: function getHeader() {
+      if ('not_mobile' === this.getAttribute('filter_type')) {
+        return optinVars.messages.condition_labels.desktop_only;
+      }
+
+      return optinVars.messages.condition_labels.mobile_only;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * From referrer
+   */
+
+  Optin.View.Conditions.from_referrer = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'from_referrer',
+    disable: ['from_referrer'],
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.from_specific_ref;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'true',
+        // true | false
+        refs: ''
+      };
+    },
+    getHeader: function getHeader() {
+      var length = 0;
+
+      if (this.getAttribute('refs').length) {
+        length = this.countLines(this.getAttribute('refs'));
+      }
+
+      if (length) {
+        return ('false' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.except_these : optinVars.messages.condition_labels.only_these).replace('{number}', length);
+      }
+
+      return 'false' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.any : optinVars.messages.condition_labels.none;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * Source of arrival
+   */
+
+  Optin.View.Conditions.source_of_arrival = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'source_of_arrival',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.from_search_engine;
+    },
+    defaults: function defaults() {
+      return {
+        source_direct: 'false',
+        // true | false
+        source_external: 'false',
+        // true | false
+        source_internal: 'false',
+        // true | false
+        source_not_search: 'false',
+        // true | false
+        source_search: 'false' // true | false
+
+      };
+    },
+    getHeader: function getHeader() {
+      var conditions = 0;
+      var direct = _.isTrue(this.getAttribute('source_direct')) && ++conditions,
+          external = _.isTrue(this.getAttribute('source_external')) && ++conditions,
+          internal = _.isTrue(this.getAttribute('source_internal')) && ++conditions,
+          search = _.isTrue(this.getAttribute('source_search')) && ++conditions,
+          notSearch = _.isTrue(this.getAttribute('source_not_search')) && ++conditions;
+
+      if (search && notSearch || direct && internal && external) {
+        return optinVars.messages.condition_labels.any;
+      } else if (conditions) {
+        return optinVars.messages.condition_labels.any_conditions.replace('{number}', conditions);
+      }
+
+      return optinVars.messages.condition_labels.any;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * On/not on specific url
+   */
+
+  Optin.View.Conditions.on_url = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'on_url',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.on_specific_url;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        urls: ''
+      };
+    },
+    getHeader: function getHeader() {
+      var length = 0;
+
+      if (this.getAttribute('urls').length) {
+        length = this.countLines(this.getAttribute('urls'));
+      }
+
+      if (length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * On/not on specific browser
+   */
+
+  Optin.View.Conditions.on_browser = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'on_browser',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.on_specific_browser;
+    },
+    defaults: function defaults() {
+      return {
+        browsers: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('browsers').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('browsers').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('browsers'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Visitor commented or not
+   */
+
+  Optin.View.Conditions.visitor_commented = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'visitor_commented',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.visitor_has_never_commented;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'true' // true | false
+
+      };
+    },
+    getHeader: function getHeader() {
+      return 'false' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.false : optinVars.messages.condition_labels.true;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * User has role
+   */
+
+  Optin.View.Conditions.user_roles = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'user_roles',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.on_specific_roles;
+    },
+    defaults: function defaults() {
+      return {
+        roles: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('roles').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('roles').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('roles'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Page templates
+   */
+
+  Optin.View.Conditions.page_templates = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'page_templates',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.on_specific_templates;
+    },
+    defaults: function defaults() {
+      return {
+        templates: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('templates').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('templates').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('templates'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Show modules based on user registration time
+   */
+
+  Optin.View.Conditions.user_registration = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'user_registration',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.user_registration;
+    },
+    defaults: function defaults() {
+      return {
+        from_date: 0,
+        to_date: 0
+      };
+    },
+    getHeader: function getHeader() {
+      var from = 0 < this.getAttribute('from_date') ? optinVars.messages.condition_labels.reg_date.replace('{number}', this.getAttribute('from_date')) : optinVars.messages.condition_labels.immediately;
+      var upTo = 0 < this.getAttribute('to_date') ? optinVars.messages.condition_labels.reg_date.replace('{number}', this.getAttribute('to_date')) : optinVars.messages.condition_labels.forever;
+      return from + ' - ' + upTo;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  });
+  /**
+   * Visitor country
+   */
+
+  Optin.View.Conditions.visitor_country = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'visitor_country',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.not_in_a_country;
+    },
+    defaults: function defaults() {
+      return {
+        countries: '',
+        filter_type: 'except' // only | except
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('countries').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('countries').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('countries'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Static Pages
+   */
+
+  Optin.View.Conditions.wp_conditions = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'wp_conditions',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wp_conditions;
+    },
+    defaults: function defaults() {
+      return {
+        wp_conditions: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('wp_conditions').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('wp_conditions').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('wp_conditions'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Archive Pages
+   */
+
+  Optin.View.Conditions.archive_pages = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'archive_pages',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.archive_pages;
+    },
+    defaults: function defaults() {
+      return {
+        archive_pages: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('archive_pages').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('archive_pages').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('archive_pages'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**********************************************************************************************************************************************************/
+
+  /*********************************** WooCommerce Conditions ***********************************************************************************************/
+
+  /**********************************************************************************************************************************************************/
+
+  /**
+   * All WooCommerce Pages
+   */
+
+  Optin.View.Conditions.wc_pages = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    // eslint-disable-line camelcase
+    conditionId: 'wc_pages',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wc_pages;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'all' // all | none
+
+      };
+    },
+    getHeader: function getHeader() {
+      if ('none' === this.getAttribute('filter_type')) {
+        return optinVars.messages.condition_labels.none;
+      }
+
+      return optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    }
+  }));
+  /**
+   * WooCommerce Categories
+   */
+
+  Optin.View.Conditions.wc_categories = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    // eslint-disable-line camelcase
+    conditionId: 'wc_categories',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wc_categories;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        wc_categories: [] // eslint-disable-line camelcase
+
+      };
+    },
+    onInit: function onInit() {},
+    getHeader: function getHeader() {
+      if (this.getAttribute('wc_categories').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('wc_categories').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        tags: 'true',
+        width: '100%',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'wc_category'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * WooCommerce Tags
+   */
+
+  Optin.View.Conditions.wc_tags = ConditionBase.extend(_.extend({}, ToggleButtonTogglerMixin, {
+    // eslint-disable-line camelcase
+    conditionId: 'wc_tags',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wc_tags;
+    },
+    defaults: function defaults() {
+      return {
+        filter_type: 'except',
+        // except | only
+        wc_tags: [] // eslint-disable-line camelcase
+
+      };
+    },
+    onInit: function onInit() {},
+    getHeader: function getHeader() {
+      if (this.getAttribute('wc_tags').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('wc_tags').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.hustle-select-ajax').SUIselect2({
+        tags: 'true',
+        width: '100%',
+        dropdownCssClass: 'sui-select-dropdown',
+        ajax: {
+          url: ajaxurl,
+          delay: 250,
+          // wait 250 milliseconds before triggering the request
+          dataType: 'json',
+          type: 'POST',
+          data: function data(params) {
+            var query = {
+              action: 'get_new_condition_ids',
+              search: params.term,
+              postType: 'wc_tag'
+            };
+            return query;
+          },
+          processResults: function processResults(data) {
+            return {
+              results: data.data
+            };
+          },
+          cache: true
+        },
+        createTag: function createTag() {
+          return false;
+        }
+      }).on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  }));
+  /**
+   * WooCommerce Archive Pages
+   */
+
+  Optin.View.Conditions.wc_archive_pages = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'wc_archive_pages',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wc_archive_pages;
+    },
+    defaults: function defaults() {
+      return {
+        wc_archive_pages: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('wc_archive_pages').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('wc_archive_pages').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('wc_archive_pages'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * WooCommerce Static Pages
+   */
+
+  Optin.View.Conditions.wc_static_pages = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'wc_static_pages',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.wc_static_pages;
+    },
+    defaults: function defaults() {
+      return {
+        wc_static_pages: '',
+        filter_type: 'except' // except | only
+
+      };
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('wc_static_pages').length) {
+        return ('only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.only_these : optinVars.messages.condition_labels.except_these).replace('{number}', this.getAttribute('wc_static_pages').length);
+      }
+
+      return 'only' === this.getAttribute('filter_type') ? optinVars.messages.condition_labels.none : optinVars.messages.condition_labels.all;
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      this.$('.sui-select').val(this.getAttribute('wc_static_pages'));
+      SUI.select.init(this.$('.sui-select'));
+      this.$('.sui-select').on('select2:selecting', reenableScroll).on('select2:unselecting', reenableScroll);
+    }
+  });
+  /**
+   * Cookie is set
+   */
+
+  Optin.View.Conditions.cookie_set = ConditionBase.extend({
+    // eslint-disable-line camelcase
+    conditionId: 'cookie_set',
+    setProperties: function setProperties() {
+      this.title = optinVars.messages.conditions.cookie_set;
+    },
+    defaults: function defaults() {
+      return {
+        cookie_name: '',
+        cookie_value: '',
+        filter_type: 'exists',
+        // exists | doesnt_exists
+        cookie_value_conditions: 'anything'
+      };
+    },
+    changeInput: function changeInput(e) {
+      var el = e.target,
+          $el = $(el);
+      var updated,
+          $selectedTabInput,
+          $selectedTabInputValue,
+          $cookieNameInput,
+          val = $el.is('.sui-select') ? $el.val() : e.target.value;
+      e.stopImmediatePropagation(); // Because cookies condition uses two inputs based on which condition type is selected
+      // we have to update a value based on currently selected option.
+
+      if ('undefined' !== typeof $el.find(':selected').data('switcher-menu')) {
+        $selectedTabInput = $el.closest('.select-content-switcher-wrapper').find(".select-switcher-content[data-switcher-content=\"".concat($el.find(':selected').data('switcher-menu'), "\"] input"));
+        $selectedTabInputValue = $selectedTabInput.val();
+        $selectedTabInputValue = $selectedTabInputValue ? $selectedTabInputValue : '';
+        updated = this.updateAttribute('cookie_value', $selectedTabInputValue);
+      } // Let's make sure we use the proper cookie name.
+
+
+      if ('filter_type' === $el.data('attribute')) {
+        $cookieNameInput = $el.closest('.sui-side-tabs').find('.sui-tab-boxed:not(.active) input[data-attribute="cookie_name"]').val();
+        $el.closest('.sui-side-tabs').find('.sui-tab-boxed.active input[data-attribute="cookie_name"]').val($cookieNameInput);
+        updated = this.updateAttribute('cookie_name', $cookieNameInput);
+      }
+
+      if ($el.is(':checkbox')) {
+        val = $el.is(':checked');
+      } // skip for input search
+
+
+      if ($el.is('.select2-search__field')) {
+        return false;
+      }
+
+      var attribute = el.getAttribute('data-attribute');
+      updated = this.updateAttribute(attribute, val);
+      this.refreshLabel();
+      return updated;
+    },
+    getHeader: function getHeader() {
+      if (this.getAttribute('cookie_name')) {
+        if ('exists' === this.getAttribute('filter_type')) {
+          if ('anything' === this.getAttribute('cookie_value_conditions')) {
+            return optinVars.messages.condition_labels.cookie_anything.replace('{name}', this.getAttribute('cookie_name')).replace(/(<([^>]+)>)/ig, '');
+          }
+
+          return optinVars.messages.condition_labels.cookie_value.replace('{name}', this.getAttribute('cookie_name')).replace('{value_condition}', optinVars.wp_cookie_set[this.getAttribute('cookie_value_conditions')]).replace('{value}', this.getAttribute('cookie_value')).replace(/(<([^>]+)>)/ig, '');
+        }
+
+        return optinVars.messages.condition_labels.cookie_doesnt_exist.replace('{name}', this.getAttribute('cookie_name')).replace(/(<([^>]+)>)/ig, '');
+      }
+
+      return '-';
+    },
+    body: function body() {
+      return this.template(this.getData());
+    },
+    rendered: function rendered() {
+      SUI.select.init(this.$('.sui-select'));
+    }
+  });
+  $(document).trigger('hustleAddViewConditions', [ConditionBase]);
+})(jQuery);
 Hustle.define('imageUploader', function () {
   'use strict';
 
@@ -1242,10 +2437,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
   return Backbone.View.extend({
     el: '#hustle-dialog--edit-field',
     events: {
-      'click .sui-modal-overlay': 'closeModal',
-      'click .hustle-modal-close': 'closeModal',
       'change input[name="time_format"]': 'changeTimeFormat',
-      'click #hustle-apply-changes': 'applyChanges',
       'blur input[name="name"]': 'trimName',
       'change input': 'fieldUpdated',
       'click input[type="radio"]': 'fieldUpdated',
@@ -1260,19 +2452,12 @@ Hustle.define('Modals.Edit_Field', function ($) {
 
       this.fieldData = options.fieldData;
       this.model = options.model;
-      this.render(); // TODO: Use SUI close action when we update SUI.
-
-      setTimeout(function () {
-        _this.$el.siblings('.sui-modal-overlay').on('click', function () {
-          return _this.closeModal();
-        });
-      }, 500);
-      this.$el.on('keyup', function (e) {
-        var key = e.which || e.keyCode;
-
-        if (27 === key) {
-          _this.closeModal();
-        }
+      this.render();
+      this.$el.off('close').on('close', function () {
+        return _this.modalClosed();
+      });
+      this.$('#hustle-apply-changes').off('mouseup').on('mouseup', function (e) {
+        return _this.applyChanges(e);
       });
     },
     render: function render() {
@@ -1284,10 +2469,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
 
       this.$('.hustle-data-pane').first().trigger('click'); // Make the search box work within the modal.
 
-      this.$('.sui-select').SUIselect2({
-        dropdownParent: $('#hustle-dialog--edit-field .sui-box'),
-        dropdownCssClass: 'sui-select-dropdown'
-      });
+      SUI.select.init(this.$('.sui-select'));
     },
     renderHeader: function renderHeader() {
       var $tagContainer = this.$('.hustle-field-tag-container');
@@ -1401,7 +2583,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
           dataValue = $this.is(':checkbox') ? $this.is(':checked') : $this.val();
       this.changed[dataName] = dataValue;
     },
-    closeModal: function closeModal() {
+    modalClosed: function modalClosed() {
       this.undelegateEvents();
       this.stopListening();
     },
@@ -1446,7 +2628,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
      */
     trimName: function trimName(e) {
       var $input = this.$(e.target),
-          newVal = $.trim($input.val()).replace(/ /g, '_');
+          newVal = $input.val().trim().replace(/ /g, '_');
       $input.val(newVal);
     },
 
@@ -1459,8 +2641,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
     applyChanges: function applyChanges(e) {
       // TODO: do validation
       // TODO: keep consistency with how stuff is saved in visibility conditions
-      var self = this,
-          $button = this.$(e.target),
+      var $button = this.$(e.target),
           formFields = Object.assign({}, this.model.get('form_elements')); // if gdpr message
 
       if ('gdpr' === this.field.type && 'undefined' !== typeof tinyMCE) {
@@ -1494,10 +2675,30 @@ Hustle.define('Modals.Edit_Field', function ($) {
         if ('name' in this.changed && 'email' !== oldField.name && 'email' === this.field.name || 'name' in this.changed && !this.field.name.trim().length) {
           this.field.name = oldField.name;
           delete this.changed.name;
+        }
+
+        if ('email' === oldField.name) {
+          this.field.name = 'email';
+          delete this.changed.name;
+        }
+
+        if (this.field.name !== oldField.name) {
+          // Check if the new name already in use.
+          var newOriginalName = this.field.name;
+          var i = 0,
+              newName = newOriginalName;
+
+          while (newName in formFields) {
+            i++;
+            newName = newOriginalName + '-' + i;
+          }
+
+          this.field.name = newName;
+          this.changed.name = newName;
         } // "Name" is the unique identifier. If it changed, return and let the callback handle it.
 
 
-        if (!('name' in this.changed) && 'email' !== oldField.name) {
+        if (!('name' in this.changed)) {
           // Update this field.
           formFields[this.field.name] = this.field; // Alternative to deep cloning the formFields object to trigger 'change' in the model.
 
@@ -1505,9 +2706,6 @@ Hustle.define('Modals.Edit_Field', function ($) {
             silent: true
           });
           this.model.set('form_elements', formFields);
-        } else if ('email' === oldField.name) {
-          this.field.name = 'email';
-          delete this.changed.name;
         }
 
         this.trigger('field:updated', this.field, this.changed, oldField);
@@ -1515,8 +2713,7 @@ Hustle.define('Modals.Edit_Field', function ($) {
 
       $button.addClass('sui-button-onload');
       setTimeout(function () {
-        self.closeModal();
-        $button.removeClass('sui-button-onload');
+        return $button.removeClass('sui-button-onload');
       }, 300);
     }
   });
@@ -1532,6 +2729,8 @@ Hustle.define('Modals.EditSchedule', function ($) {
       'click #hustle-schedule-save': 'saveSchedule',
       'click .hustle-schedule-cancel': 'cancel',
       'click .hustle-schedule-delete': 'openDeleteModal',
+      'change .hustle-datepicker-field[name=start_date]': 'changeMinDate',
+      'change [name=not_schedule_start]': 'changeMinDate',
       // Change events.
       'change .hustle-checkbox-with-dependencies input[type="checkbox"]': 'checkboxWithDependenciesChanged',
       'change select[name="custom_timezone"]': 'customTimezoneChanged'
@@ -1552,11 +2751,20 @@ Hustle.define('Modals.EditSchedule', function ($) {
         dateFormat: 'm/d/yy'
       }); // Make the search box work within the modal.
 
-      this.$('.sui-select').SUIselect2({
-        dropdownParent: $("#".concat(this.dialogId, " .sui-box")),
-        dropdownCssClass: 'sui-select-dropdown'
-      });
+      SUI.select.init(this.$('.sui-select'));
+      this.changeMinDate();
       SUI.openModal(modalId, focusAfterClosed, focusWhenOpen, hasOverlayMask);
+    },
+    changeMinDate: function changeMinDate() {
+      var minDate;
+
+      if (!$('[name=not_schedule_end]').is(':checked') && !$('[name=not_schedule_start]').is(':checked')) {
+        minDate = $('[name=start_date]').val();
+      }
+
+      $('.hustle-datepicker-field[name=end_date]').datepicker('option', {
+        minDate: minDate
+      });
     },
     renderContent: function renderContent() {
       var template = Optin.template('hustle-schedule-dialog-content-tpl'),
@@ -1756,16 +2964,14 @@ Hustle.define('Modals.Optin_Fields', function () {
     selectedFields: [],
     events: {
       'click .sui-box-selector input': 'selectFields',
-      'click .hustle-modal-close': 'closeModalActions',
       'click #hustle-insert-fields': 'insertFields'
     },
     initialize: function initialize(options) {
       var _this = this;
 
       this.model = options.model;
-      this.selectedFields = []; // The overlay is outside the view, but we need to do some actions on close.
-
-      this.$el.siblings('.sui-modal-overlay').on('click', function () {
+      this.selectedFields = [];
+      this.$el.off('close').on('close', function () {
         return _this.closeModalActions();
       });
     },
@@ -1783,15 +2989,14 @@ Hustle.define('Modals.Optin_Fields', function () {
       }
     },
     insertFields: function insertFields(e) {
-      var self = this,
-          $button = this.$(e.target);
+      var // self = this,
+      $button = this.$(e.target);
       $button.addClass('sui-button-onload');
       this.trigger('fields:added', this.selectedFields);
       setTimeout(function () {
         $button.removeClass('sui-button-onload');
-        self.closeModalActions();
         SUI.closeModal();
-      }, 500);
+      }, 300);
     },
     closeModalActions: function closeModalActions() {
       this.undelegateEvents();
@@ -1977,13 +3182,10 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
     el: '.sui-wrap-hustle',
     logShown: false,
     moduleType: '',
-    singleModuleActionNonce: '',
     previewView: null,
     _events: {
       // Modals.
       'click .hustle-create-module': 'openCreateModal',
-      'click .hustle-delete-module-button': 'openDeleteModal',
-      'click .hustle-module-tracking-reset-button': 'openResetTrackingModal',
       'click .hustle-manage-tracking-button': 'openManageTrackingModal',
       'click .hustle-import-module-button': 'openImportModal',
       'click .hustle-upgrade-modal-button': 'openUpgradeModal',
@@ -2001,12 +3203,9 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
       this.events = $.extend(true, {}, this.events, this._events);
       this.delegateEvents();
       this.moduleType = opts.moduleType;
-      this.singleModuleActionNonce = optinVars.single_module_action_nonce;
       var newModuleModal = Hustle.get('Modals.New_Module'),
           importModal = Hustle.get('Modals.ImportModule');
-      this.newModuleModal = new newModuleModal({
-        moduleType: this.moduleType
-      });
+      this.newModuleModal = new newModuleModal(this.moduleType, this.getPreviewView());
       this.ImportModal = new importModal(); // Why this doesn't work when added in events
 
       $('.sui-accordion-item-header').on('click', $.proxy(this.openTrackingChart, this)); // Open the tracking chart when the class is present. Used when coming from 'view tracking' in Dashboard.
@@ -2044,6 +3243,17 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
         if ('undefined' !== typeof message && message.length) {
           Module.Notification.open(status, message, closeTime);
         }
+      } // View module stats.
+
+
+      var viewId = Module.Utils.getUrlParam('view-stats');
+
+      if (viewId) {
+        var $header = $('.hustle-list .sui-accordion-item-header[data-id="' + viewId + '"]');
+        $header.trigger('click');
+        $('html, body').animate({
+          scrollTop: $header.closest('.sui-accordion-item').offset().top - 40
+        }, 1000);
       }
     },
     handleSingleModuleAction: function handleSingleModuleAction(e) {
@@ -2241,19 +3451,6 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
 
       SUI.openModal('hustle-modal--upgrade-to-pro', focusOnClose, 'hustle-button--upgrade-to-pro', true);
     },
-    openDeleteModal: function openDeleteModal(e) {
-      e.preventDefault();
-      var $this = $(e.currentTarget),
-          data = {
-        id: $this.data('id'),
-        nonce: $this.data('nonce'),
-        action: 'delete',
-        title: $this.data('title'),
-        description: $this.data('description'),
-        actionClass: 'hustle-single-module-button-action'
-      };
-      Module.deleteModal.open(data, $this[0]);
-    },
     openImportModal: function openImportModal(e) {
       var $this = $(e.currentTarget);
 
@@ -2270,19 +3467,6 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
      * @since 4.0.0
      * @param {Event} e Event.
      */
-    openResetTrackingModal: function openResetTrackingModal(e) {
-      e.preventDefault();
-      var $this = $(e.target),
-          data = {
-        id: $this.data('module-id'),
-        nonce: this.singleModuleActionNonce,
-        action: 'reset-tracking',
-        title: $this.data('title'),
-        description: $this.data('description'),
-        actionClass: 'hustle-single-module-button-action'
-      };
-      Module.deleteModal.open(data, $this[0]);
-    },
     openManageTrackingModal: function openManageTrackingModal(e) {
       var template = Optin.template('hustle-manage-tracking-form-tpl'),
           $modal = $('#hustle-dialog--manage-tracking'),
@@ -2313,7 +3497,7 @@ function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len 
         var _this = this;
 
         $container.find('select.hustle-conversion-type').each(function (i, el) {
-          SUI.suiSelect(el);
+          SUI.select.init($(el));
           $(el).on('change.select2', function (e) {
             return _this.conversionTypeChanged(e, $container);
           });
@@ -2470,6 +3654,7 @@ Hustle.define('Modals.New_Module', function ($) {
 
   return Backbone.View.extend({
     el: '#hustle-dialog--create-new-module',
+    previewView: null,
     moduleType: '',
     moduleName: false,
     moduleMode: 'optin',
@@ -2484,10 +3669,12 @@ Hustle.define('Modals.New_Module', function ($) {
       'change input[name="mode"]': 'modeChanged',
       'click #hustle-go-to-templates-button': 'goToTemplatesStep',
       'click .hustle-template-select-button': 'createNonSshare',
+      'click .hustle-template-preview-button': 'previewTemplate',
       'click .hustle-modal-go-back': 'goToStepOne'
     },
-    initialize: function initialize(args) {
-      this.moduleType = args.moduleType;
+    initialize: function initialize(moduleType, previewView) {
+      this.moduleType = moduleType;
+      this.previewView = previewView;
       var nextButtonSelector = 'social_sharing' !== this.moduleType ? '#hustle-go-to-templates-button' : '#hustle-create-module';
       this.$moveForwardButton = this.$(nextButtonSelector);
     },
@@ -2587,6 +3774,15 @@ Hustle.define('Modals.New_Module', function ($) {
         $button.removeClass('sui-button-onload');
         Module.Notification.open('error', errorMessage, false);
       });
+    },
+    previewTemplate: function previewTemplate(e) {
+      var $button = $(e.currentTarget);
+      this.previewView.open(0, $button.data('module-type'), $button, {
+        module_name: $button.data('name'),
+        module_type: $button.data('module-type'),
+        template_name: $button.data('template'),
+        template_mode: $button.data('module-mode')
+      });
     }
   });
 });
@@ -2631,7 +3827,7 @@ Hustle.define('Modals.ImportModule', function ($) {
         $submitButton.attr('data-module-id', moduleId);
       }
 
-      SUI.openModal('hustle-dialog--import', e.currentTarget, this.$el.find('.hustle-modal-close')[0], true);
+      SUI.openModal('hustle-dialog--import', e.currentTarget, 'hustle-import-file-input', true);
     },
     selectUploadFile: function selectUploadFile(e) {
       e.preventDefault();
@@ -2778,6 +3974,12 @@ Hustle.define('Mixins.Model_Updater', function ($) {
     }
   };
 });
+function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
 /* global moment, sprintf */
 Hustle.define('Mixins.Module_Settings', function ($) {
   'use strict';
@@ -2820,7 +4022,10 @@ Hustle.define('Mixins.Module_Settings', function ($) {
     },
     render: function render() {
       this.renderScheduleSection();
-      this.editScheduleView.on('schedule:updated', $.proxy(this.renderScheduleSection, this));
+      this.editScheduleView.on('schedule:updated', $.proxy(this.renderScheduleSection, this)); // Order matters. Tags will show up in disabled accordions if calling 'toggleTriggerAccordionsDisabled' first.
+
+      this.initTriggerAccordionsTag();
+      this.toggleTriggerAccordionsDisabled();
     },
     renderScheduleSection: function renderScheduleSection() {
       var _this = this;
@@ -2952,22 +4157,182 @@ Hustle.define('Mixins.Module_Settings', function ($) {
       }
     },
     triggersViewChanged: function triggersViewChanged(model) {
-      var changed = model.changed;
+      var changed = model.changed,
+          changedKey = Object.keys(changed)[0];
 
-      if ('on_scroll' in changed) {
-        var $scrolledContentDiv = this.$('#hustle-on-scroll--scrolled-toggle-wrapper'),
-            $selectorContentDiv = this.$('#hustle-on-scroll--selector-toggle-wrapper');
+      if ('trigger' === changedKey) {
+        this.toggleTriggerAccordionsDisabled();
+      } else {
+        var $changedInput = this.$("[name=\"trigger_".concat(changedKey, "\"]")); // TODO: standardize this. Some inputs have "trigger_" prefixed to their key.
+        // The sidetabs have "triggers.".
 
-        if ($scrolledContentDiv.length || $selectorContentDiv.length) {
-          if ('scrolled' === changed.on_scroll) {
-            $scrolledContentDiv.removeClass('sui-hidden');
-            $selectorContentDiv.addClass('sui-hidden');
-          } else {
-            $selectorContentDiv.removeClass('sui-hidden');
-            $scrolledContentDiv.addClass('sui-hidden');
-          }
+        if (!$changedInput.length) {
+          $changedInput = this.$("[name=\"triggers.".concat(changedKey, "\"]"));
+        }
+
+        this.updateTriggerTag($changedInput.closest('.hustle-trigger-accordion-item'));
+
+        if ('on_scroll' === changedKey) {
+          var scrollPast = this.triggersModel.get('on_scroll'),
+              hide = 'scrolled' === scrollPast ? 'selector' : 'scrolled',
+              show = 'scrolled' === scrollPast ? 'scrolled' : 'selector';
+          this.$("#hustle-on-scroll--".concat(hide, "-toggle-wrapper")).addClass('sui-hidden');
+          this.$("#hustle-on-scroll--".concat(show, "-toggle-wrapper")).removeClass('sui-hidden');
         }
       }
+    },
+    toggleTriggerAccordionsDisabled: function toggleTriggerAccordionsDisabled() {
+      var triggerAccordions = this.$('.hustle-trigger-accordion-item'),
+          selectedTriggers = this.triggersModel.get('trigger');
+
+      var toggleDisabled = function toggleDisabled($accordion) {
+        var accordionTrigger = $accordion.data('trigger'),
+            $optionTag = $accordion.find('.hustle-trigger-tag'),
+            isActive = selectedTriggers.includes(accordionTrigger);
+
+        if (isActive) {
+          $optionTag.show();
+          $accordion.removeClass('sui-accordion-item--disabled');
+        } else {
+          $optionTag.hide();
+          $accordion.addClass('sui-accordion-item--disabled');
+        }
+      };
+
+      var _iterator = _createForOfIteratorHelper(triggerAccordions),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var accordion = _step.value;
+          toggleDisabled($(accordion));
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+    },
+    initTriggerAccordionsTag: function initTriggerAccordionsTag() {
+      var triggerAccordions = this.$('.hustle-trigger-accordion-item');
+
+      var _iterator2 = _createForOfIteratorHelper(triggerAccordions),
+          _step2;
+
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var accordion = _step2.value;
+          this.updateTriggerTag($(accordion));
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    },
+    updateTriggerTag: function updateTriggerTag($triggerAccordion) {
+      var trigger = $triggerAccordion.data('trigger'),
+          $accordionTitle = $triggerAccordion.find('.sui-accordion-item-title'),
+          $tag = $triggerAccordion.find('.hustle-trigger-tag');
+
+      if ($tag.length) {
+        $tag.remove();
+      }
+
+      var tagTextArray = this.getTriggerTagText(trigger);
+
+      var _iterator3 = _createForOfIteratorHelper(tagTextArray),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var text = _step3.value;
+
+          if (text.trim().length) {
+            var newTag = "<span class=\"sui-tag hustle-trigger-tag\">".concat(text, "</span>");
+            $accordionTitle.append(newTag);
+          }
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+    },
+    getTriggerTagText: function getTriggerTagText(trigger) {
+      var tagText = [];
+
+      if ('scroll' === trigger) {
+        tagText = this.getTriggerTagTextForScroll();
+      } else if ('click' === trigger) {
+        tagText = this.getTriggerTagTextForClick();
+      } else {
+        tagText = this.getTriggerTagTextForDelays(trigger);
+      }
+
+      return tagText;
+    },
+    getTriggerTagTextForScroll: function getTriggerTagTextForScroll() {
+      var scrollPast = this.triggersModel.get('on_scroll');
+      var selected, tagBase;
+
+      if ('selector' === scrollPast) {
+        selected = _.escape(this.triggersModel.get('on_scroll_css_selector'));
+        tagBase = optinVars.triggers.scroll_element_tag;
+      } else {
+        selected = this.triggersModel.get('on_scroll_page_percent');
+        tagBase = optinVars.triggers.scroll_percentage_tag;
+      }
+
+      var text = tagBase.replace('{value}', selected),
+          textArray = [text];
+      return textArray;
+    },
+    getTriggerTagTextForClick: function getTriggerTagTextForClick() {
+      var textArray = [],
+          isElementEnabled = '1' === this.triggersModel.get('enable_on_click_element'),
+          isShortcodeEnabled = '1' === this.triggersModel.get('enable_on_click_shortcode');
+
+      if (isElementEnabled) {
+        var savedElement = _.escape(this.triggersModel.get('on_click_element'));
+
+        textArray.push(savedElement);
+      }
+
+      if (isShortcodeEnabled) {
+        textArray.push('[wd_hustle]');
+      }
+
+      return textArray;
+    },
+    getTriggerTagTextForDelays: function getTriggerTagTextForDelays(trigger) {
+      var triggerDelayOptions = {
+        time: {
+          time: 'on_time_delay',
+          unit: 'on_time_unit'
+        },
+        exit_intent: {
+          time: 'on_exit_intent_delayed_time',
+          unit: 'on_exit_intent_delayed_unit'
+        },
+        adblock: {
+          time: 'on_adblock_delay',
+          unit: 'on_adblock_delay_unit'
+        }
+      },
+          tagOptions = triggerDelayOptions[trigger];
+      var selectedTime = this.triggersModel.get(tagOptions.time);
+      var text = optinVars.triggers.immediately_tag;
+
+      if ('0' !== selectedTime) {
+        var selectedUnit = this.triggersModel.get(tagOptions.unit),
+            translatedUnit = optinVars.triggers[selectedUnit],
+            delayTagBase = optinVars.triggers.delayed_tag;
+        text = delayTagBase.replace('{time}', selectedTime).replace('{unit}', translatedUnit);
+      }
+
+      var textArray = [text];
+      return textArray;
     }
   });
 });
@@ -3008,8 +4373,40 @@ Hustle.define('Mixins.Module_Content', function () {
         }
       }
     },
+
+    /**
+     * Updates the active container `aria-labelledby` attr so it matches the active button.
+     * For accessibility.
+     * We should make this behavior reusable. Maybe it should be handled it sui.
+     *
+     * @since 4.3.0
+     */
+    updateLabelledbyCtaContent: function updateLabelledbyCtaContent() {
+      var selectedLabelForAttr = this.$('input[name="show_cta"]:checked').attr('id'),
+          newLabeledBy = this.$("[data-label-for=\"".concat(selectedLabelForAttr, "\"]")).attr('id');
+      this.$('#tab-content-cta-button-one').attr('aria-labelledby', newLabeledBy);
+    },
     modelUpdated: function modelUpdated(model) {
+      var changedKey = Object.keys(model.changed)[0],
+          actionToDo = this.getActionOnModelUpdated(changedKey);
+
+      if ('undefined' !== typeof actionToDo) {
+        actionToDo(model.changed);
+      }
+
       Hustle.Events.trigger('modules.view.contentUpdate', model.changed);
+    },
+    getActionOnModelUpdated: function getActionOnModelUpdated(changedKey) {
+      var _this = this;
+
+      var functions = {
+        show_cta: function show_cta(changed) {
+          if ('0' !== changed.show_cta) {
+            Module.Utils.showHideDependencyOnSelectChange(_this.$('#hustle-content-cta-options-container'));
+          }
+        }
+      };
+      return functions[changedKey];
     }
   });
 });
@@ -3059,7 +4456,6 @@ Hustle.define('Mixins.Module_Design', function ($) {
       'change [data-linked-fields]': 'linkedFieldsChanged',
       'change .hustle-font-family-select': 'fontFamilyUpdated',
       'change select[name="feature_image_width_option"]': 'updateFeatureImageWidth',
-      'click .sui-accordion-item': 'initiateFontFamilySelectOnAccordionClick',
       'click .hustle-button-apply-global-font': 'applyGlobalFontClicked',
       'change .hustle-required-field': 'requiredFieldChanged'
     },
@@ -3081,6 +4477,16 @@ Hustle.define('Mixins.Module_Design', function ($) {
       Hustle.Events.on('modules.view.integrationsUpdate', function (changed) {
         return _this.integrationsModelUpdate(changed);
       });
+      this.$('#hustle-color-palettes-list').on('select2:open', function () {
+        return _this.addCreatePalettesLink();
+      }); // Initialize wpColorPickers only before using them.
+
+      this.$('#tab-content-customize_colors-custom .sui-accordion-item').on('click', function (e) {
+        return _this.initiateColorPickers(e);
+      });
+      this.$('.hustle-typography-elements-row .sui-accordion-item-header').on('click', function (e) {
+        return _this.initiateFontFamilySelectOnAccordionClick(e);
+      });
       this.setFontFamilyOptions();
       this.setVisibilityOnRender();
     },
@@ -3090,8 +4496,6 @@ Hustle.define('Mixins.Module_Design', function ($) {
       this.setImageAligmentOptions();
       this.toggleFeatureImageSizeSettingRow();
       this.toggleFeatureImageSizeRows();
-      this.createPickers();
-      this.addCreatePalettesLink();
       this.cssEditor = this.createEditor('hustle_custom_css');
       this.setVanillaThemeVisibility(); // Hide other Options for Mobile Feature Image.
 
@@ -3146,7 +4550,7 @@ Hustle.define('Mixins.Module_Design', function ($) {
     },
     initiateFontFamilySelectOnAccordionClick: function initiateFontFamilySelectOnAccordionClick(e) {
       var self = this;
-      $(e.currentTarget).find('.hustle-font-family-select').each(function () {
+      $(e.currentTarget).siblings('.sui-accordion-item-body').find('.hustle-font-family-select.sui-disabled').each(function () {
         self.initiateFontFamilySelects($(this));
         self.toggleCustomFontInput($(this));
       });
@@ -3157,11 +4561,10 @@ Hustle.define('Mixins.Module_Design', function ($) {
       if ($selects.data('fonts-loaded') === false || force) {
         $selects.SUIselect2('destroy');
         $selects.SUIselect2({
-          dropdownCssClass: 'sui-select-dropdown',
           data: this.fontFamiliesOptions
         });
         $selects.removeClass('sui-disabled');
-        $selects.removeProp('disabled');
+        $selects.prop('disabled', false);
         $selects.data('fonts-loaded', true);
       }
     },
@@ -3206,13 +4609,11 @@ Hustle.define('Mixins.Module_Design', function ($) {
         $weightSelect.html(weightSelectOptions);
         $weightSelect.SUIselect2('destroy');
         $weightSelect.SUIselect2({
-          dropdownCssClass: 'sui-select-dropdown',
           data: weightSelectOptions
         });
         $weightSelectMobile.html(weightSelectOptions);
         $weightSelectMobile.SUIselect2('destroy');
         $weightSelectMobile.SUIselect2({
-          dropdownCssClass: 'sui-select-dropdown',
           data: weightSelectOptions
         });
       }
@@ -3292,7 +4693,6 @@ Hustle.define('Mixins.Module_Design', function ($) {
         $weightSelect.html(weightSelectOptions);
         $weightSelect.SUIselect2('destroy');
         $weightSelect.SUIselect2({
-          dropdownCssClass: 'sui-select-dropdown',
           data: weightSelectOptions
         });
       }
@@ -3323,17 +4723,26 @@ Hustle.define('Mixins.Module_Design', function ($) {
         $deviceTabsContent.find('#tab-content-device_settings-mobile').attr('aria-hidden', true);
       } else {
         $deviceTabs.addClass('hustle-mobile-enabled');
-        $deviceTabsMenu.removeAttr('aria-hidden');
-        $deviceTabsMenu.removeAttr('hidden');
+        $deviceTabsMenu.prop('aria-hidden', false);
+        $deviceTabsMenu.prop('hidden', false);
         $deviceTabsContent.find('#tab-content-device_settings-desktop').attr('role', 'tabpanel');
-        $deviceTabsContent.find('#tab-content-device_settings-mobile').removeAttr('aria-hidden');
+        $deviceTabsContent.find('#tab-content-device_settings-mobile').prop('aria-hidden', false);
       }
     },
     // ============================================================
     // Color Pickers
-    createPickers: function createPickers() {
-      var self = this,
-          $suiPickerInputs = this.$('.sui-colorpicker-input');
+    initiateColorPickers: function initiateColorPickers(e) {
+      var $accordion = $(e.currentTarget);
+      var initClass = 'hustle-colorpickers-initialized',
+          pickers = $accordion.find('.sui-colorpicker-input');
+
+      if (!$accordion.hasClass(initClass) && pickers.length) {
+        $accordion.addClass(initClass);
+        this.createPickers(pickers);
+      }
+    },
+    createPickers: function createPickers($suiPickerInputs) {
+      var self = this;
       $suiPickerInputs.wpColorPicker({
         change: function change(event, ui) {
           var $this = $(this); // Prevent the model from being marked as changed on load.
@@ -3484,17 +4893,23 @@ Hustle.define('Mixins.Module_Design', function ($) {
 
     /**
      * Add the "Create custom palette button" to the existing palettes dropdown.
+     * The select's options are re-rendered every time they're opened.
      *
      * @since 4.0.3
      */
     addCreatePalettesLink: function addCreatePalettesLink() {
-      var $link = this.$('#hustle-create-palette-link'),
-          $selectPaletteContainer = this.$('.select-container.hui-select-palette .list-results'),
-          $selectButton = $selectPaletteContainer.find('.hui-button');
+      var _this4 = this;
 
-      if (!$selectButton.length) {
-        $selectPaletteContainer.append($link);
-      }
+      // Delay appending this so it's not overriden by select2's options.
+      setTimeout(function () {
+        var $link = _this4.$('#hustle-create-palette-link li'),
+            $selectPaletteContainer = $('#select2-hustle-color-palettes-list-results'),
+            $selectButton = $selectPaletteContainer.find('.hui-button');
+
+        if (!$selectButton.length) {
+          $link.clone().appendTo($selectPaletteContainer);
+        }
+      }, 500);
     },
     // ============================================================
     // CSS Editor
@@ -3545,44 +4960,44 @@ Hustle.define('Mixins.Module_Design', function ($) {
       }
     },
     getActionOnModelUpdated: function getActionOnModelUpdated(changedKey) {
-      var _this4 = this;
+      var _this5 = this;
 
       var functions = {
         color_palette: function color_palette() {
-          return _this4.updatePickers(_this4.model.changed.color_palette);
+          return _this5.updatePickers(_this5.model.changed.color_palette);
         },
         cta_buttons_alignment: function cta_buttons_alignment() {
-          return _this4.toggleCtaButtonsTextAlignment();
+          return _this5.toggleCtaButtonsTextAlignment();
         },
         cta_buttons_alignment_mobile: function cta_buttons_alignment_mobile() {
-          return _this4.toggleCtaButtonsTextAlignment();
+          return _this5.toggleCtaButtonsTextAlignment();
         },
         enable_mobile_settings: function enable_mobile_settings() {
-          return _this4.toggleDeviceTabs();
+          return _this5.toggleDeviceTabs();
         },
         feature_image_hide_on_mobile: function feature_image_hide_on_mobile(prop) {
-          return _this4.hideOtherOptionsInAcordionItem(prop, '1' === _this4.model.get(prop));
+          return _this5.hideOtherOptionsInAcordionItem(prop, '1' === _this5.model.get(prop));
         },
         feature_image_fit: function feature_image_fit(prop) {
-          return _this4.toggleFeatureImageSizeSettingRow(prop);
+          return _this5.toggleFeatureImageSizeSettingRow(prop);
         },
         // Hide other Options for Mobile Feature Image.
         feature_image_fit_mobile: function feature_image_fit_mobile(prop) {
-          return _this4.toggleFeatureImageSizeSettingRow(prop);
+          return _this5.toggleFeatureImageSizeSettingRow(prop);
         },
         feature_image_position: function feature_image_position() {
-          return _this4.toggleFeatureImageSizeRows();
+          return _this5.toggleFeatureImageSizeRows();
         },
         form_layout: function form_layout() {
-          _this4.setImageAligmentOptions();
+          _this5.setImageAligmentOptions();
 
-          _this4.toggleFeatureImageSizeRows();
+          _this5.toggleFeatureImageSizeRows();
         },
         style: function style() {
-          return _this4.handleStyleChange();
+          return _this5.handleStyleChange();
         },
         use_vanilla: function use_vanilla() {
-          return _this4.setVanillaThemeVisibility();
+          return _this5.setVanillaThemeVisibility();
         }
       };
       return functions[changedKey];
@@ -3861,33 +5276,33 @@ Hustle.define('Mixins.Module_Design', function ($) {
       this.contentPropIsShown.main_content = '' !== optinVars.current.content.main_content;
     },
     getActionOnContentModelUpdated: function getActionOnContentModelUpdated(changedKey) {
-      var _this5 = this;
+      var _this6 = this;
 
       var functions = {
         // Uploading a featured image makes the "Featured Image settings" show up in the "Appearance" tab.
         background_image: function background_image(changed) {
-          return _this5.contentPropIsShown.background_image = '' !== changed.background_image;
+          return _this6.contentPropIsShown.background_image = '' !== changed.background_image;
         },
         // Update this view when "Feature image" is changed in the Content tab.
         feature_image: function feature_image(changed) {
-          _this5.contentPropIsShown.feature_image = '' !== changed.feature_image;
+          _this6.contentPropIsShown.feature_image = '' !== changed.feature_image;
 
-          _this5.hideOtherOptionsInAcordionItem('feature_image_position', !_this5.contentPropIsShown.feature_image);
+          _this6.hideOtherOptionsInAcordionItem('feature_image_position', !_this6.contentPropIsShown.feature_image);
         },
         main_content: function main_content(changed) {
-          return _this5.contentPropIsShown.main_content = '' !== changed.main_content;
+          return _this6.contentPropIsShown.main_content = '' !== changed.main_content;
         },
         show_cta: function show_cta(changed) {
-          return _this5.contentPropIsShown.show_cta = '0' !== changed.show_cta;
+          return _this6.contentPropIsShown.show_cta = '0' !== changed.show_cta;
         },
         show_never_see_link: function show_never_see_link(changed) {
-          return _this5.contentPropIsShown.show_never_see_link = '0' !== changed.show_never_see_link;
+          return _this6.contentPropIsShown.show_never_see_link = '0' !== changed.show_never_see_link;
         },
         sub_title: function sub_title(changed) {
-          return _this5.contentPropIsShown.sub_title = '' !== changed.sub_title;
+          return _this6.contentPropIsShown.sub_title = '' !== changed.sub_title;
         },
         title: function title(changed) {
-          return _this5.contentPropIsShown.title = '' !== changed.title;
+          return _this6.contentPropIsShown.title = '' !== changed.title;
         }
       };
       return functions[changedKey];
@@ -3995,14 +5410,14 @@ Hustle.define('Mixins.Module_Design', function ($) {
       }
     },
     getActionOnEmailsModelUpdated: function getActionOnEmailsModelUpdated(changedKey) {
-      var _this6 = this;
+      var _this7 = this;
 
       var functions = {
         form_elements: function form_elements(changed) {
-          return _this6.formFieldsUpdated(changed);
+          return _this7.formFieldsUpdated(changed);
         },
         after_successful_submission: function after_successful_submission(changed) {
-          return _this6.setSucccessfulMessageOptionVisibility(changed);
+          return _this7.setSucccessfulMessageOptionVisibility(changed);
         }
       };
       return functions[changedKey];
@@ -4164,6 +5579,26 @@ Hustle.define('Mixins.Module_Emails', function ($) {
         containment: '.sui-box-builder'
       });
       sortableContainer.on('sortupdate', $.proxy(self.fieldsOrderChanged, self, sortableContainer));
+      this.$('#hustle-email-day').datepicker({
+        beforeShow: function beforeShow() {
+          $('#ui-datepicker-div').addClass('sui-calendar');
+        },
+        dateFormat: 'MM dd, yy'
+      });
+      this.$('#hustle-email-time').timepicker({
+        timeFormat: 'h:mm p',
+        interval: '1',
+        minTime: '0',
+        maxTime: '11:59pm',
+        defaultTime: null,
+        startTime: '00:00',
+        dynamic: false,
+        dropdown: true,
+        scrollbar: true,
+        change: function change() {
+          $('#hustle-email-time').trigger('change');
+        }
+      });
       this.updateDynamicValueFields();
       return this;
     },
@@ -4474,6 +5909,14 @@ Hustle.define('Mixins.Module_Emails', function ($) {
      * @param {Object} field Properties of the field.
      */
     addFieldToDynamicValueFields: function addFieldToDynamicValueFields(field) {
+      // escape name and label.
+      var temp;
+      temp = $('<div>' + field.name + '</div>');
+      temp.find('script').remove();
+      field.name = temp.html();
+      temp = $('<div>' + field.label + '</div>');
+      temp.find('script').remove();
+      field.label = temp.html();
       var option = $('<option/>', {
         value: field.name,
         'data-content': '{' + field.name + '}'
@@ -4930,7 +6373,9 @@ Hustle.define('Mixins.Module_Visibility', function ($) {
 
       }));
 
-      $(html).insertBefore(targetContainer.find('.hustle-add-new-visibility-group'));
+      var $group = $(html);
+      $group.insertBefore(targetContainer.find('.hustle-add-new-visibility-group'));
+      SUI.select.init($group.find('.sui-select'));
       this.activeConditions[groupId] = {}; // Render each of this group's conditions.
 
       var self = this,
@@ -5153,7 +6598,9 @@ Hustle.define('Mixins.Wizard_View', function ($, doc, win) {
       'click .wpmudev-button-navigation': 'doButtonNavigation',
       'change #hustle-module-name': 'updateModuleName',
       'click #hustle-preview-module': 'previewModule',
-      'blur input.sui-form-control': 'removeErrorMessage'
+      'blur input.sui-form-control': 'removeErrorMessage',
+      // Module's actions.
+      'click .hustle-single-module-button-action': 'handleSingleModuleAction'
     },
     // ============================================================
     // Initialize Wizard
@@ -5212,4 +6659,3952 @@ Hustle.define('Mixins.Wizard_View', function ($, doc, win) {
 
       this.emailsView.delegateEvents(); // Integrations view
 
-      this.integrationsView.d
+      this.integrationsView.delegateEvents(); // Appearance view
+
+      this.designView.delegateEvents(); // Display Options View
+
+      if ('embedded' === this.moduleType) {
+        this.displayView.delegateEvents();
+      } // Visibility view
+
+
+      this.visibilityView.delegateEvents();
+      this.visibilityView.afterRender(); // Behavior view
+
+      this.settingsView.delegateEvents();
+    },
+    // ============================================================
+    // Side Navigation
+    sidenav: function sidenav(e) {
+      e.preventDefault();
+      var tabName = $(e.target).data('tab');
+
+      if (tabName) {
+        this.goToTab(tabName, true);
+      }
+    },
+    sidenavMobile: function sidenavMobile(e) {
+      var tabName = $(e.currentTarget).val();
+
+      if (tabName) {
+        this.goToTab(tabName, true);
+      }
+    },
+    goToTab: function goToTab(tabName, updateHistory) {
+      var $tab = this.$el.find('a[data-tab="' + tabName + '"]'),
+          $sidenav = $tab.closest('.sui-vertical-tabs'),
+          $tabs = $sidenav.find('.sui-vertical-tab a'),
+          $content = this.$el.find('.sui-box[data-tab]'),
+          $current = this.$el.find('.sui-box[data-tab="' + tabName + '"]');
+
+      if (updateHistory) {
+        // The module id must be defined at this point.
+        // If it's not, the user should be redirected to the listing page to properly create a module before reaching this.
+        var state = {
+          tabName: tabName
+        },
+            moduleId = this.model.get('module_id');
+        history.pushState(state, 'Hustle ' + this.moduleType + ' wizard', 'admin.php?page=' + optinVars.current.wizard_page + '&id=' + moduleId + '&section=' + tabName);
+      }
+
+      $tabs.removeClass('current');
+      $content.hide();
+      $tab.addClass('current');
+      $current.show();
+      $('.sui-wrap-hustle')[0].scrollIntoView();
+    },
+    // Keep the sync of the shown tab and the URL when going "back" with the browser.
+    updateTabOnPopstate: function updateTabOnPopstate(e) {
+      var state = e.originalEvent.state;
+
+      if (state) {
+        this.goToTab(state.tabName);
+      }
+    },
+    // Go to he "next" and "previous" tab when using the buttons at the bottom of the wizard.
+    doButtonNavigation: function doButtonNavigation(e) {
+      e.preventDefault();
+      var $button = $(e.target),
+          direction = 'prev' === $button.data('direction') ? 'prev' : 'next',
+          nextTabName = this.getNextOrPrevTabName(direction);
+      this.goToTab(nextTabName, true);
+    },
+    // Get the name of the previous or next tab.
+    getNextOrPrevTabName: function getNextOrPrevTabName(direction) {
+      var current = $('#hustle-module-wizard-view .sui-sidenav ul li a.current');
+      var tab = current.data('tab');
+
+      if ('prev' === direction) {
+        tab = current.parent().prev().find('a').data('tab');
+      } else {
+        tab = current.parent().next().find('a').data('tab');
+      }
+
+      return tab;
+    },
+    // ============================================================
+    // TinyMCE
+    // Set the editor content in their respective model on change.
+    tinymceReady: function tinymceReady(e, editor) {
+      var _this2 = this;
+
+      editor.on('change', function () {
+        var model = 'main_content' === editor.id ? _this2.contentView.model : _this2.emailsView.model;
+        model.set(editor.id, editor.getContent());
+      });
+    },
+    setContentFromTinymce: function setContentFromTinymce() {
+      var keepSilent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      if ('social_sharing' !== this.moduleType && 'undefined' !== typeof tinyMCE) {
+        // main_content editor
+        var mainContentEditor = tinyMCE.get('main_content'),
+            $mainContentTextarea = this.$('textarea#main_content'),
+            mainContent = 'true' === $mainContentTextarea.attr('aria-hidden') ? mainContentEditor.getContent() : $mainContentTextarea.val();
+        this.contentView.model.set('main_content', mainContent, {
+          silent: keepSilent
+        }); // success_message editor
+
+        var successMessageEditor = tinyMCE.get('success_message'),
+            $successMessageTextarea = this.$('textarea#success_message'),
+            successMessage = 'true' === $successMessageTextarea.attr('aria-hidden') ? successMessageEditor.getContent() : $successMessageTextarea.val();
+        this.emailsView.model.set('success_message', successMessage, {
+          silent: keepSilent
+        }); // email_body editor
+
+        var emailBodyEditor = tinyMCE.get('email_body'),
+            $emailBodyTextarea = this.$('textarea#email_body'),
+            emailBody = 'true' === $successMessageTextarea.attr('aria-hidden') ? emailBodyEditor.getContent() : $emailBodyTextarea.val();
+        this.emailsView.model.set('email_body', emailBody, {
+          silent: keepSilent
+        });
+      }
+    },
+    // ============================================================
+    // Sanitize Data
+    sanitizeData: function sanitizeData() {
+      // Call to action
+      var ctaUrl = this.contentView.model.get('cta_url');
+
+      if (0 !== ctaUrl.indexOf('mailto:') && 0 !== ctaUrl.indexOf('tel:')) {
+        if (!/^(f|ht)tps?:\/\//i.test(ctaUrl)) {
+          ctaUrl = 'https://' + ctaUrl;
+          this.contentView.model.set('cta_url', ctaUrl, {
+            silent: true
+          });
+        }
+      }
+    },
+    // ============================================================
+    // Save changes
+    save: function save() {
+      this.setContentFromTinymce(true);
+      this.sanitizeData(); // Preparig the data
+
+      var $this = this.$el.find('#hustle-module-wizard-view'),
+          id = $this.data('id'),
+          nonce = $this.data('nonce'),
+          module = this.model.toJSON();
+      var data = {
+        action: 'hustle_save_module',
+        _ajax_nonce: nonce,
+        id: id,
+        module: module
+      };
+
+      _.extend(data, this.getDataToSave()); // ajax save here
+
+
+      return $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        dataType: 'json'
+      });
+    },
+    getDataToSave: function getDataToSave() {
+      var data = {
+        content: this.contentView.model.toJSON(),
+        emails: this.emailsView.model.toJSON(),
+        design: this.designView.updatedProperties,
+        // this.designView.model.toJSON(),
+        integrations_settings: this.integrationsView.model.toJSON(),
+        // eslint-disable-line camelcase
+        visibility: this.visibilityView.model.toJSON(),
+        settings: JSON.stringify(this.settingsView.model.toJSON())
+      }; // We overwrite the Custom CSS value straight from the editor.
+
+      data.design.custom_css = this.designView.cssEditor.getValue(); // eslint-disable-line camelcase
+
+      if ('embedded' === this.moduleType) {
+        data.display = this.displayView.model.toJSON();
+      }
+
+      return data;
+    },
+    saveChanges: function saveChanges(e) {
+      var _this3 = this;
+
+      e.preventDefault();
+      var currentActive = this.model.get('active'),
+          $saveButton = $(e.currentTarget),
+          setActiveTo = String($saveButton.data('active')),
+          activeChanged = setActiveTo !== currentActive,
+          wasPublished = '0' !== setActiveTo;
+      this.disableButtonsOnSave($saveButton);
+
+      if (activeChanged && wasPublished) {
+        this.publishModal.open();
+      }
+
+      this.model.set('active', setActiveTo, {
+        silent: true
+      });
+      var save = this.save(); // TODO: handle errors. Like when the nonce expired.
+
+      save.done(function (res) {
+        if (true === res.success) {
+          // The changes were already saved.
+          Module.hasChanges = false; // Change the "Pending changes" label to "Saved".
+
+          _this3.switchStatusTo('saved');
+
+          if (activeChanged) {
+            if (wasPublished) {
+              // Ssharing modules don't have schedules.
+              var isScheduled = 'social_sharing' !== _this3.model.get('module_type') ? '1' === _this3.settingsView.model.get('is_schedule') : false;
+              var hasEnd = false; // Handle the 'published' modal messages according to the schedule.
+
+              if (isScheduled) {
+                var scheduleSettings = _this3.settingsView.model.get('schedule');
+
+                hasEnd = '1' !== scheduleSettings.not_schedule_end;
+              }
+
+              _this3.publishModal.setPublished(isScheduled, hasEnd);
+            }
+
+            _this3.updateViewOnActiveChange();
+          }
+        } else {
+          var errors = res.data;
+          var errorMessage = ''; // When nonce expired or something we didn't thought about happened errors.data is not defined
+          // so it's a place to inform the user that he should reload his browser.
+
+          if ('undefined' === typeof errors.data) {
+            errorMessage = optinVars.messages.module_error_reload;
+          } else {
+            if ('undefined' !== typeof errors.data.icon_error) {
+              _.each(errors.data.icon_error, function (error) {
+                $('#hustle-platform-' + error).find('.sui-error-message').show();
+                $('#hustle-platform-' + error + ' .hustle-social-url-field').addClass('sui-form-field-error');
+                $('#hustle-platform-' + error).not('.sui-accordion-item--open').find('.sui-accordion-open-indicator').click();
+              });
+
+              errorMessage = '<a href="#" data-tab="services" class="notify-error-tab"> ' + optinVars.module_tabs.services + ' </a>';
+            } else if ('undefined' !== typeof errors.data.selector_error) {
+              _.each(errors.data.selector_error, function (error) {
+                $('input[name="' + error + '_css_selector"]').siblings('.sui-error-message').show();
+                $('input[name="' + error + '_css_selector"]').parent('.sui-form-field').addClass('sui-form-field-error');
+              });
+
+              if (!_.isEmpty(errorMessage)) {
+                errorMessage = errorMessage + ' and ';
+              }
+
+              errorMessage = errorMessage + '<a href="#" data-tab="display" class="notify-error-tab"> ' + optinVars.module_tabs.display + ' </a>';
+            }
+
+            errorMessage = optinVars.messages.module_error.replace('{page}', errorMessage);
+          }
+
+          _this3.switchStatusTo('unsaved');
+
+          Module.Notification.open('error', errorMessage, false);
+        }
+      }).always(function () {
+        _this3.enableSaveButtons();
+      });
+    },
+    // ============================================================
+    // Update the view elements
+
+    /**
+     * Update this module's name if the new value is not empty.
+     *
+     * @param {event} e Event.
+     */
+    updateModuleName: function updateModuleName(e) {
+      var $input = $(e.target),
+          moduleName = $input.val();
+
+      if (moduleName.length) {
+        this.$('#hustle-module-name-wrapper').removeClass('sui-form-field-error');
+        this.$('#hustle-module-name-error').hide();
+        this.$('#hustle-module-name-error').html('');
+        this.model.set('module_name', moduleName);
+      } else {
+        var message = this.$('#hustle-module-name-error').data('error-message');
+        this.$('#hustle-module-name-wrapper').addClass('sui-form-field-error');
+        this.$('#hustle-module-name-error').html(message);
+        this.$('#hustle-module-name-error').show();
+      }
+    },
+    // Disable the save buttons.
+    disableButtonsOnSave: function disableButtonsOnSave($buttonOnLoad) {
+      $buttonOnLoad.addClass('sui-button-onload');
+      this.$('.hustle-action-save').prop('disabled', true);
+      this.$('.wpmudev-button-navigation').prop('disabled', true);
+    },
+    // Enable the save buttons.
+    enableSaveButtons: function enableSaveButtons() {
+      this.$('.sui-button-onload').removeClass('sui-button-onload');
+      this.$('.hustle-action-save').prop('disabled', false);
+      this.$('.wpmudev-button-navigation').prop('disabled', false);
+    },
+    // Change the 'saved'/'unsaved' label.
+    switchStatusTo: function switchStatusTo(switchTo) {
+      if ('saved' === switchTo) {
+        this.$el.find('#hustle-unsaved-changes-status').addClass('sui-hidden');
+        this.$el.find('#hustle-saved-changes-status').removeClass('sui-hidden');
+      } else {
+        this.$el.find('#hustle-unsaved-changes-status').removeClass('sui-hidden');
+        this.$el.find('#hustle-saved-changes-status').addClass('sui-hidden');
+      }
+    },
+    // Change the 'Draft'/'Published' module status label, and update the save buttons for each case.
+    updateViewOnActiveChange: function updateViewOnActiveChange() {
+      var isActive = '1' === this.model.get('active'); // Update the module status tag. The one that says if the module is Published or a Draft.
+
+      var $statusTag = this.$('.sui-status-module .sui-tag'),
+          newStatus = isActive ? optinVars.messages.commons.published : optinVars.messages.commons.draft;
+      $statusTag.text(newStatus);
+
+      if (isActive) {
+        $statusTag.addClass('sui-tag-blue');
+      } else {
+        $statusTag.removeClass('sui-tag-blue');
+      }
+
+      var saveDraftContent = this.$('#hustle-draft-button-save-draft-text'),
+          unpublishContent = this.$('#hustle-draft-button-unpublish-text'); // Update the text of buttons for publishing and unpublishing the module.
+
+      if (isActive) {
+        saveDraftContent.addClass('sui-hidden-important');
+        unpublishContent.removeClass('sui-hidden-important');
+      } else {
+        saveDraftContent.removeClass('sui-hidden-important');
+        unpublishContent.addClass('sui-hidden-important');
+      } // Update the text within the Publish button.
+
+
+      var $publishButton = this.$('.hustle-publish-button'),
+          publishButtonText = isActive ? $publishButton.data('update') : $publishButton.data('publish');
+      $publishButton.find('.button-text').text(publishButtonText);
+    },
+    removeErrorMessage: function removeErrorMessage(e) {
+      if (e.target.value) {
+        var parent = $(e.target).parent('.sui-form-field');
+        parent.removeClass('sui-form-field-error');
+        parent.find('.sui-error-message').hide();
+      }
+    },
+    // ============================================================
+    // Previewing
+    previewModule: function previewModule(e) {
+      e.preventDefault();
+      var $button = $(e.currentTarget);
+      this.setContentFromTinymce(true);
+      this.sanitizeData();
+
+      var previewData = _.extend({}, this.model.toJSON(), this.getDataToSave()),
+          moduleName = previewData.module_name.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+      previewData.module_name = moduleName;
+      this.getPreviewView().open(this.model.get('module_id'), this.model.get('module_type'), $button, previewData);
+    },
+    getPreviewView: function getPreviewView() {
+      if (!this.previewView) {
+        var previewView = Hustle.get('Modals.Preview');
+        this.previewView = new previewView();
+      }
+
+      return this.previewView;
+    },
+    // ============================================================
+    // Module's actions.
+    handleSingleModuleAction: function handleSingleModuleAction(e) {
+      Module.handleActions.initAction(e, 'listing', this);
+    }
+  };
+});
+Hustle.define('Settings.Palettes', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#palettes-box',
+    events: {
+      'click .hustle-create-palette': 'openCreatePaletteModal',
+      'click .hustle-delete-button': 'openDeletePaletteModal',
+      'click .hustle-button-delete': 'delettePalette'
+    },
+    initialize: function initialize() {
+      var PaletteModal = Hustle.get('Settings.Palettes_Modal');
+      this.paletteModal = new PaletteModal();
+    },
+    openCreatePaletteModal: function openCreatePaletteModal(e) {
+      this.paletteModal.open(e);
+    },
+    openDeletePaletteModal: function openDeletePaletteModal(e) {
+      e.preventDefault();
+      var $this = $(e.currentTarget),
+          data = {
+        id: $this.data('id'),
+        title: $this.data('title'),
+        description: $this.data('description'),
+        action: 'delete',
+        nonce: $this.data('nonce'),
+        actionClass: 'hustle-button-delete'
+      };
+      Module.deleteModal.open(data, $this[0]); // This element is outside the view and only added after opening the modal.
+
+      $('.hustle-button-delete').on('click', $.proxy(this.delettePalette, this));
+    },
+
+    /**
+     * Handle the color palettes 'delete' action.
+     *
+     * @since 4.0.3
+     * @param {Object} e
+     */
+    delettePalette: function delettePalette(e) {
+      e.preventDefault();
+      var $this = $(e.currentTarget),
+          relatedFormId = $this.data('form-id'),
+          actionData = $this.data(),
+          $form = $('#' + relatedFormId),
+          data = new FormData($form[0]); // TODO: remove when "hustle_action" field name is changed to "hustleAction"
+
+      $.each(actionData, function (name, value) {
+        return data.append(name, value);
+      });
+      data.append('_ajax_nonce', optinVars.settings_palettes_action_nonce);
+      data.append('action', 'hustle_handle_palette_actions');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        contentType: false,
+        processData: false
+      }).done(function (res) {
+        if (res.data.url) {
+          location.replace(res.data.url);
+        } else if (res.data.notification) {
+          Module.Notification.open(res.data.notification.status, res.data.notification.message, res.data.notification.delay);
+        } // Don't remove the 'loading' icon when redirecting/reloading.
+
+
+        if (!res.data.url) {
+          $('.sui-button-onload').removeClass('sui-button-onload');
+        }
+      }).fail(function () {
+        Module.Notification.open('error', optinVars.messages.commons.generic_ajax_error);
+        $('.sui-button-onload').removeClass('sui-button-onload');
+      });
+    }
+  });
+});
+Hustle.define('Settings.Data_Settings', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#data-box',
+    events: {
+      'click #hustle-dialog-open--reset-data-settings': 'dataDialog'
+    },
+    // ============================================================
+    // DIALOG: Reset Settings
+    // Open dialog
+    dataDialog: function dataDialog(e) {
+      e.preventDefault();
+      var $button = this.$(e.target),
+          $dialog = $('#hustle-dialog--reset-data-settings');
+      SUI.openModal('hustle-dialog--reset-data-settings', $button[0], $dialog.find('.sui-box-header .sui-button-icon')[0], true);
+      $('#hustle-reset-settings').off('click').on('click', $.proxy(this.settingsReset));
+    },
+    // Confirm and close
+    settingsReset: function settingsReset(e) {
+      var $this = $(e.currentTarget),
+          $dialog = $this.closest('.sui-modal'),
+          $buttons = $dialog.find('button, .sui-button');
+      $buttons.prop('disabled', true);
+      $this.addClass('sui-button-onload');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+          action: 'hustle_reset_settings',
+          _ajax_nonce: $this.data('nonce') // eslint-disable-line camelcase
+
+        },
+        success: function success() {
+          $('#' + $this.data('notice')).show();
+          SUI.closeModal();
+          $this.removeClass('sui-button-onload');
+          $buttons.prop('disabled', false);
+          Module.Notification.open('success', optinVars.messages.settings_was_reset);
+          window.setTimeout(function () {
+            return location.reload(true);
+          }, 2000);
+        },
+        error: function error() {
+          SUI.closeModal();
+          $this.removeClass('sui-button-onload');
+          $buttons.prop('disabled', false);
+          Module.Notification.open('error', optinVars.messages.something_went_wrong);
+        }
+      });
+    }
+  });
+});
+Hustle.define('Settings.Palettes_Modal', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#hustle-dialog--edit-palette',
+    events: {
+      'click .hustle-button-action': 'handleAction',
+      'click .hustle-modal-close': 'closeCreatePaletteModal',
+      'change #hustle-palette-module-type': 'updateModulesOptions'
+    },
+    initialize: function initialize() {},
+    open: function open(e) {
+      var slug = $(e.currentTarget).data('slug');
+
+      if ('undefined' !== typeof slug) {
+        // When editing a palette.
+        this.handleAction(e);
+      } else {
+        // When creating a new palette.
+        // Update the modules' options when opening.
+        this.$('#hustle-palette-module-type').trigger('change');
+        SUI.openModal('hustle-dialog--edit-palette', e.currentTarget, 'hustle-palette-name', false);
+      }
+    },
+
+    /**
+     * Handle the color palettes 'save' action.
+     *
+     * @since 4.0.3
+     * @param {Object} e
+     */
+    handleAction: function handleAction(e) {
+      e.preventDefault();
+      var self = this,
+          $this = $(e.currentTarget),
+          relatedFormId = $this.data('form-id');
+      $this.addClass('sui-button-onload');
+      Module.Utils.accessibleHide(this.$('.sui-error-message'));
+      var data = new FormData(),
+          errors = false; // Grab the form's data if the action has a related form.
+
+      if ('undefined' !== typeof relatedFormId) {
+        var $form = $('#' + relatedFormId);
+
+        if ($form.length) {
+          data = new FormData($form[0]);
+          $form.find('.hustle-required-field').each(function (i, el) {
+            var $field = $(el);
+
+            if (!$field.val().trim().length) {
+              var errorMessage = $field.data('error-message'),
+                  $errorMessage = $field.siblings('.sui-error-message');
+              $errorMessage.html(errorMessage);
+              Module.Utils.accessibleShow($errorMessage);
+              errors = true;
+            }
+          });
+        }
+      } // Don't do the request if there are missing required fields.
+
+
+      if (errors) {
+        $('.sui-button-onload').removeClass('sui-button-onload');
+        return;
+      }
+
+      var actionData = $this.data();
+      $.each(actionData, function (name, value) {
+        return data.append(name, value);
+      });
+      data.append('_ajax_nonce', optinVars.settings_palettes_action_nonce);
+      data.append('action', 'hustle_handle_palette_actions');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        contentType: false,
+        processData: false
+      }).done(function (res) {
+        // If there's a defined callback, call it.
+        if (res.data.callback && 'function' === typeof self[res.data.callback]) {
+          // This calls the "action{ hustle action }" functions from this view.
+          // For example: actionToggleStatus();
+          self[res.data.callback](res.data, res.success, e);
+        } else if (res.data.url) {
+          location.replace(res.data.url);
+        } else if (res.data.notification) {
+          Module.Notification.open(res.data.notification.status, res.data.notification.message, res.data.notification.delay);
+        } // Don't remove the 'loading' icon when redirecting/reloading.
+
+
+        if (!res.data.url) {
+          $('.sui-button-onload').removeClass('sui-button-onload');
+        }
+      }).fail(function () {
+        $('.sui-button-onload').removeClass('sui-button-onload');
+      });
+    },
+    actionOpenEditPalette: function actionOpenEditPalette(data, success, e) {
+      this.actionGoToSecondStep(data);
+      SUI.openModal('hustle-dialog--edit-palette', e.currentTarget, 'hustle-palette-name', false);
+
+      if (data.palette_data.name) {
+        $('#hustle-dialog--edit-palette').find('#hustle-palette-name').val(data.palette_data.name);
+      }
+    },
+    actionGoToSecondStep: function actionGoToSecondStep(data) {
+      var stepOne = this.$('#hustle-edit-palette-first-step'),
+          stepTwo = this.$('#hustle-edit-palette-second-step'),
+          btnAction = this.$('.hustle-button-action'),
+          paletteData = data.palette_data,
+          template = Optin.template('hustle-dialog--edit-palette-tpl'); // Hide first step
+
+      Module.Utils.accessibleHide(stepOne, true); // Print and show second step
+
+      stepTwo.html(template(paletteData));
+      this.initiateSecondStepElements();
+      Module.Utils.accessibleShow(stepTwo, true);
+      stepTwo.focus(); // Set new step
+
+      btnAction.data('step', 3);
+      btnAction.addClass('sui-button-blue');
+      Module.Utils.accessibleHide(btnAction.find('#hustle-step-button-text'));
+      Module.Utils.accessibleShow(btnAction.find('#hustle-finish-button-text'));
+    },
+    initiateSecondStepElements: function initiateSecondStepElements() {
+      // Accordions.
+      this.$('.sui-accordion').each(function () {
+        SUI.suiAccordion(this);
+      }); // Init tabs
+
+      SUI.suiTabs();
+      SUI.tabs(); // Color pickers.
+
+      this.createPickers();
+    },
+    closeCreatePaletteModal: function closeCreatePaletteModal() {
+      var self = this,
+          stepOne = this.$('#hustle-edit-palette-first-step'),
+          stepTwo = this.$('#hustle-edit-palette-second-step'),
+          btnAction = this.$('.hustle-button-action');
+      setTimeout(function () {
+        // Hide error messages
+        Module.Utils.accessibleHide(self.$('.sui-error-message')); // Hide second step
+
+        Module.Utils.accessibleHide(stepTwo, true);
+        stepTwo.html(''); // Show first step
+
+        Module.Utils.accessibleShow(stepOne, true); // Reset action button
+
+        btnAction.removeClass('sui-button-blue');
+        btnAction.data('step', 2);
+        Module.Utils.accessibleShow(btnAction.find('#hustle-step-button-text'));
+        Module.Utils.accessibleHide(btnAction.find('#hustle-finish-button-text'));
+      }, 500);
+    },
+    // ============================================================
+    // Color Pickers
+    // TODO: Copied from wizards. Re-use instead of copy-pasting
+    createPickers: function createPickers() {
+      var $suiPickerInputs = this.$('.sui-colorpicker-input');
+      $suiPickerInputs.wpColorPicker({
+        change: function change(event, ui) {
+          var $this = $(this); // Prevent the model from being marked as changed on load.
+
+          if ($this.val() !== ui.color.toCSS()) {
+            $this.val(ui.color.toCSS()).trigger('change');
+          }
+        },
+        palettes: ['#333333', '#FFFFFF', '#17A8E3', '#E1F6FF', '#666666', '#AAAAAA', '#E6E6E6']
+      });
+
+      if ($suiPickerInputs.hasClass('wp-color-picker')) {
+        $suiPickerInputs.each(function () {
+          var $suiPickerInput = $(this),
+              $suiPicker = $suiPickerInput.closest('.sui-colorpicker-wrap'),
+              $suiPickerColor = $suiPicker.find('.sui-colorpicker-value span[role=button]'),
+              $suiPickerValue = $suiPicker.find('.sui-colorpicker-value'),
+              $suiPickerClear = $suiPickerValue.find('button'),
+              $shownInput = $suiPickerValue.find('.hustle-colorpicker-input');
+          var $wpPicker = $suiPickerInput.closest('.wp-picker-container'),
+              $wpPickerButton = $wpPicker.find('.wp-color-result'),
+              $wpPickerAlpha = $wpPickerButton.find('.color-alpha'),
+              $wpPickerClear = $wpPicker.find('.wp-picker-clear');
+          var $suiPickerType = 'hex'; // Check if alpha exists
+
+          if (true === $suiPickerInput.data('alpha')) {
+            $suiPickerType = 'rgba'; // Listen to color change
+
+            $suiPickerInput.on('change', function () {
+              // Change color preview
+              $suiPickerColor.find('span').css({
+                'background-color': $wpPickerAlpha.css('background')
+              }); // We trigger this 'change' manually when the shown input changes.
+              // Don't update its value again if this is the case.
+
+              if ('undefined' === typeof data) {
+                // Change color value
+                $shownInput.val($suiPickerInput.val());
+              }
+            });
+          } else {
+            // Listen to color change
+            $suiPickerInput.on('change', function () {
+              // Change color preview
+              $suiPickerColor.find('span').css({
+                'background-color': $wpPickerButton.css('background-color')
+              }); // We trigger this 'change' manually when the shown input changes.
+              // Don't update its value again if this is the case.
+
+              if ('undefined' === typeof data) {
+                // Change color value
+                $shownInput.val($suiPickerInput.val());
+              }
+            });
+          } // Allow updating the colors without having to open the colorpicker.
+
+
+          $shownInput.on('change', function () {
+            // Change color value
+            $suiPickerInput.val($shownInput.val());
+            $suiPickerInput.trigger('change', [{
+              triggeredByUs: true
+            }]);
+          }); // Add picker type class
+
+          $suiPicker.find('.sui-colorpicker').addClass('sui-colorpicker-' + $suiPickerType); // Open iris picker
+
+          $suiPicker.find('.sui-button, span[role=button]').on('click', function (e) {
+            $wpPickerButton.click();
+            e.preventDefault();
+            e.stopPropagation();
+          }); // Clear color value
+
+          $suiPickerClear.on('click', function (e) {
+            var inputName = $suiPickerInput.data('attribute'),
+                selectedStyle = $('#hustle-palette-module-fallback').val(),
+                resetValue = optinVars.palettes[selectedStyle][inputName];
+            $wpPickerClear.click();
+            $suiPickerValue.find('input').val(resetValue);
+            $suiPickerInput.val(resetValue).trigger('change');
+            $suiPickerColor.find('span').css({
+              'background-color': resetValue
+            });
+            e.preventDefault();
+            e.stopPropagation();
+          });
+        });
+      }
+    },
+    updateModulesOptions: function updateModulesOptions(e) {
+      var $this = $(e.currentTarget),
+          self = this,
+          moduleType = $this.val(),
+          $modulesOptionsSelect = this.$('#hustle-palette-module-name');
+      var html = '';
+      $.each(optinVars.current[moduleType], function (id, name) {
+        html += "<option value=\"".concat(id, "\">").concat(name, "</option>");
+      });
+      $modulesOptionsSelect.html(html);
+      this.$('.sui-select:not(.hustle-select-ajax)').SUIselect2({
+        dropdownCssClass: 'sui-select-dropdown',
+        dropdownParent: self.$('.sui-box')
+      });
+    }
+  });
+});
+Hustle.define('Settings.Permissions_View', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#permissions-box',
+    initialize: function initialize() {
+      $(function () {
+        //Delete the remove ability for Administrator option in select2
+        function blockingAdminRemove() {
+          $('.select2-selection__rendered li:first-child .select2-selection__choice__remove').off('click').text('').on('click', function (e) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          });
+        }
+
+        $('select').on('change.select2', function () {
+          blockingAdminRemove();
+        });
+        blockingAdminRemove();
+      });
+    }
+  });
+});
+Hustle.define('Settings.Privacy_Settings', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#privacy-box',
+    events: {
+      'click #hustle-dialog-open--delete-ips': 'openDeleteIpsDialog'
+    },
+    initialize: function initialize() {
+      $('#hustle-delete-ips-submit').on('click', this.handleIpDeletion);
+    },
+    // ============================================================
+    // DIALOG: Delete All IPs
+    // Open dialog
+    openDeleteIpsDialog: function openDeleteIpsDialog(e) {
+      SUI.openModal('hustle-dialog--delete-ips', $(e.currentTarget)[0], this.$('#hustle-dialog--delete-ips .sui-box-header .sui-button-icon')[0], true);
+      e.preventDefault();
+    },
+    handleIpDeletion: function handleIpDeletion(e) {
+      e.preventDefault();
+      var $this = $(e.currentTarget),
+          $form = $('#' + $this.data('formId')),
+          data = new FormData($form[0]);
+      data.append('action', 'hustle_remove_ips');
+      data.append('_ajax_nonce', $this.data('nonce'));
+      $this.addClass('sui-button-onload');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        contentType: false,
+        processData: false,
+        success: function success(res) {
+          Module.Notification.open('success', res.data.message);
+          SUI.closeModal();
+          $('.sui-button-onload').removeClass('sui-button-onload');
+        },
+        error: function error() {
+          SUI.closeModal();
+          $('.sui-button-onload').removeClass('sui-button-onload');
+          Module.Notification.open('error', optinVars.messages.something_went_wrong);
+        }
+      });
+    }
+  });
+});
+Hustle.define('Settings.reCaptcha_Settings', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#recaptcha-box',
+    data: {},
+    initialize: function initialize() {
+      this.maybeRenderRecaptchas();
+    },
+    maybeRenderRecaptchas: function maybeRenderRecaptchas() {
+      var _this = this;
+
+      var self = this,
+          versions = ['v2_checkbox', 'v2_invisible', 'v3_recaptcha'];
+      var scriptAdded = false;
+
+      var _loop = function _loop() {
+        var version = _versions[_i];
+
+        var $previewContainer = _this.$("#hustle-modal-recaptcha-".concat(version, "-0")),
+            sitekey = _this.$("input[name=\"".concat(version, "_site_key\"]")).val().trim(),
+            secretkey = _this.$("input[name=\"".concat(version, "_secret_key\"]")).val().trim();
+
+        if (sitekey && secretkey) {
+          $previewContainer.data('sitekey', sitekey);
+
+          if (!scriptAdded) {
+            $.ajax({
+              url: ajaxurl,
+              type: 'POST',
+              data: {
+                action: 'hustle_load_recaptcha_preview'
+              }
+            }).done(function (result) {
+              if (result.success) {
+                scriptAdded = true;
+                self.$('#hustle-recaptcha-script-container').html(result.data);
+                setTimeout(function () {
+                  return HUI.maybeRenderRecaptcha($previewContainer.closest('.sui-form-field'));
+                }, 1000);
+              }
+            });
+          } else {
+            HUI.maybeRenderRecaptcha($previewContainer.closest('.sui-form-field'));
+          }
+
+          _this.$(".hustle-recaptcha-".concat(version, "-preview-notice")).hide();
+
+          $previewContainer.show();
+        } else {
+          _this.$(".hustle-recaptcha-".concat(version, "-preview-notice")).show();
+
+          $previewContainer.hide();
+        }
+      };
+
+      for (var _i = 0, _versions = versions; _i < _versions.length; _i++) {
+        _loop();
+      }
+    }
+  });
+});
+Hustle.define('Settings.Top_Metrics_View', function () {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#top-metrics-box',
+    events: {
+      'click .sui-checkbox input': 'maybeDisableInputs'
+    },
+    initialize: function initialize() {
+      this.maybeDisableInputs();
+    },
+    maybeDisableInputs: function maybeDisableInputs() {
+      var $allchecked = this.$el.find('input:checked'),
+          $unchecked = this.$el.find('input:not(:checked)'),
+          $button = this.$el.find('button[type="submit"]'),
+          $buttonTip = $button.parent(),
+          $design = $unchecked.next('span');
+
+      if (3 <= $allchecked.length) {
+        $unchecked.prop('disabled', true);
+        $design.addClass('sui-tooltip');
+        $design.css('opacity', '1');
+        $button.prop('disabled', false);
+        $buttonTip.removeClass('sui-tooltip');
+      } else {
+        $button.prop('disabled', true);
+        $unchecked.prop('disabled', false);
+        $design.removeClass('sui-tooltip');
+        $design.css('opacity', '');
+        $buttonTip.addClass('sui-tooltip');
+      }
+    }
+  });
+});
+Hustle.define('Integration_Modal_Handler', function ($) {
+  'use strict';
+
+  return Backbone.View.extend({
+    events: {
+      'click .hustle-provider-connect': 'connectAddOn',
+      'click .hustle-provider-disconnect': 'disconnectAddOn',
+      'click .hustle-provider-next': 'submitNextStep',
+      'click .hustle-provider-back': 'goPrevStep',
+      'click .hustle-refresh-email-lists': 'refreshLists',
+      'click .hustle-provider-form-disconnect': 'disconnectAddOnForm',
+      'click .hustle-provider-clear-radio-options': 'clearRadioOptions',
+      'change select#group': 'showInterests'
+    },
+    initialize: function initialize(options) {
+      var _this = this;
+
+      this.slug = options.slug;
+      this.nonce = options.nonce;
+      this.action = options.action; // eslint-disable-next-line camelcase
+
+      this.moduleId = options.moduleId; // eslint-disable-next-line camelcase
+
+      this.multi_id = options.multiId;
+      this.globalMultiId = options.globalMultiId;
+      this.step = 0; // eslint-disable-next-line camelcase
+
+      this.next_step = false; // eslint-disable-next-line camelcase
+
+      this.prev_step = false; // Attach close actions to SUI's modal close event.
+
+      this.$el.off('close').on('close', function () {
+        return _this.modalClosed();
+      });
+      return this.render();
+    },
+    render: function render() {
+      var data = {};
+      data.action = this.action; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = {};
+      data.data.slug = this.slug;
+      data.data.step = this.step; // eslint-disable-next-line camelcase
+
+      data.data.current_step = this.step;
+
+      if (this.moduleId) {
+        // eslint-disable-next-line camelcase
+        data.data.module_id = this.moduleId;
+      }
+
+      if (this.multi_id) {
+        // eslint-disable-next-line camelcase
+        data.data.multi_id = this.multi_id;
+      }
+
+      if (this.globalMultiId) {
+        // eslint-disable-next-line camelcase
+        data.data.global_multi_id = this.globalMultiId;
+      }
+
+      this.request(data, false, true);
+    },
+    applyLoader: function applyLoader($element) {
+      $element.find('.sui-button:not(.disable-loader)').addClass('sui-button-onload');
+    },
+    resetLoader: function resetLoader($element) {
+      $element.find('.sui-button').removeClass('sui-button-onload');
+    },
+    request: function request(data, close, loader) {
+      var self = this;
+
+      if (loader) {
+        this.$el.find('.sui-box-body').addClass('sui-block-content-center').html( // TODO: translate "loading content".
+        '<p class="sui-loading-dialog" aria-label="Loading content"><i class="sui-icon-loader sui-loading" aria-hidden="true"></i></p>');
+        this.$el.find('.sui-box-footer').html('');
+        this.$el.find('.integration-header').html('');
+      }
+
+      this.applyLoader(this.$el);
+      this.ajax = $.post({
+        url: ajaxurl,
+        type: 'post',
+        data: data
+      }).done(function (result) {
+        if (result && result.success) {
+          // Shorten result data
+          var resultData = result.data.data; // Handle close modal
+
+          if (close || !_.isUndefined(resultData.is_close) && resultData.is_close) {
+            SUI.closeModal();
+          } else {
+            // Render popup body
+            self.renderBody(result); // Render popup footer
+
+            self.renderFooter(result);
+            self.onRender(resultData);
+            self.resetLoader(self.$el);
+          } // Handle notifications
+
+
+          if (!_.isUndefined(resultData.notification) && !_.isUndefined(resultData.notification.type) && !_.isUndefined(resultData.notification.text)) {
+            var custom = Module.Notification;
+            custom.open(resultData.notification.type, resultData.notification.text);
+          } // Handle the modal's size.
+
+
+          if (!_.isUndefined(resultData.size)) {
+            var $modal = self.$el.closest('.sui-modal'); // Remove all sizes
+
+            if (resultData.size === 'normal') {
+              $modal.removeClass('sui-modal-sm sui-modal-lg');
+            }
+
+            if (resultData.size === 'small') {
+              $modal.addClass('sui-modal-sm');
+              $modal.removeClass('sui-modal-lg');
+            }
+
+            if (resultData.size === 'large') {
+              $modal.addClass('sui-modal-lg');
+              $modal.removeClass('sui-modal-sm');
+            }
+          } // Show Mailchimp interests is Group is already choosen
+
+
+          if ('mailchimp' === self.slug) {
+            var group = self.$el.find('#group');
+
+            if (group.length) {
+              group.trigger('change');
+            }
+          } // There's a response, but not a successful one.
+
+        } else {
+          // Render popup body
+          self.renderBody(result); // Render popup footer
+
+          self.renderFooter(result);
+        }
+      }); // Remove the preloader
+
+      this.ajax.always(function (result) {
+        // Add closing event.
+        self.$el.find('.hustle-modal-close').off('click').on('click', function () {
+          SUI.closeModal();
+        });
+        self.$el.find('.sui-box-body').removeClass('sui-block-content-center');
+        self.$el.find('.sui-loading-dialog').remove();
+
+        if (!result || !result.success || !result.data) {
+          self.showGenericErrorMessage();
+        }
+      });
+    },
+    renderBody: function renderBody(result) {
+      if (!result.data || !result.data.data) {
+        return;
+      }
+
+      this.$el.find('.sui-box-body').html(result.data.data.html); // append header to integration-header
+
+      var integrationHeader = this.$el.find('.sui-box-body .integration-header').remove();
+
+      if (0 < integrationHeader.length) {
+        this.$el.find('.integration-header').html(integrationHeader.html());
+      } // Hide empty content
+
+
+      if (!this.$el.find('.sui-box-body').html().trim().length) {
+        this.$el.find('.sui-box-body').addClass('sui-hidden');
+        this.$el.find('.sui-box-footer').css('padding-top', '');
+      } else {
+        var children = this.$el.find('.sui-box-body').children();
+        var hideBody = true;
+        $.each(children, function (i, child) {
+          if (!$(child).is(':hidden')) {
+            hideBody = false;
+          }
+        }); // Hide the content only when all children are hidden.
+
+        if (hideBody) {
+          this.$el.find('.sui-box-body').addClass('sui-hidden');
+          this.$el.find('.sui-box-footer').css('padding-top', '');
+        } else {
+          // FIX: Prevent extra spacing.
+          // eslint-disable-next-line no-lonely-if
+          if (this.$el.find('.sui-box-body .sui-notice').next().is('input[type="hidden"]')) {
+            this.$el.find('.sui-box-body .sui-notice').css({
+              'margin-bottom': '0'
+            });
+          }
+        }
+      }
+    },
+    renderFooter: function renderFooter(result) {
+      if (!result.data || !result.data.data) {
+        return;
+      }
+
+      var self = this,
+          buttons = result.data.data.buttons,
+          body = self.$el.find('.sui-box-body'),
+          footer = self.$el.find('.sui-box-footer'); // Clear the body's spacing classes.
+
+      body.removeClass('sui-spacing-bottom--0').removeClass('sui-spacing-bottom--30'); // Clear footer from previous buttons
+
+      footer.removeClass('sui-hidden').removeClass('sui-hidden-important').removeClass('sui-content-center').removeClass('sui-content-right').removeClass('sui-content-separated').html(''); // Append buttons
+
+      _.each(buttons, function (button) {
+        footer.append(button.markup);
+      });
+
+      if (0 === footer.find('.sui-button').length) {
+        footer.addClass('sui-hidden-important');
+        body.addClass('sui-spacing-bottom--30');
+      } else {
+        // The footer is shown. It has the required spacing.
+        body.addClass('sui-spacing-bottom--0'); // FIX: Align buttons to center.
+
+        if (footer.find('.sui-button').hasClass('sui-button-center')) {
+          footer.addClass('sui-content-center'); // FIX: Align buttons to right.
+        } else if (footer.find('.sui-button').hasClass('sui-button-right')) {
+          if (!footer.find('.sui-button').hasClass('sui-button-left')) {
+            footer.addClass('sui-content-right');
+          } // FIX: Align buttons separated.
+
+        } else {
+          footer.addClass('sui-content-separated');
+        }
+      }
+    },
+    onRender: function onRender(result) {
+      var self = this;
+      this.delegateEvents(); // Update current step
+
+      if (!_.isUndefined(result.opt_in_provider_current_step)) {
+        this.step = +result.opt_in_provider_current_step;
+      } // Update has next step
+
+
+      if (!_.isUndefined(result.opt_in_provider_has_next_step)) {
+        // eslint-disable-next-line camelcase
+        this.next_step = result.opt_in_provider_has_next_step;
+      } // Update has prev step
+
+
+      if (!_.isUndefined(result.opt_in_provider_has_prev_step)) {
+        // eslint-disable-next-line camelcase
+        this.prev_step = result.opt_in_provider_has_prev_step;
+      }
+
+      self.$el.find('.sui-select').SUIselect2({
+        dropdownCssClass: 'sui-select-dropdown',
+        dropdownParent: $('#hustle-integration-dialog .sui-box')
+      });
+    },
+    refreshLists: function refreshLists(e) {
+      var _this2 = this;
+
+      e.preventDefault();
+      e.stopPropagation();
+      var $this = $(e.currentTarget),
+          $oldSelect = $('#list_id').length ? $('#list_id') : $('#form_id'),
+          id = this.moduleId,
+          slug = this.slug,
+          type = $('#form_id').length ? 'forms' : 'lists',
+          nonce = this.nonce;
+      $this.addClass('sui-button-onload');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+          action: 'hustle_refresh_email_lists',
+          id: id,
+          slug: slug,
+          type: type,
+          _ajax_nonce: nonce // eslint-disable-line camelcase
+
+        }
+      }).done(function (result) {
+        if (result.success) {
+          if ('undefined' !== typeof result.data.select) {
+            var $refreshContainer = $oldSelect.closest('.hui-select-refresh');
+            $oldSelect.SUIselect2('destroy');
+            $oldSelect.remove();
+            var $newSelect = $(result.data.select);
+            $refreshContainer.prepend($newSelect);
+            $newSelect.SUIselect2({
+              dropdownParent: _this2.$('.sui-box'),
+              dropdownCssClass: 'sui-select-dropdown'
+            });
+          }
+        }
+      }).fail(function () {// TODO: handle errors
+      }).always(function () {
+        $this.removeClass('sui-button-onload');
+      });
+    },
+    submitNextStep: function submitNextStep() {
+      var data = {},
+          form = this.$el.find('form'),
+          params = {
+        slug: this.slug,
+        step: this.getStep(),
+        // eslint-disable-next-line camelcase
+        current_step: this.step
+      };
+      var formData = form.serialize();
+
+      if (this.moduleId) {
+        // eslint-disable-next-line camelcase
+        params.module_id = this.moduleId;
+      }
+
+      formData = formData + '&' + $.param(params);
+      data.action = this.action; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = formData;
+      this.request(data, false, false);
+    },
+    goPrevStep: function goPrevStep() {
+      var data = {},
+          params = {
+        slug: this.slug,
+        step: this.getPrevStep(),
+        current_step: this.step
+      };
+
+      if (this.moduleId) {
+        // eslint-disable-next-line camelcase
+        params.module_id = this.moduleId;
+      }
+
+      if (this.multi_id) {
+        // eslint-disable-next-line camelcase
+        params.multi_id = this.multi_id;
+      }
+
+      data.action = this.action; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = params;
+      this.request(data, false, false);
+    },
+    getStep: function getStep() {
+      if (this.next_step) {
+        return this.step + 1;
+      }
+
+      return this.step;
+    },
+    getPrevStep: function getPrevStep() {
+      if (this.prev_step) {
+        return this.step - 1;
+      }
+
+      return this.step;
+    },
+    connectAddOn: function connectAddOn() {
+      var data = {},
+          form = this.$el.find('form'),
+          params = {
+        slug: this.slug,
+        step: this.getStep(),
+        // eslint-disable-next-line camelcase
+        current_step: this.step
+      };
+      var formData = form.serialize();
+
+      if (this.moduleId) {
+        // eslint-disable-next-line camelcase
+        params.module_id = this.moduleId;
+      }
+
+      if (this.multi_id) {
+        // eslint-disable-next-line camelcase
+        params.multi_id = this.multi_id;
+      }
+
+      formData = formData + '&' + $.param(params);
+      data.action = this.action; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = formData;
+      this.request(data, false, false);
+    },
+    disconnectAddOn: function disconnectAddOn() {
+      var self = this,
+          img = this.$el.find('.sui-box-logo img').attr('src'),
+          title = this.$el.find('#dialogTitle2').html(),
+          data = {},
+          isActiveData = {};
+      var modules = {};
+      data.action = 'hustle_provider_deactivate'; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = {};
+      data.data.slug = this.slug;
+      data.data.img = img;
+      data.data.title = title;
+
+      if (this.globalMultiId) {
+        // eslint-disable-next-line camelcase
+        data.data.global_multi_id = this.globalMultiId;
+      }
+
+      isActiveData.action = 'hustle_provider_is_on_module'; // eslint-disable-next-line camelcase
+
+      isActiveData._ajax_nonce = this.nonce;
+      isActiveData.data = {};
+      isActiveData.data.slug = this.slug;
+      isActiveData.data.globalMultiId = this.globalMultiId;
+      this.$el.find('.sui-button:not(.disable-loader)').addClass('sui-button-onload');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: isActiveData,
+        success: function success(resp) {
+          if (true === resp.success) {
+            modules = resp;
+          }
+        },
+        complete: function complete() {
+          if (true === modules.success) {
+            Module.integrationsActiveRemove.open(modules.data, data, self);
+          } else {
+            self.request(data, true, false);
+          }
+        }
+      });
+    },
+    disconnectAddOnForm: function disconnectAddOnForm() {
+      var self = this;
+      var data = {};
+      var active = $('#hustle-integrations-active-count').val(),
+          activeIntegration = $('#hustle-integrations-active-integrations').val();
+      data.action = 'hustle_provider_form_deactivate'; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = this.nonce;
+      data.data = {};
+      data.data.slug = this.slug; // eslint-disable-next-line camelcase
+
+      data.data.module_id = this.moduleId;
+
+      if (this.multi_id) {
+        // eslint-disable-next-line camelcase
+        data.data.multi_id = this.multi_id;
+      }
+
+      if ('1' === active && activeIntegration === this.slug && 'local_list' !== this.slug) {
+        Module.integrationsAllRemove.open(data, self);
+      } else if ('1' === active && 'local_list' === this.slug) {
+        Module.Notification.open('error', optinVars.messages.integraiton_required);
+        SUI.closeModal();
+      } else {
+        this.request(data, true, false);
+      }
+    },
+    modalClosed: function modalClosed() {
+      // Kill AJAX hearbeat
+      this.ajax.abort(); // Refrest add-on list
+
+      Hustle.Events.trigger('hustle:providers:reload');
+    },
+    clearRadioOptions: function clearRadioOptions() {
+      this.$('input[type=radio]', this.$el).prop('checked', false);
+    },
+    //show interests for mailchimp
+    showInterests: function showInterests(e) {
+      var self = this,
+          $this = $(e.currentTarget),
+          nonce = $this.data('nonce'),
+          group = $this.val(),
+          data = {},
+          form = self.$el.find('form'),
+          params = {
+        slug: self.slug,
+        group: group,
+        module_id: self.moduleId
+      };
+      var formData = form.serialize();
+      formData = formData + '&' + $.param(params);
+      data.action = 'hustle_mailchimp_get_group_interests'; // eslint-disable-next-line camelcase
+
+      data._ajax_nonce = nonce;
+      data.data = formData;
+      self.applyLoader(self.$el);
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data
+      }).done(function (result) {
+        if (result.success) {
+          form.find('.sui-form-field').slice(1).remove();
+          form.find('.sui-form-field:first-child').after(result.data);
+        }
+      }).fail(function () {// TODO: handle errors
+      }).always(function () {
+        self.resetLoader(self.$el);
+      });
+    },
+    showGenericErrorMessage: function showGenericErrorMessage() {
+      this.$el.find('.sui-box-body').html('<div id="hustle-request-error-reload-notice" role="alert" aria-live="assertive" class="sui-notice"></div>');
+      this.$el.find('.sui-box-footer').html('');
+      SUI.openNotice('hustle-request-error-reload-notice', '<p>' + optinVars.messages.request_error_reload_notice + '</p>', {
+        type: "error",
+        autoclose: {
+          show: false
+        }
+      });
+    }
+  });
+});
+var Module = window.Module || {};
+Hustle.define('Model', function ($) {
+  'use strict';
+
+  return Backbone.Model.extend({
+    initialize: function initialize() {
+      this.on('change', this.userHasChange, this);
+      Backbone.Model.prototype.initialize.apply(this, arguments);
+      $(window).on('beforeunload', this.changesNotSaved);
+    },
+    userHasChange: function userHasChange() {
+      Module.hasChanges = true; // Add the "unsaved" status tag to the module screen.
+
+      Hustle.Events.trigger('modules.view.switch_status', 'unsaved');
+    },
+    changesNotSaved: function changesNotSaved() {
+      if (Module.hasChanges) {
+        return 'You have unsaved changes'; // This message is ignored anyway.
+      }
+    }
+  });
+});
+Hustle.define('Models.M', function () {
+  'use strict';
+
+  return Hustle.get('Model').extend({
+    toJSON: function toJSON() {
+      var json = _.clone(this.attributes);
+
+      var attr;
+
+      for (attr in json) {
+        if (json[attr] instanceof Backbone.Model || json[attr] instanceof Backbone.Collection) {
+          json[attr] = json[attr].toJSON();
+        }
+      }
+
+      return json;
+    },
+    set: function set(key, val, options) {
+      var parent, child, parentModel;
+
+      if ('string' === typeof key && -1 !== key.indexOf('.')) {
+        parent = key.split('.')[0];
+        child = key.split('.')[1];
+        parentModel = this.get(parent);
+
+        if (parentModel && parentModel instanceof Backbone.Model) {
+          parentModel.set(child, val, options);
+          this.trigger('change:' + key, key, val, options);
+          this.trigger('change:' + parent, key, val, options);
+        }
+      } else {
+        Backbone.Model.prototype.set.call(this, key, val, options);
+      }
+    },
+    get: function get(key) {
+      var parent, child;
+
+      if ('string' === typeof key && -1 !== key.indexOf('.')) {
+        parent = key.split('.')[0];
+        child = key.split('.')[1];
+        return this.get(parent).get(child);
+      }
+
+      return Backbone.Model.prototype.get.call(this, key);
+    }
+  });
+});
+Hustle.define('Models.Trigger', function () {
+  'use strict';
+
+  return Hustle.get('Model').extend({
+    defaults: {
+      trigger: ['time'],
+      // time | scroll | click | exit_intent | adblock
+      on_time_delay: '0',
+      on_time_unit: 'seconds',
+      on_scroll: 'scrolled',
+      // scrolled | selector
+      on_scroll_page_percent: '20',
+      on_scroll_css_selector: '',
+      enable_on_click_element: '1',
+      on_click_element: '',
+      enable_on_click_shortcode: '1',
+      on_exit_intent_per_session: '1',
+      on_exit_intent_delayed_time: '5',
+      on_exit_intent_delayed_unit: 'seconds',
+      on_adblock_delay: '0',
+      on_adblock_delay_unit: 'seconds'
+    }
+  });
+});
+Module.Model = Hustle.get('Models.M').extend({
+  defaults: {
+    module_name: '',
+    moduleType: 'popup',
+    active: '0'
+  }
+});
+(function ($) {
+  'use strict';
+  /**
+   * READ BEFORE ADDING A NEW OBJECT HERE.
+   * This file should only contain *views* that are used in *more than one page*.
+   * The idea is to have reusable views in a single place.
+   * If the functionality you're about to introduce is used in a single page,
+   * there's probably a specific view for that page, and its functionalities
+   * should belong in there.
+   *
+   * For example:
+   * Module's preview modal   => It's used in Dashboard, Listings, and Wizards. All good.
+   * Module's tracking charts => It's only used in Listings. Not good.
+   *                             There's a view for listings. It should be handled in the listing's view.
+   */
+
+  var Module = window.Module || {};
+  /**
+   * Render a notification at the top of the page.
+   * Used in the global settings page when saving, for example.
+   *
+   * @since 4.0
+   */
+
+  Module.Notification = {
+    id: null,
+    $floatingContainer: null,
+    open: function open(type, message) {
+      var closeTime = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 4000;
+      var id = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'hustle-only-active-notification';
+      var isFloating = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
+      this.id = id;
+      var options = {
+        type: type || '',
+        icon: 'info',
+        // We're only using info icons atm.
+        dismiss: {},
+        autoclose: {}
+      };
+
+      if (isFloating) {
+        this.$floatingContainer = $('#hustle-floating-notifications-wrapper');
+        this.createFloatingNoticeWrapper(); // Make sure closeTime is an integer, unless it's false.
+
+        if (false !== closeTime) {
+          var parsedCloseTime = parseInt(closeTime); // Use the 4secs default otherwise.
+
+          if (isNaN(parsedCloseTime)) {
+            closeTime = 4000;
+          }
+        }
+
+        options.dismiss = {
+          show: false === closeTime,
+          label: optinVars.messages.commons.dismiss
+        };
+        options.autoclose = {
+          show: false !== closeTime,
+          time: closeTime
+        };
+      } else {
+        // We don't have auto-close nor dismissable inline notices.
+        options.autoclose.show = false;
+        options.dismiss.show = false;
+      }
+
+      message = "<p>".concat(message, "</p>");
+      SUI.openNotice(id, message, options);
+    },
+    createFloatingNoticeWrapper: function createFloatingNoticeWrapper() {
+      var id = this.id; // Create the notice wrapper if it doesn't exist already.
+
+      if (!$('#' + id).length) {
+        this.$floatingContainer.append("<div\n\t\t\t\t\trole=\"alert\"\n\t\t\t\t\tid=\"".concat(id, "\"\n\t\t\t\t\tclass=\"sui-notice\"\n\t\t\t\t\taria-live=\"assertive\"\n\t\t\t\t></div>"));
+      }
+    }
+  };
+  /**
+   * Render the modal used for editing the itnegrations' settings.
+   *
+   * @since 4.0
+   */
+
+  Module.integrationsModal = {
+    $popup: {},
+    open: function open(e) {
+      var self = this;
+      var $target = $(e.target);
+
+      if (!$target.hasClass('connect-integration')) {
+        $target = $target.closest('.connect-integration');
+      } // Remove the templated modal before adding a new one.
+
+
+      if ($('#hustle-integration-dialog').closest('.sui-modal').length) {
+        $('#hustle-integration-dialog').closest('.sui-modal').remove();
+      }
+
+      var nonce = $target.data('nonce'),
+          slug = $target.data('slug'),
+          title = $target.data('title'),
+          image = $target.data('image'),
+          action = $target.data('action'),
+          moduleId = $target.data('module_id'),
+          multiId = $target.data('multi_id'),
+          globalMultiId = $target.data('global_multi_id'),
+          tpl = Optin.template('hustle-integration-dialog-tpl');
+      $('.sui-wrap-hustle').append(tpl({
+        image: image,
+        title: title
+      }));
+      this.$popup = $('#hustle-integration-dialog');
+      var settingsView = Hustle.get('Integration_Modal_Handler');
+      this.view = new settingsView({
+        slug: slug,
+        nonce: nonce,
+        action: action,
+        moduleId: moduleId,
+        multiId: multiId,
+        globalMultiId: globalMultiId,
+        el: this.$popup
+      });
+      this.$popup.on('close', function () {
+        return self.close();
+      });
+      SUI.openModal('hustle-integration-dialog', $target[0], this.$popup.find('.sui-box .hustle-modal-close')[0], true); // Make sui-tabs changeable
+
+      this.$popup.on('click', '.sui-tab-item', function (ev) {
+        var $this = $(ev.currentTarget),
+            $items = $this.closest('.sui-side-tabs').find('.sui-tab-item');
+        $items.removeClass('active');
+        $this.addClass('active');
+      });
+    },
+    close: function close() {
+      if (this.view) {
+        this.$popup.closest('.sui-modal').remove();
+        this.view.remove();
+      }
+    }
+  };
+  /**
+   * Handle the modal for when removing the only integration in a module.
+   * In Wizard pages.
+   *
+   * @since 4.0.1
+   */
+
+  Module.integrationsAllRemove = {
+    referrer: {},
+
+    /**
+     * @since 4.0.2
+     * @param {Object} data
+     * @param {Object} referrer
+     */
+    open: function open(data, referrer) {
+      var self = this;
+      this.referrer = referrer;
+      var dialogId = $('#hustle-dialog--final-delete');
+
+      var insertLocal = function insertLocal(insertData) {
+        self.insertLocalList(insertData);
+        return false;
+      };
+
+      var deleteInt = function deleteInt(deleteData, deleteReferrer) {
+        self.deleteIntegration(deleteData, deleteReferrer);
+        return false;
+      };
+
+      var $closeButton = dialogId.find('.sui-box-header .sui-button-icon'); // Add closing event
+
+      $closeButton.on('click', self.close);
+      dialogId.find('#hustle-delete-final-button-cancel').on('click', self.close);
+      $('#hustle-delete-final-button').off('click').on('click', function () {
+        $('#hustle-delete-final-button').addClass('sui-button-onload');
+        deleteInt(data, referrer);
+        insertLocal(data);
+        self.close();
+      });
+      $('#hustle-delete-final-button').prop('disabled', false);
+      var $providerConfigButton = $('#hustle-connected-providers-section button[data-slug="' + data.data.slug + '"]');
+      SUI.replaceModal('hustle-dialog--final-delete', $providerConfigButton[0], $closeButton[0], true);
+    },
+    close: function close() {
+      $('#hustle-delete-final-button').removeClass('sui-button-onload');
+      $('#hustle-delete-final-button').prop('disabled', false);
+    },
+    confirmDelete: function confirmDelete(data, referrer) {
+      this.deleteIntegration(data, referrer);
+      this.insertLocal(data);
+      this.close();
+    },
+    deleteIntegration: function deleteIntegration(data, referrer) {
+      referrer.request(data, true, false);
+    },
+    insertLocalList: function insertLocalList(data) {
+      var ajaxData = {
+        id: data.data.module_id,
+        _ajax_nonce: data._ajax_nonce,
+        action: 'hustle_provider_insert_local_list'
+      };
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: ajaxData,
+        success: function success(resp) {
+          if (resp.success) {
+            Hustle.Events.trigger('hustle:providers:reload');
+          } else {
+            Module.Notification.open('error', optinVars.messages.something_went_wrong);
+          }
+        },
+        error: function error() {
+          Module.Notification.open('error', optinVars.messages.something_went_wrong);
+        }
+      });
+    }
+  };
+  /**
+   * Render the modal used when disconnecting a global integration that's in use in a module.
+   * Used in the global Integrations page.
+   *
+   * @since 4.0.1
+   */
+
+  Module.integrationsActiveRemove = {
+    $popup: {},
+    _deferred: {},
+
+    /**
+     * @since 4.0.2
+     * @param {Object} data
+     * @param {Object} disconnect
+     * @param {Object} referrer
+     */
+    open: function open(data, disconnect, referrer) {
+      var self = this,
+          dialogId = $('#hustle-dialog--remove-active');
+
+      var goBack = function goBack() {
+        self.back(referrer);
+        return false;
+      };
+
+      var removeIntegration = function removeIntegration(integrationData, integrationReferrer, modules) {
+        self.removeIntegration(integrationData, integrationReferrer, modules);
+      };
+
+      var tpl = Optin.template('hustle-modules-active-integration-tpl'),
+          tplImg = Optin.template('hustle-modules-active-integration-img-tpl'),
+          tplHead = Optin.template('hustle-modules-active-integration-header-tpl'),
+          tplDesc = Optin.template('hustle-modules-active-integration-desc-tpl'); //remove previous html
+
+      $('#hustle-dialog--remove-active tbody').html('');
+      $('#hustle-dialog--remove-active .sui-box-logo').html('');
+      $('#hustle-dialog--remove-active #hustle-dialog--remove-active-title').html('');
+      $('#hustle-dialog--remove-active #hustle-dialog--remove-active-description').html('');
+      $('#hustle-dialog--remove-active .sui-box-logo').append(tplImg({
+        image: disconnect.data.img,
+        title: disconnect.data.slug
+      }));
+      $('#hustle-dialog--remove-active #hustle-dialog--remove-active-title').append(tplHead({
+        title: disconnect.data.title.replace(/Connect|Configure/gi, ' ')
+      }));
+      $('#hustle-dialog--remove-active #hustle-dialog--remove-active-description').append(tplDesc({
+        title: disconnect.data.title.replace(/Connect|Configure/gi, ' ')
+      }));
+      $.each(data, function (id, meta) {
+        $('#hustle-dialog--remove-active tbody').append(tpl({
+          name: meta.name,
+          type: meta.type,
+          editUrl: meta.edit_url
+        }));
+      });
+      dialogId.find('#hustle-remove-active-integration-back').off('click').on('click', function () {
+        goBack();
+      });
+      $('#hustle-remove-active-button').off('click').on('click', function () {
+        $(this).addClass('sui-button-onload');
+        removeIntegration(disconnect, referrer, data);
+      }); // Set the element to focus on once the modal is closed.
+
+      var $configButton = '';
+
+      if (referrer.globalMultiId) {
+        $configButton = $('button[data-global_multi_id="' + referrer.globalMultiId + '"]');
+      } else {
+        $configButton = $('button[data-slug="' + disconnect.data.slug + '"]');
+      }
+
+      SUI.replaceModal('hustle-dialog--remove-active', $configButton[0], dialogId.find('.hustle-modal-close')[0], true);
+    },
+    close: function close() {
+      SUI.closeModal();
+    },
+    back: function back(referrer) {
+      var self = this;
+      self.close(); //integrations that doesn't support global multi id.
+
+      if ('hubspot' === referrer.slug || 'constantcontact' === referrer.slug || 'zapier' === referrer.slug) {
+        $('button[data-slug="' + referrer.slug + '"]').trigger('click');
+      } else {
+        $('button[data-global_multi_id="' + referrer.globalMultiId + '"]').trigger('click');
+      }
+    },
+    removeIntegration: function removeIntegration(data, referrer, modules) {
+      var self = this;
+      $.each(modules, function (id, meta) {
+        if (data.data.slug === meta.active.active_integrations) {
+          self.insertLocalList(data, id);
+        }
+      });
+      referrer.request(data, true, false);
+      $('#hustle-remove-active-button').removeClass('sui-button-onload');
+    },
+    insertLocalList: function insertLocalList(data, id) {
+      var ajaxData = {
+        id: id,
+        _ajax_nonce: data._ajax_nonce,
+        action: 'hustle_provider_insert_local_list'
+      };
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: ajaxData,
+        success: function success(resp) {
+          if (false === resp.success) {
+            Module.Notification.open('error', optinVars.messages.something_went_wrong);
+          }
+        },
+        error: function error() {
+          Module.Notification.open('error', optinVars.messages.something_went_wrong);
+        }
+      });
+    }
+  };
+  /**
+   * The provider migration model
+   *
+   * @since 4.0.3
+   */
+
+  Module.ProviderMigration = {
+    $popup: {},
+
+    /**
+     * @since 4.0.3
+     * @param {string} slug Provider slug.
+     * @param {string} id Provider global multi ID.
+     */
+    open: function open(slug) {
+      var id = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+      var dialogId = $('#hustle-dialog-migrate--' + slug),
+          self = this,
+          reauthMultiID = function reauthMultiID() {
+        var form = dialogId.find('form'),
+            data = {},
+            params = {
+          slug: slug,
+          // eslint-disable-next-line camelcase
+          global_multi_id: id
+        };
+        var formData = form.serialize();
+        $('#integration-migrate').addClass('sui-button-onload'); // eslint-disable-next-line camelcase
+
+        data._ajax_nonce = $('#integration-migrate').data('nonce');
+        data.action = 'hustle_provider_migrate_aweber';
+        formData = formData + '&' + $.param(params);
+        data.data = formData;
+        self.reauth(dialogId, data, id, slug);
+      };
+
+      if (id) {
+        $('#integration-migrate').attr('data-id', id);
+      }
+
+      setTimeout(function () {
+        return SUI.openModal('hustle-dialog-migrate--' + slug, $('.sui-header-title')[0], $('#hustle-dialog-migrate--' + slug + ' .sui-box-header .sui-button-icon')[0], true);
+      }, 300);
+      dialogId.find('#integration-migrate').on('click', reauthMultiID);
+    },
+    reauth: function reauth(dialogId, data, id, slug) {
+      var notice = $('.hustle_migration_notice__' + slug + '[data-id="' + id + '"]');
+      this.ajax = $.post({
+        url: ajaxurl,
+        type: 'post',
+        data: data
+      }).done(function (result) {
+        if (result && result.success) {
+          SUI.closeModal();
+          notice.hide();
+          Module.Notification.open('success', optinVars.messages.aweber_migration_success, false);
+        } else {
+          $(dialogId).find('#integration-migrate').removeClass('sui-button-onload');
+          $(dialogId).find('.sui-error-message').removeClass('sui-hidden');
+          $(dialogId).find('.sui-form-field').addClass('sui-form-field-error');
+        }
+      });
+    }
+  };
+  /**
+   * The "are you sure?" modal from when deleting modules or entries.
+   *
+   * @since 4.0
+   */
+
+  Module.deleteModal = {
+    /**
+     * @since 4.0
+     * @param {Object} data - Must contain 'title', 'description', 'nonce', 'action', and 'id' that's being deleted.
+     * @param {Object} focusOnClose - Document node to focus on after the modal is closed.
+     */
+    open: function open(data, focusOnClose) {
+      var dialogId = 'hustle-dialog--delete',
+          template = Optin.template('hustle-dialog--delete-tpl'),
+          content = template(data); // Add the templated content to the modal.
+
+      $('#' + dialogId + ' #hustle-delete-dialog-content').html(content); // Add the title to the modal.
+
+      $('#' + dialogId + ' #hustle-dialog--delete-title').html(data.title); // Attach the closing event.
+
+      $('#' + dialogId + ' .hustle-cancel-button').on('click', function () {
+        return SUI.closeModal(dialogId);
+      });
+      $('#' + dialogId + ' .hustle-delete-confirm').on('click', function (e) {
+        var $button = $(e.currentTarget);
+        $button.addClass('sui-button-onload');
+      });
+      SUI.openModal(dialogId, focusOnClose, $('#' + dialogId + '.hustle-modal-close')[0], true);
+    }
+  };
+  /**
+   * Key var to listen user changes before triggering
+   * navigate away message.
+   **/
+
+  Module.hasChanges = false;
+})(jQuery);
+(function ($) {
+  'use strict';
+
+  var Module = window.Module || {};
+  Module.Utils = {
+    /*
+     * Return URL param value
+     */
+    getUrlParam: function getUrlParam(param) {
+      var defaultReturn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var urlParams = optinVars.urlParams;
+
+      if ('undefined' !== typeof urlParams[param]) {
+        return urlParams[param];
+      }
+
+      return defaultReturn;
+    },
+    accessibleHide: function accessibleHide($elements) {
+      var isFocusable = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var extraToUpdate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+      $elements.hide();
+      $elements.attr('aria-hidden', true);
+      $elements.prop('hidden', true);
+
+      if (isFocusable) {
+        $elements.prop('tabindex', '-1');
+      }
+
+      if (extraToUpdate) {
+        if ('undefined' !== typeof extraToUpdate.name) {
+          if ('undefined' !== typeof extraToUpdate.value) {
+            $elements.attr(extraToUpdate.name, extraToUpdate.value);
+          } else {
+            $elements.removeAttr(extraToUpdate.name);
+          }
+        }
+      }
+    },
+    accessibleShow: function accessibleShow($elements) {
+      var isFocusable = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var extraToUpdate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+      $elements.show();
+      $elements.prop('aria-hidden', false);
+      $elements.removeClass('sui-hidden');
+      $elements.prop('hidden', false);
+
+      if (isFocusable) {
+        $elements.attr('tabindex', '0');
+      }
+
+      if (extraToUpdate) {
+        if ('undefined' !== typeof extraToUpdate.name) {
+          if ('undefined' !== typeof extraToUpdate.value) {
+            $elements.attr(extraToUpdate.name, extraToUpdate.value);
+          } else {
+            $elements.removeAttr(extraToUpdate.name);
+          }
+        }
+      }
+    },
+    showHideDependencyOnSelectChange: function showHideDependencyOnSelectChange($parent) {
+      var $selectsWithContainers = $parent ? $parent.find('select.hustle-select-with-container') : $('select.hustle-select-with-container');
+      $selectsWithContainers.each(function () {
+        var $this = $(this),
+            $depContainer = $("[data-field-content=\"".concat(this.name, "\"]")),
+            valuesOn = $this.data('content-on') ? $this.data('content-on').split(',') : false,
+            valuesOff = $this.data('content-off') ? $this.data('content-off').split(',') : false;
+
+        var doToggle = function doToggle() {
+          var currentVal = $this.val(),
+              doShow = valuesOn ? valuesOn.includes(currentVal) : !valuesOff.includes(currentVal);
+
+          if (doShow) {
+            Module.Utils.accessibleShow($depContainer);
+          } else {
+            Module.Utils.accessibleHide($depContainer);
+          }
+        }; // Do it on load.
+
+
+        doToggle(); // And do it on change.
+
+        $this.on('change', function () {
+          return doToggle();
+        });
+      });
+    },
+    serializeObject: function serializeObject($form) {
+      var object = {},
+          array = $form.serializeArray();
+      $.each(array, function () {
+        if (undefined !== object[this.name]) {
+          if (!object[this.name].push) {
+            object[this.name] = [object[this.name]];
+          }
+
+          object[this.name].push(this.value || '');
+        } else {
+          object[this.name] = this.value || '';
+        }
+      });
+      $form.find('input:disabled[name]').each(function () {
+        object[this.name] = this.value || '';
+      });
+      $form.find('select:disabled[name]').each(function () {
+        object[this.name] = this.value || '';
+      });
+      $form.find('input[type="checkbox"]:not(:checked)').each(function () {
+        if (undefined === object[this.name]) {
+          object[this.name] = '0';
+        } else if ('0' === object[this.name] && !$form.find("input[name=\"".concat(this.name, "\"]:checked")).length) {
+          object[this.name] = [];
+        } else if (!Array.isArray(object[this.name])) {
+          object[this.name] = [object[this.name]];
+        }
+      });
+      return object;
+    }
+  };
+  /**
+   * One callback to rule them all.
+   * Receives the events from single module actions.
+   * Call another callback or does an action (eg. a redirect) according to the ajax request response.
+   * Used in module listing pages and dashboard.
+   *
+   * @since 4.0.3
+   */
+
+  Module.handleActions = {
+    context: '',
+    $target: null,
+
+    /**
+     * @param {Object} data AJAX request response.
+     */
+    responseData: {},
+
+    /**
+     * Function to initiate the action.
+     *
+     * @since 4.0.3
+     * @param {Object} e
+     * @param {string} context Where it's called from. dashboard|listing
+     */
+    initAction: function initAction(e, context) {
+      var _this = this;
+
+      e.preventDefault();
+      this.context = context;
+      this.$target = $(e.currentTarget);
+      var self = this,
+          relatedFormId = this.$target.data('form-id'),
+          actionData = this.$target.data();
+      var data = new FormData(); // Grab the form's data if the action has a related form.
+
+      if ('undefined' !== typeof relatedFormId) {
+        var $form = $('#' + relatedFormId);
+
+        if ($form.length) {
+          data = new FormData($form[0]);
+        }
+      }
+
+      $.each(actionData, function (name, value) {
+        return data.append(name, value);
+      });
+      data.append('context', this.context);
+      data.append('_ajax_nonce', optinVars.single_module_action_nonce);
+      data.append('action', 'hustle_module_handle_single_action');
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        contentType: false,
+        processData: false
+      }).done(function (res) {
+        // If there's a defined callback, call it.
+        if (res.data.callback && 'function' === typeof self[res.data.callback]) {
+          _this.responseData = res.data; // This calls the "action{ hustle action }" function from this view.
+          // For example: actionToggleStatus();
+
+          self[res.data.callback]();
+        } else if (res.data.url) {
+          window.location.assign(res.data.url);
+        } else if (res.data.notification) {
+          Module.Notification.open(res.data.notification.status, res.data.notification.message, res.data.notification.delay);
+        } else if (!res.success) {
+          Module.Notification.open('error', optinVars.messages.something_went_wrong, false);
+        } // Don't remove the 'loading' icon when redirecting/reloading.
+
+
+        if (!res.data.url) {
+          $('.sui-button-onload').removeClass('sui-button-onload');
+        }
+      }).fail(function () {
+        $('.sui-button-onload').removeClass('sui-button-onload');
+      });
+    },
+
+    /**
+     * initAction succcess callback for "toggle-tracking".
+     * Only for Listing.
+     *
+     * @since 4.0.3
+     */
+    actionToggleTracking: function actionToggleTracking() {
+      var $accordionContainer, isTrackingEnabled;
+
+      if (!this.responseData.is_embed_or_sshare) {
+        isTrackingEnabled = 1 - (this.responseData.was_enabled ? 1 : 0);
+        $accordionContainer = this.$target.parents('.sui-accordion-item');
+        this.$target.data('enabled', isTrackingEnabled);
+        this.$target.find('.hustle-toggle-tracking-button-description').toggleClass('sui-hidden');
+      } else {
+        var $button = $('.hustle-manage-tracking-button[data-module-id="' + this.$target.data('module-id') + '"]');
+        $button.data('tracking-types', this.responseData.enabled_types);
+        isTrackingEnabled = 0 !== this.responseData.enabled_types.length;
+        $accordionContainer = $button.parents('.sui-accordion-item');
+        SUI.closeModal();
+      } // Update the tracking chart if it was being displayed.
+
+
+      if ($accordionContainer.hasClass('sui-accordion-item--open')) {
+        $accordionContainer.find('.sui-accordion-open-indicator').trigger('click').trigger('click');
+      } // Display the 'Analytics Disable' tag if the module is active and tracking is disabled.
+
+
+      var displayTag = this.responseData.is_active && !isTrackingEnabled;
+      this.toggleTrackingDisabledTag(displayTag, $accordionContainer);
+      Module.Notification.open('success', this.responseData.message, 10000);
+    },
+    actionToggleStatus: function actionToggleStatus() {
+      if ('listing' === this.context) {
+        this.listingToggleStatus();
+      } else {
+        this.dashboardToggleStatus();
+      }
+    },
+
+    /**
+     * initAction succcess callback for "toggle-status".
+     *
+     * @since 4.0.4
+     */
+    listingToggleStatus: function listingToggleStatus() {
+      var $accordionContainer = this.$target.closest('.sui-accordion-item'),
+          $accordionTag = $accordionContainer.find('.sui-accordion-item-title span.sui-tag');
+      $accordionTag.toggleClass('sui-tag-blue');
+      $accordionTag.find('.hustle-toggle-status-button-description').toggleClass('sui-hidden');
+      this.$target.find('.hustle-toggle-status-button-description').toggleClass('sui-hidden'); // Update tracking data
+
+      if ($accordionContainer.hasClass('sui-accordion-item--open')) {
+        $accordionContainer.find('.sui-accordion-open-indicator').trigger('click').trigger('click');
+      } // Display the 'Analytics Disable' tag if the module is active and tracking is disabled.
+
+
+      var displayTag = this.responseData.is_active && !this.responseData.is_tracking_enabled;
+      this.toggleTrackingDisabledTag(displayTag, $accordionContainer);
+    },
+
+    /**
+     * initAction succcess callback for "toggle-status".
+     *
+     * @since 4.0.4
+     */
+    dashboardToggleStatus: function dashboardToggleStatus() {
+      var isActive = this.responseData.is_active;
+      this.$target.find('.hustle-toggle-status-button-description').toggleClass('sui-hidden');
+      var tooltip = this.$target.parents('td.hui-status').find('span.sui-tooltip');
+      tooltip.removeClass('sui-draft sui-published');
+
+      if (isActive) {
+        tooltip.addClass('sui-published').attr('data-tooltip', optinVars.messages.commons.published);
+      } else {
+        tooltip.addClass('sui-draft').attr('data-tooltip', optinVars.messages.commons.draft);
+      }
+    },
+    actionImportDisplayError: function actionImportDisplayError() {
+      var message = this.responseData.message,
+          $dialog = this.$target.closest('.sui-modal'),
+          dialogId = $dialog.find('.sui-modal-content').attr('id'),
+          noticeId = dialogId + '-error-notice';
+      Module.Notification.open('error', message, false, noticeId, false);
+      $dialog.find('input[name="import_file"]').focus();
+    },
+    toggleTrackingDisabledTag: function toggleTrackingDisabledTag(isDisplay, $accordionContainer) {
+      var $trackingDisabledTag = $accordionContainer.find('.hustle-analytics-disabled-tag');
+
+      if (isDisplay) {
+        $trackingDisabledTag.removeClass('sui-hidden');
+      } else {
+        $trackingDisabledTag.addClass('sui-hidden');
+      }
+    }
+  };
+  var Optin = window.Optin || {};
+
+  Optin.globalMixin = function () {
+    _.mixin({
+      /**
+       * Converts val to boolian
+       *
+       * @param {*} val Value to check.
+       * @return {boolean} Passed value as boolean.
+       */
+      toBool: function toBool(val) {
+        if (_.isBoolean(val)) {
+          return val;
+        }
+
+        if (_.isString(val) && -1 !== ['true', 'false', '1'].indexOf(val.toLowerCase())) {
+          return 'true' === val.toLowerCase() || '1' === val.toLowerCase() ? true : false;
+        }
+
+        if (_.isNumber(val)) {
+          return !!val;
+        }
+
+        if (_.isUndefined(val) || _.isNull(val) || _.isNaN(val)) {
+          return false;
+        }
+
+        return val;
+      },
+
+      /**
+       * Checks if val is truthy
+       *
+       * @param {*} val Value to check.
+       * @return {boolean} Passed value as boolean.
+       */
+      isTrue: function isTrue(val) {
+        if (_.isUndefined(val) || _.isNull(val) || _.isNaN(val)) {
+          return false;
+        }
+
+        if (_.isNumber(val)) {
+          return 0 !== val;
+        }
+
+        val = val.toString().toLowerCase();
+        return -1 !== ['1', 'true', 'on'].indexOf(val);
+      },
+      isFalse: function isFalse(val) {
+        return !_.isTrue(val);
+      },
+      controlBase: function controlBase(checked, current, attribute) {
+        attribute = _.isUndefined(attribute) ? 'checked' : attribute;
+        checked = _.toBool(checked);
+        current = _.isBoolean(checked) ? _.isTrue(current) : current;
+
+        if (_.isEqual(checked, current)) {
+          return attribute + '=' + attribute;
+        }
+
+        return '';
+      },
+
+      /**
+       * Checks whether the input should be checked.
+       *
+       * @param {number|string} checked Currently checked value.
+       * @param {number|string} current Current value in the iteration.
+       * @return {string} Returns checked="checked" if checked variable is equal to current state.
+       */
+      checked: function checked(_checked, current) {
+        return _.controlBase(_checked, current, 'checked');
+      },
+
+      /**
+       * Checks whether the option should be selected.
+       *
+       * @param {number|string} selected Currently checked value.
+       * @param {number|string} current Current value in the iteration.
+       * @return {string} Returns selected="selected" if checked variable is equal to current state.
+       */
+      selected: function selected(_selected, current) {
+        return _.controlBase(_selected, current, 'selected');
+      },
+
+      /**
+       * Checks whether the thing should be disabled.
+       *
+       * @param {number|string} disabled Currently checked value.
+       * @param {number|string} current Current value in the iteration.
+       * @return {string} Returns disabled="disabled" if checked variable is equal to current state.
+       */
+      disabled: function disabled(_disabled, current) {
+        return _.controlBase(_disabled, current, 'disabled');
+      },
+
+      /**
+       * Returns css class based on the passed condition.
+       *
+       * @param {*} conditon The condition to check.
+       * @param {string} className Class to add if the condition is true.
+       * @param {string} negatingClass Class to add if the condition is not true.
+       * @return {string} Class to add.
+       */
+      class: function _class(conditon, className, negatingClass) {
+        if (_.isTrue(conditon)) {
+          return className;
+        }
+
+        return 'undefined' !== typeof negatingClass ? negatingClass : '';
+      }
+    });
+  };
+
+  Optin.globalMixin();
+  /**
+   * Recursive toJSON
+   *
+   * @return {*} JSON.
+   */
+
+  Backbone.Model.prototype.toJSON = function () {
+    var json = _.clone(this.attributes);
+
+    var attr;
+
+    for (attr in json) {
+      if (json[attr] instanceof Backbone.Model || Backbone.Collection && json[attr] instanceof Backbone.Collection) {
+        json[attr] = json[attr].toJSON();
+      }
+    }
+
+    return json;
+  };
+})(jQuery);
+function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+Hustle.define('SShare.Content_View', function ($) {
+  'use strict';
+
+  return Hustle.View.extend(_.extend({}, Hustle.get('Mixins.Module_Content'), {
+    el: '#hustle-wizard-content',
+    activePlatforms: [],
+    events: {
+      'change select.hustle-select-field-variables': 'addPlaceholderToField',
+      'click ul.wpmudev-tabs-menu li label': 'toggleCheckbox',
+      // Open Add Platforms popup
+      'click .hustle-choose-platforms': 'openPlatformsModal'
+    },
+    render: function render() {
+      var me = this,
+          data = this.model.toJSON();
+
+      if ('undefined' !== typeof data.social_icons && data.social_icons) {
+        for (var platform in data.social_icons) {
+          me.addPlatformToPanel(platform, data.social_icons[platform]);
+        }
+      } // Initiate the sortable functionality to sort form platforms' order.
+
+
+      var sortableContainer = this.$('#hustle-social-services').sortable({
+        axis: 'y',
+        containment: '.sui-box-builder'
+      });
+      sortableContainer.on('sortupdate', $.proxy(me.platformsOrderChanged, me, sortableContainer)); //add all platforms to Add Platforms popup
+
+      for (var _platform in optinVars.social_platforms) {
+        me.addPlatformToDialog(_platform);
+      }
+
+      this.bindRemoveService();
+
+      if ('true' === Module.Utils.getUrlParam('new')) {
+        Module.Notification.open('success', optinVars.messages.module_created, 10000);
+      }
+    },
+    bindRemoveService: function bindRemoveService() {
+      // Delete Social Service
+      $('#hustle-wizard-content .hustle-remove-social-service').off('click').on('click', $.proxy(this.removeService, this));
+    },
+    openPlatformsModal: function openPlatformsModal() {
+      var self = this,
+          savedPlatforms = this.model.get('social_icons'),
+          platforms = 'undefined' !== typeof savedPlatforms ? Object.keys(savedPlatforms) : [],
+          PlatformsModalView = Hustle.get('Modals.Services_Platforms'),
+          platformsModal = new PlatformsModalView(platforms);
+      platformsModal.on('platforms:added', $.proxy(self.addNewPlatforms, self)); // Show dialog
+
+      SUI.openModal('hustle-dialog--add-platforms', this.$('.hustle-choose-platforms')[0], this.$('#hustle-dialog--add-platforms .hustle-modal-close')[0], true);
+    },
+    addNewPlatforms: function addNewPlatforms(platforms) {
+      var _this = this;
+
+      if (!this.model.get('social_icons')) {
+        this.model.set('social_icons', {});
+      }
+
+      var self = this,
+          savedPlatforms = _.extend({}, this.model.get('social_icons'));
+
+      $.each(platforms, function (i, platform) {
+        if (savedPlatforms && platform in savedPlatforms) {
+          //If this platform is already set, abort. Prevent duplicated platforms.
+          return true;
+        }
+
+        self.addPlatformToPanel(platform, {});
+
+        var data = _this.getPlatformDefaults(platform);
+
+        savedPlatforms[platform] = data;
+      });
+      this.bindRemoveService();
+      this.model.set('social_icons', savedPlatforms);
+      Hustle.Events.trigger('view.rendered', this);
+    },
+    addPlatformToPanel: function addPlatformToPanel(platform, data) {
+      var template = Optin.template('hustle-platform-row-tpl'),
+          $platformsContainer = this.$('#hustle-social-services');
+      data = _.extend({}, this.getPlatformViewDefaults(platform), data);
+      this.activePlatforms.push(platform);
+      $platformsContainer.append(template(data));
+    },
+    addPlatformToDialog: function addPlatformToDialog(platform) {
+      var template = Optin.template('hustle-add-platform-li-tpl'),
+          $container = $('#hustle_add_platforms_container'),
+          data = this.getPlatformViewDefaults(platform);
+      $container.append(template(data));
+    },
+    getPlatformDefaults: function getPlatformDefaults(platform) {
+      var label = platform in optinVars.social_platforms ? optinVars.social_platforms[platform] : platform,
+          defaults = {
+        platform: platform,
+        label: label,
+        type: 'click',
+        counter: '0',
+        link: ''
+      };
+
+      if ('email' === platform) {
+        defaults.title = '{post_title}';
+        defaults.message = optinVars.social_platforms_data.email_message_default;
+      }
+
+      return defaults;
+    },
+    getPlatformViewDefaults: function getPlatformViewDefaults(platform) {
+      var data = this.model.toJSON(),
+          counterEnabled = 'undefined' === typeof data.counter_enabled ? 'true' : data.counter_enabled,
+          changedStyles = {
+        fivehundredpx: '500px'
+      },
+          hasEndpoint = -1 !== optinVars.social_platforms_with_endpoints.indexOf(platform),
+          hasCounter = -1 !== optinVars.social_platforms_with_api.indexOf(platform);
+
+      var platformStyle = platform in changedStyles ? changedStyles[platform] : platform,
+          viewDefaults = _.extend({}, this.getPlatformDefaults(platform), {
+        platform_style: platformStyle,
+        counter_enabled: counterEnabled,
+        hasEndpoint: hasEndpoint,
+        hasCounter: hasCounter
+      });
+
+      return viewDefaults;
+    },
+
+    /**
+     * Assign the new platfom order to the model. Triggered when the platforms are sorted.
+     *
+     * @since 4.0.0
+     * @param {Object} sortable
+     */
+    platformsOrderChanged: function platformsOrderChanged(sortable) {
+      var platforms = this.model.get('social_icons'),
+          newOrder = sortable.sortable('toArray', {
+        attribute: 'data-platform'
+      }),
+          orderedPlatforms = {};
+
+      var _iterator = _createForOfIteratorHelper(newOrder),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var id = _step.value;
+          orderedPlatforms[id] = platforms[id];
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+
+      this.model.set('social_icons', orderedPlatforms);
+      this.model.trigger('change', this.model);
+    },
+    removeService: function removeService(e) {
+      var $this = $(e.currentTarget),
+          platform = $this.data('platform'),
+          socialIcons = this.model.get('social_icons'),
+          $platformContainer = this.$('#hustle-platform-' + platform); // Remove the platform container from the page.
+
+      $platformContainer.remove();
+      this.activePlatforms = _.without(this.activePlatforms, platform);
+      delete socialIcons[platform];
+      this.model.trigger('change', this.model);
+      e.stopPropagation();
+    },
+    modelUpdated: function modelUpdated(e) {
+      var changed = e.changed,
+          key = 'undefined' !== typeof Object.keys(changed)[0] ? Object.keys(changed)[0] : '';
+      var socialIcons; // for service_type
+
+      if ('service_type' in changed) {
+        this.serviceTypeUpdated(changed.service_type);
+      } // for click_counter
+
+
+      if ('click_counter' in changed) {
+        this.clickCounterUpdated(changed.click_counter);
+      } else if (-1 !== key.indexOf('_counter')) {
+        var platform = key.slice(0, -8);
+        socialIcons = this.model.get('social_icons');
+
+        if (platform in socialIcons) {
+          socialIcons[platform].counter = parseInt(changed[key]);
+        }
+
+        this.model.unset(key, {
+          silent: true
+        });
+      }
+
+      if (-1 !== key.indexOf('_link')) {
+        var _platform2 = key.slice(0, -5);
+
+        socialIcons = this.model.get('social_icons');
+
+        if (_platform2 in socialIcons) {
+          socialIcons[_platform2].link = changed[key];
+        }
+
+        this.model.unset(key, {
+          silent: true
+        });
+      }
+
+      if (-1 !== key.indexOf('_type')) {
+        var _platform3 = key.slice(0, -5);
+
+        socialIcons = this.model.get('social_icons');
+
+        if (_platform3 in socialIcons) {
+          socialIcons[_platform3].type = 'native' === changed[key] ? 'native' : 'click';
+        }
+
+        this.model.unset(key, {
+          silent: true
+        });
+      }
+
+      if ('email_title' in changed) {
+        var _platform4 = 'email';
+        socialIcons = this.model.get('social_icons');
+
+        if (_platform4 in socialIcons) {
+          socialIcons[_platform4].title = changed[key];
+        }
+
+        this.model.unset(key, {
+          silent: true
+        });
+      }
+
+      if ('email_message' in changed) {
+        var _platform5 = 'email';
+        socialIcons = this.model.get('social_icons');
+
+        if (_platform5 in socialIcons) {
+          socialIcons[_platform5].message = changed[key];
+        }
+
+        this.model.unset(key, {
+          silent: true
+        });
+      }
+    },
+    serviceTypeUpdated: function serviceTypeUpdated(val) {
+      var $counterOptions = this.$('#wpmudev-sshare-counter-options'),
+          $nativeOptions = $('.wph-wizard-services-icons-native'),
+          $customOptions = $('.wph-wizard-services-icons-custom');
+
+      if ('native' === val) {
+        $counterOptions.removeClass('wpmudev-hidden');
+        $customOptions.addClass('wpmudev-hidden');
+        $nativeOptions.removeClass('wpmudev-hidden');
+      } else {
+        $counterOptions.addClass('wpmudev-hidden');
+        $nativeOptions.addClass('wpmudev-hidden');
+        $customOptions.removeClass('wpmudev-hidden');
+      }
+    },
+    clickCounterUpdated: function clickCounterUpdated(val) {
+      var $counterNotice = $('#wpmudev-sshare-counter-options .hustle-twitter-notice');
+
+      if ('native' === val) {
+        $counterNotice.removeClass('wpmudev-hidden');
+      } else if (!$counterNotice.hasClass('wpmudev-hidden')) {
+        $counterNotice.addClass('wpmudev-hidden');
+      }
+
+      $('#wph-wizard-services-icons-native .wpmudev-social-item').each(function () {
+        var $checkbox = $(this).find('.toggle-checkbox'),
+            isChecked = $checkbox.is(':checked'),
+            $inputCounter = $(this).find('input.wpmudev-input_number');
+
+        if ('none' !== val && isChecked) {
+          $inputCounter.removeClass('wpmudev-hidden');
+        } else if (!$inputCounter.hasClass('wpmudev-hidden')) {
+          $inputCounter.addClass('wpmudev-hidden');
+        }
+      });
+      $('#wph-wizard-services-icons-native #wpmudev-counter-title>strong').removeClass('wpmudev-hidden');
+
+      if ('none' === val) {
+        $('#wph-wizard-services-icons-native #wpmudev-counter-title>strong:first-child').addClass('wpmudev-hidden');
+      } else {
+        $('#wph-wizard-services-icons-native #wpmudev-counter-title>strong:nth-child(2)').addClass('wpmudev-hidden');
+      }
+    },
+    toggleCheckbox: function toggleCheckbox(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var $this = this.$(e.target),
+          $li = $this.closest('li');
+
+      if ($li.hasClass('current')) {
+        return;
+      }
+
+      $li.addClass('current');
+      $li.siblings().removeClass('current');
+      var $input = $li.find('input'),
+          prop = $input.data('attribute');
+      this.model.set(prop, $input.val());
+    },
+    setSocialIcons: function setSocialIcons() {
+      var services = this.model.toJSON();
+      services = this.getSocialIconsData(services);
+      this.model.set('social_icons', services.social_icons, {
+        silent: true
+      });
+    },
+    getSocialIconsData: function getSocialIconsData(services) {
+      var $socialContainers = $('#wph-wizard-services-icons-' + services.service_type + ' .wpmudev-social-item'),
+          socialIcons = {};
+      $socialContainers.each(function () {
+        var $sc = $(this),
+            $toggleInput = $sc.find('input.toggle-checkbox'),
+            icon = $toggleInput.data('id'),
+            $counter = $sc.find('input.wpmudev-input_number'),
+            $link = $sc.find('input.wpmudev-input_text'); // check if counter have negative values
+
+        if ($counter.length) {
+          var counterVal = parseInt($counter.val());
+
+          if (0 > counterVal) {
+            $counter.val(0);
+          }
+        }
+
+        if ($toggleInput.is(':checked')) {
+          socialIcons[icon] = {
+            enabled: true,
+            counter: $counter.length ? $counter.val() : '0',
+            link: $link.length ? $link.val() : ''
+          };
+        }
+      });
+
+      if ($socialContainers.length) {
+        services.social_icons = socialIcons;
+      }
+
+      return services;
+    },
+    addPlaceholderToField: function addPlaceholderToField(e) {
+      var $select = $(e.currentTarget),
+          selectedPlaceholder = $select.val(),
+          targetInputName = $select.data('field'),
+          $input = $("[name=\"".concat(targetInputName, "\"]")),
+          val = $input.val() + selectedPlaceholder;
+      $input.val(val).trigger('change');
+    }
+  }));
+});
+Hustle.define('SShare.Design_View', function ($) {
+  'use strict';
+
+  return Hustle.View.extend(_.extend({}, Hustle.get('Mixins.Model_Updater'), Hustle.get('Mixins.Module_Design'), {
+    beforeRender: function beforeRender() {
+      this.listenTo(this.model, 'change', this.modelUpdated); // Update the Appearance tab view when the display types are changed in the Display tab.
+
+      Hustle.Events.off('modules.view.displayTypeUpdated').on('modules.view.displayTypeUpdated', $.proxy(this.viewChangedDisplayTab, this));
+    },
+    render: function render() {
+      var _this = this;
+
+      this.createPickers($('.sui-colorpicker-input')); // Trigger preview when this tab is shown.
+
+      $('a[data-tab="appearance"]').on('click', $.proxy(this.updatePreview, this));
+      $('.sui-box[data-tab="display"] .sui-button[data-direction="next"').on('click', $.proxy(this.updatePreview, this));
+      $('.sui-box[data-tab="visibility"] .sui-button[data-direction="prev"').on('click', $.proxy(this.updatePreview, this));
+      this.updateSocialIconsPickers();
+      setTimeout(function () {
+        return _this.updatePreview();
+      }, 100);
+    },
+    updatePreview: function updatePreview() {
+      $('#hui-preview-social-shares-floating').trigger('hustle_update_prewiev');
+    },
+    // Adjust the view when model is updated
+    modelUpdated: function modelUpdated(model) {
+      var changedKey = Object.keys(model.changed)[0],
+          actionToDo = this.getActionOnContentModelUpdated(changedKey);
+
+      if ('undefined' !== typeof actionToDo) {
+        actionToDo();
+      }
+
+      this.updatePreview();
+    },
+    getActionOnContentModelUpdated: function getActionOnContentModelUpdated(changedKey) {
+      var _this2 = this;
+
+      var functions = {
+        icon_style: function icon_style() {
+          return _this2.updateSocialIconsPickers();
+        }
+      };
+      return functions[changedKey];
+    },
+    updateSocialIconsPickers: function updateSocialIconsPickers() {
+      var iconStyle = this.model.get('icon_style');
+
+      if ('flat' === iconStyle) {
+        $('#hustle-floating-icons-custom-background').addClass('sui-hidden');
+        $('#hustle-widget-icons-custom-background').addClass('sui-hidden');
+      } else {
+        $('#hustle-floating-icons-custom-background').removeClass('sui-hidden');
+        $('#hustle-widget-icons-custom-background').removeClass('sui-hidden');
+      }
+
+      if ('outline' === iconStyle) {
+        // Replace "icon background" text with "icon border"
+        this.$('.hustle-icon-bg-color-label').addClass('sui-hidden');
+        this.$('.hustle-icon-border-color-label').removeClass('sui-hidden'); // Hide counter border color
+
+        $('#hustle-floating-counter-border').addClass('sui-hidden');
+        $('#hustle-widget-counter-border').addClass('sui-hidden');
+      } else {
+        // Replace "icon border" text with "icon background"
+        this.$('.hustle-icon-bg-color-label').removeClass('sui-hidden');
+        this.$('.hustle-icon-border-color-label').addClass('sui-hidden'); // Show counter border color
+
+        $('#hustle-floating-counter-border').removeClass('sui-hidden');
+        $('#hustle-widget-counter-border').removeClass('sui-hidden');
+      }
+    },
+    viewChangedDisplayTab: function viewChangedDisplayTab(model) {
+      var inline = model.get('inline_enabled'),
+          widget = model.get('widget_enabled'),
+          shortcode = model.get('shortcode_enabled'),
+          floatDesktop = model.get('float_desktop_enabled'),
+          floatMobile = model.get('float_mobile_enabled'),
+          isWidgetEnabled = _.intersection([1, '1', 'true'], [inline, widget, shortcode]).length,
+          isFloatingEnabled = _.intersection([1, '1', 'true'], [floatMobile, floatDesktop]).length; // TODO: we should be using this.$( '...' ) here instead.
+
+
+      if (isFloatingEnabled) {
+        $('#hustle-appearance-floating-icons-row').show();
+        $('#hustle-appearance-floating-icons-placeholder').hide();
+      } else {
+        $('#hustle-appearance-floating-icons-row').hide();
+        $('#hustle-appearance-floating-icons-placeholder').show();
+      }
+
+      if (isWidgetEnabled) {
+        $('#hustle-appearance-widget-icons-row').show();
+        $('#hustle-appearance-widget-icons-placeholder').hide();
+      } else {
+        $('#hustle-appearance-widget-icons-row').hide();
+        $('#hustle-appearance-widget-icons-placeholder').show();
+      }
+
+      if (!isWidgetEnabled && !isFloatingEnabled) {
+        $('#hustle-appearance-icons-style').hide();
+        $('#hustle-appearance-empty-message').show();
+        $('#hustle-appearance-floating-icons-placeholder').hide();
+        $('#hustle-appearance-widget-icons-placeholder').hide();
+      } else {
+        $('#hustle-appearance-icons-style').show();
+        $('#hustle-appearance-empty-message').hide();
+      }
+    },
+    colorPickerCleared: function colorPickerCleared(e, parentSuiPickerInput) {
+      var inputName = parentSuiPickerInput.data('attribute'),
+          resetValue = optinVars.palettes.sshare_defaults[inputName],
+          $suiPicker = parentSuiPickerInput.closest('.sui-colorpicker-wrap'),
+          $suiPickerValue = $suiPicker.find('.sui-colorpicker-value'),
+          $suiPickerColor = $suiPicker.find('.sui-colorpicker-value span[role=button]'),
+          $wpPicker = parentSuiPickerInput.closest('.wp-picker-container'),
+          $wpPickerClear = $wpPicker.find('.wp-picker-clear');
+      $wpPickerClear.click();
+      $suiPickerValue.find('input').val(resetValue);
+      parentSuiPickerInput.val(resetValue).trigger('change');
+      $suiPickerColor.find('span').css({
+        'background-color': resetValue
+      });
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    updatePickers: function updatePickers() {
+      var self = this;
+
+      if ('undefined' !== typeof optinVars.palettes.sshare_defaults) {
+        var colors = optinVars.palettes.sshare_defaults; // update color palettes
+
+        _.each(colors, function (color, key) {
+          self.$('input[data-attribute="' + key + '"]').val(color).trigger('change');
+        });
+      }
+    }
+  }));
+});
+Hustle.define('SShare.Display_View', function () {
+  'use strict';
+
+  return Hustle.View.extend(_.extend({}, Hustle.get('Mixins.Module_Display'), {
+    viewChanged: function viewChanged(changed) {
+      if (_.intersection(['float_desktop_enabled', 'float_mobile_enabled', 'inline_enabled', 'widget_enabled', 'shortcode_enabled'], Object.keys(changed)).length) {
+        // Show/hide some settings in the Appearance tab.
+        Hustle.Events.trigger('modules.view.displayTypeUpdated', this.model);
+      } else if ('float_desktop_position' in changed) {
+        if ('right' === changed.float_desktop_position) {
+          this.$('#hustle-float_desktop-left-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_desktop-right-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_desktop-offset-x-wrapper').removeClass('sui-hidden');
+        } else if ('left' === changed.float_desktop_position) {
+          this.$('#hustle-float_desktop-left-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_desktop-right-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_desktop-offset-x-wrapper').removeClass('sui-hidden');
+        } else {
+          this.$('#hustle-float_desktop-offset-x-wrapper').addClass('sui-hidden');
+        }
+      } else if ('float_desktop_position_y' in changed) {
+        if ('bottom' === changed.float_desktop_position_y) {
+          this.$('#hustle-float_desktop-top-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_desktop-bottom-offset-label').removeClass('sui-hidden');
+        } else {
+          this.$('#hustle-float_desktop-top-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_desktop-bottom-offset-label').addClass('sui-hidden');
+        }
+      } else if ('float_mobile_position' in changed) {
+        if ('right' === changed.float_mobile_position) {
+          this.$('#hustle-float_mobile-left-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_mobile-right-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_mobile-offset-x-wrapper').removeClass('sui-hidden');
+        } else if ('left' === changed.float_mobile_position) {
+          this.$('#hustle-float_mobile-left-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_mobile-right-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_mobile-offset-x-wrapper').removeClass('sui-hidden');
+        } else {
+          this.$('#hustle-float_mobile-offset-x-wrapper').addClass('sui-hidden');
+        }
+      } else if ('float_mobile_position_y' in changed) {
+        if ('bottom' === changed.float_mobile_position_y) {
+          this.$('#hustle-float_mobile-top-offset-label').addClass('sui-hidden');
+          this.$('#hustle-float_mobile-bottom-offset-label').removeClass('sui-hidden');
+        } else {
+          this.$('#hustle-float_mobile-top-offset-label').removeClass('sui-hidden');
+          this.$('#hustle-float_mobile-bottom-offset-label').addClass('sui-hidden');
+        }
+      }
+    }
+  }));
+});
+function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+Hustle.define('Modals.Services_Platforms', function () {
+  'use strict';
+
+  return Backbone.View.extend({
+    el: '#hustle-dialog--add-platforms',
+    selectedPlatforms: [],
+    events: {
+      'click .sui-box-selector input': 'selectPlatforms',
+      //Add platforms
+      'click #hustle-add-platforms': 'addPlatforms'
+    },
+    initialize: function initialize(platforms) {
+      this.selectedPlatforms = platforms;
+      this.$('.hustle-add-platforms-option').prop('checked', false).prop('disabled', false);
+
+      var _iterator = _createForOfIteratorHelper(this.selectedPlatforms),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var platform = _step.value;
+          this.$('#hustle-social--' + platform).prop('checked', true).prop('disabled', true);
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
+      }
+    },
+    selectPlatforms: function selectPlatforms(e) {
+      var $input = this.$(e.target),
+          $selectorLabel = this.$el.find('label[for="' + $input.attr('id') + '"]'),
+          value = $input.val();
+      $selectorLabel.toggleClass('selected');
+
+      if ($input.prop('checked')) {
+        this.selectedPlatforms.push(value);
+      } else {
+        this.selectedPlatforms = _.without(this.selectedPlatforms, value);
+      }
+    },
+    checkPlatforms: function checkPlatforms() {
+      var _iterator2 = _createForOfIteratorHelper(this.selectedPlatforms),
+          _step2;
+
+      try {
+        for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+          var platform = _step2.value;
+
+          if (!this.$('#hustle-social--' + platform).prop('checked')) {
+            this.selectedPlatforms = _.without(this.selectedPlatforms, platform);
+          }
+        }
+      } catch (err) {
+        _iterator2.e(err);
+      } finally {
+        _iterator2.f();
+      }
+    },
+    addPlatforms: function addPlatforms(e) {
+      var $button = this.$(e.target);
+      $button.addClass('sui-button-onload');
+      this.checkPlatforms();
+      this.trigger('platforms:added', this.selectedPlatforms);
+      setTimeout(function () {
+        // Hide dialog
+        SUI.closeModal();
+        $button.removeClass('sui-button-onload');
+      }, 500);
+    }
+  });
+});
+Hustle.define('SShare.View', function ($) {
+  'use strict';
+
+  return Hustle.View.extend(_.extend({}, Hustle.get('Mixins.Wizard_View'), {
+    _events: {
+      'hustle_update_prewiev #hui-preview-social-shares-floating': 'updatePreview'
+    },
+    updatePreview: function updatePreview() {
+      var previewData = _.extend({}, this.model.toJSON(), this.getDataToSave());
+
+      $.ajax({
+        type: 'POST',
+        url: ajaxurl,
+        dataType: 'json',
+        data: {
+          action: 'hustle_preview_module',
+          id: this.model.get('module_id'),
+          previewData: previewData
+        },
+        success: function success(res) {
+          if (res.success) {
+            var $floatingContainer = $('#hui-preview-social-shares-floating'),
+                $widgetContainer = $('#hui-preview-social-shares-widget');
+            $floatingContainer.html(res.data.floatingHtml);
+            $widgetContainer.html(res.data.widgetHtml);
+
+            if (res.data.style) {
+              $floatingContainer.append(res.data.style);
+            }
+
+            $('.hustle-share-icon').on('click', function (ev) {
+              return ev.preventDefault();
+            });
+          }
+        }
+      });
+    },
+
+    /**
+     * Overriding.
+     *
+     * @param {Object} opts
+     */
+    setTabsViews: function setTabsViews(opts) {
+      this.contentView = opts.contentView;
+      this.displayView = opts.displayView;
+      this.designView = opts.designView;
+      this.visibilityView = opts.visibilityView;
+      this.moduleType = this.model.get('module_type');
+    },
+
+    /**
+     * Overriding.
+     */
+    renderTabs: function renderTabs() {
+      // Services
+      this.contentView.delegateEvents(); // Appearance view
+
+      this.designView.delegateEvents(); // Display Options View
+
+      this.displayView.delegateEvents(); // Visibility view.
+
+      this.visibilityView.delegateEvents();
+      this.visibilityView.afterRender();
+    },
+
+    /**
+     * Overriding.
+     */
+    sanitizeData: function sanitizeData() {},
+
+    /**
+     * Overriding.
+     */
+    getDataToSave: function getDataToSave() {
+      return {
+        content: this.contentView.model.toJSON(),
+        display: this.displayView.model.toJSON(),
+        design: this.designView.model.toJSON(),
+        visibility: this.visibilityView.model.toJSON()
+      };
+    }
+  }));
+});
+(function () {
+  'use strict';
+  /**
+   * Listing Page
+   */
+
+  (function () {
+    var page = '_page_hustle_popup_listing';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    new Optin.listingBase({
+      moduleType: optinVars.current.module_type
+    });
+  })();
+  /**
+   * Edit or New page
+   */
+
+
+  (function () {
+    var page = '_page_hustle_popup';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    var View = Hustle.View.extend(Hustle.get('Mixins.Wizard_View')),
+        ViewContent = Hustle.View.extend(Hustle.get('Mixins.Module_Content')),
+        ViewEmails = Hustle.View.extend(Hustle.get('Mixins.Module_Emails')),
+        ViewDesign = Hustle.View.extend(Hustle.get('Mixins.Module_Design')),
+        ViewVisibility = Hustle.View.extend(Hustle.get('Mixins.Module_Visibility')),
+        ViewSettings = Hustle.View.extend(Hustle.get('Mixins.Module_Settings')),
+        ViewIntegrations = Hustle.get('Module.IntegrationsView'),
+        ModelView = Module.Model,
+        BaseModel = Hustle.get('Models.M');
+    return new View({
+      model: new ModelView(optinVars.current.data || {}),
+      contentView: new ViewContent({
+        BaseModel: BaseModel
+      }),
+      emailsView: new ViewEmails({
+        BaseModel: BaseModel
+      }),
+      designView: new ViewDesign({
+        BaseModel: BaseModel
+      }),
+      integrationsView: new ViewIntegrations({
+        BaseModel: BaseModel
+      }),
+      visibilityView: new ViewVisibility({
+        BaseModel: BaseModel
+      }),
+      settingsView: new ViewSettings({
+        BaseModel: BaseModel
+      })
+    });
+  })();
+})();
+(function () {
+  'use strict';
+  /**
+   * Listing Page
+   */
+
+  (function () {
+    var page = '_page_hustle_slidein_listing';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    new Optin.listingBase({
+      moduleType: optinVars.current.module_type
+    });
+  })();
+  /**
+   * Edit or New page
+   */
+
+
+  (function () {
+    var page = '_page_hustle_slidein';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    var View = Hustle.View.extend(Hustle.get('Mixins.Wizard_View')),
+        ViewContent = Hustle.View.extend(Hustle.get('Mixins.Module_Content')),
+        ViewEmails = Hustle.View.extend(Hustle.get('Mixins.Module_Emails')),
+        ViewDesign = Hustle.View.extend(Hustle.get('Mixins.Module_Design')),
+        ViewVisibility = Hustle.View.extend(Hustle.get('Mixins.Module_Visibility')),
+        ViewSettings = Hustle.View.extend(Hustle.get('Mixins.Module_Settings')),
+        ViewIntegrations = Hustle.get('Module.IntegrationsView'),
+        ModelView = Module.Model,
+        BaseModel = Hustle.get('Models.M');
+    return new View({
+      model: new ModelView(optinVars.current.data || {}),
+      contentView: new ViewContent({
+        BaseModel: BaseModel
+      }),
+      emailsView: new ViewEmails({
+        BaseModel: BaseModel
+      }),
+      designView: new ViewDesign({
+        BaseModel: BaseModel
+      }),
+      integrationsView: new ViewIntegrations({
+        BaseModel: BaseModel
+      }),
+      visibilityView: new ViewVisibility({
+        BaseModel: BaseModel
+      }),
+      settingsView: new ViewSettings({
+        BaseModel: BaseModel
+      })
+    });
+  })();
+})();
+(function () {
+  'use strict'; // Listings Page
+
+  (function () {
+    var page = '_page_hustle_embedded_listing';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    new Optin.listingBase({
+      moduleType: optinVars.current.module_type
+    });
+  })(); // Wizard Page
+
+
+  (function () {
+    var page = '_page_hustle_embedded';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    var view = Hustle.View.extend(Hustle.get('Mixins.Wizard_View')),
+        ViewContent = Hustle.View.extend(Hustle.get('Mixins.Module_Content')),
+        ViewEmails = Hustle.View.extend(Hustle.get('Mixins.Module_Emails')),
+        ViewDesign = Hustle.View.extend(Hustle.get('Mixins.Module_Design')),
+        ViewDisplay = Hustle.View.extend(Hustle.get('Mixins.Module_Display')),
+        ViewVisibility = Hustle.View.extend(Hustle.get('Mixins.Module_Visibility')),
+        ViewSettings = Hustle.View.extend(Hustle.get('Mixins.Module_Settings')),
+        ViewIntegrations = Hustle.get('Module.IntegrationsView'),
+        viewModel = Module.Model,
+        BaseModel = Hustle.get('Models.M');
+    return new view({
+      model: new viewModel(optinVars.current.data || {}),
+      contentView: new ViewContent({
+        BaseModel: BaseModel
+      }),
+      emailsView: new ViewEmails({
+        BaseModel: BaseModel
+      }),
+      designView: new ViewDesign({
+        BaseModel: BaseModel
+      }),
+      integrationsView: new ViewIntegrations({
+        BaseModel: BaseModel
+      }),
+      displayView: new ViewDisplay({
+        BaseModel: BaseModel
+      }),
+      visibilityView: new ViewVisibility({
+        BaseModel: BaseModel
+      }),
+      settingsView: new ViewSettings({
+        BaseModel: BaseModel
+      })
+    });
+  })();
+})();
+(function () {
+  'use strict';
+  /**
+   * Listing Page.
+   */
+
+  (function () {
+    var page = '_page_hustle_sshare_listing';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    new Optin.listingBase({
+      moduleType: optinVars.current.module_type
+    });
+  })();
+  /**
+   * Wizard page.
+   */
+
+
+  (function () {
+    var page = '_page_hustle_sshare';
+
+    if (page !== pagenow.substr(pagenow.length - page.length)) {
+      return;
+    }
+
+    var view = Hustle.get('SShare.View'),
+        ViewContent = Hustle.get('SShare.Content_View'),
+        ViewDisplay = Hustle.get('SShare.Display_View'),
+        ViewDesign = Hustle.get('SShare.Design_View'),
+        ViewVisibility = Hustle.View.extend(Hustle.get('Mixins.Module_Visibility')),
+        viewModel = Module.Model,
+        BaseModel = Hustle.get('Models.M');
+    return new view({
+      model: new viewModel(optinVars.current.data || {}),
+      contentView: new ViewContent({
+        BaseModel: BaseModel
+      }),
+      displayView: new ViewDisplay({
+        BaseModel: BaseModel
+      }),
+      designView: new ViewDesign({
+        BaseModel: BaseModel
+      }),
+      visibilityView: new ViewVisibility({
+        BaseModel: BaseModel
+      })
+    });
+  })();
+})();
+Hustle.define('Dashboard.View', function ($) {
+  'use strict';
+
+  if ('toplevel_page_hustle' !== pagenow) {
+    // eslint-disable-line camelcase
+    return;
+  }
+
+  var dashboardView = Backbone.View.extend({
+    el: '.sui-wrap-hustle',
+    events: {
+      'click .hustle-preview-module-button': 'previewModule',
+      'click .hustle-delete-module-button': 'openDeleteModal',
+      'click .hustle-free-version-create': 'showUpgradeModal',
+      'click .sui-dropdown .hustle-onload-icon-action': 'addLoadingIconToActionsButton',
+      // Modules' actions.
+      'click .hustle-single-module-button-action': 'handleSingleModuleAction'
+    },
+    initialize: function initialize() {
+      if ($('#hustle-dialog--welcome').length) {
+        this.openWelcomeDialog();
+      } else if ($('#hustle-dialog--migrate').length) {
+        this.openMigrateDialog();
+      } else if ($('#hustle-dialog--release-highlight').length) {
+        this.openReleaseHighlightDialog();
+      }
+
+      this.doActionsBasedOnUrl();
+    },
+    doActionsBasedOnUrl: function doActionsBasedOnUrl() {
+      // Display notice based on URL parameters.
+      if (Module.Utils.getUrlParam('show-notice')) {
+        var status = 'success' === Module.Utils.getUrlParam('show-notice') ? 'success' : 'error',
+            notice = Module.Utils.getUrlParam('notice'),
+            message = notice && 'undefined' !== optinVars.messages[notice] ? optinVars.messages[notice] : Module.Utils.getUrlParam('notice-message');
+
+        if ('undefined' !== typeof message && message.length) {
+          Module.Notification.open(status, message);
+        }
+      }
+    },
+    previewModule: function previewModule(e) {
+      e.preventDefault();
+      var $button = $(e.currentTarget);
+      this.getPreviewView().open($button.data('id'), $button.data('type'), $button, {
+        module_name: $button.data('name')
+      });
+    },
+    getPreviewView: function getPreviewView() {
+      if (!this.previewView) {
+        var previewView = Hustle.get('Modals.Preview');
+        this.previewView = new previewView();
+      }
+
+      return this.previewView;
+    },
+    showUpgradeModal: function showUpgradeModal(e) {
+      if ('undefined' !== typeof e) {
+        e.preventDefault();
+      }
+
+      var $upgradeModal = $('#wph-upgrade-modal');
+      $upgradeModal.addClass('wpmudev-modal-active');
+    },
+
+    /**
+     * @since 4.0.0
+     * @param {Object} e
+     */
+    openDeleteModal: function openDeleteModal(e) {
+      e.preventDefault();
+      var $this = $(e.currentTarget),
+          data = {
+        id: $this.data('id'),
+        nonce: $this.data('nonce'),
+        action: 'delete',
+        title: $this.data('title'),
+        description: $this.data('description')
+      };
+      Module.deleteModal.open(data, $this[0]);
+    },
+    addLoadingIconToActionsButton: function addLoadingIconToActionsButton(e) {
+      var $actionButton = $(e.currentTarget),
+          $mainButton = $actionButton.closest('.sui-dropdown').find('.sui-dropdown-anchor');
+      $mainButton.addClass('sui-button-onload');
+    },
+    openWelcomeDialog: function openWelcomeDialog() {
+      Hustle.get('Modals.Welcome');
+    },
+    openMigrateDialog: function openMigrateDialog() {
+      Hustle.get('Modals.Migration');
+    },
+    openReleaseHighlightDialog: function openReleaseHighlightDialog() {
+      Hustle.get('Modals.ReleaseHighlight');
+    },
+    handleSingleModuleAction: function handleSingleModuleAction(e) {
+      Module.handleActions.initAction(e, 'dashboard', this);
+    }
+  });
+  new dashboardView();
+});
+Hustle.define('Integrations.View', function ($) {
+  'use strict';
+
+  var page = '_page_hustle_integrations';
+
+  if (page !== pagenow.substr(pagenow.length - page.length)) {
+    return;
+  }
+
+  var integrationsView = Backbone.View.extend({
+    el: '.sui-wrap-hustle',
+    events: {
+      'click .connect-integration': 'connectIntegration',
+      'keypress .connect-integration': 'preventEnterKeyFromDoingThings'
+    },
+    initialize: function initialize() {
+      this.stopListening(Hustle.Events, 'hustle:providers:reload', this.renderProvidersTables);
+      this.listenTo(Hustle.Events, 'hustle:providers:reload', this.renderProvidersTables);
+      this.render();
+    },
+    render: function render() {
+      var $notConnectedWrapper = this.$el.find('#hustle-not-connected-providers-section'),
+          $connectedWrapper = this.$el.find('#hustle-connected-providers-section');
+
+      if (0 < $notConnectedWrapper.length && 0 < $connectedWrapper.length) {
+        this.renderProvidersTables();
+      }
+
+      if (optinVars.integration_redirect) {
+        this.handleIntegrationRedirect();
+      }
+    },
+    renderProvidersTables: function renderProvidersTables() {
+      var self = this,
+          data = {};
+      this.$el.find('.hustle-integrations-display').html("<div class=\"sui-notice hustle-integration-loading-notice\">\n\t\t\t\t\t\t<div class=\"sui-notice-content\">\n\t\t\t\t\t\t\t<div class=\"sui-notice-message\">\n\n\t\t\t\t\t\t\t\t<span class=\"sui-notice-icon sui-icon-loader sui-loading sui-md\" aria-hidden=\"true\"></span>\n\t\t\t\t\t\t\t\t<p>".concat(optinVars.fetching_list, "</p>\n\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>"));
+      data.action = 'hustle_provider_get_providers';
+      data._ajax_nonce = optinVars.providers_action_nonce; // eslint-disable-line camelcase
+
+      data.data = {};
+      var ajax = $.post({
+        url: ajaxurl,
+        type: 'post',
+        data: data
+      }).done(function (result) {
+        if (result && result.success) {
+          self.$el.find('#hustle-not-connected-providers-section').html(result.data.not_connected);
+          self.$el.find('#hustle-connected-providers-section').html(result.data.connected);
+        }
+      }); // Remove the preloader.
+
+      ajax.always(function () {
+        self.$el.find('.hustle-integration-loading-notice').remove();
+      });
+    },
+    // Prevent the enter key from opening integrations modals and breaking the page.
+    preventEnterKeyFromDoingThings: function preventEnterKeyFromDoingThings(e) {
+      if (13 === e.which) {
+        // the enter key code
+        e.preventDefault();
+      }
+    },
+    connectIntegration: function connectIntegration(e) {
+      Module.integrationsModal.open(e);
+    },
+    handleIntegrationRedirect: function handleIntegrationRedirect() {
+      var data = optinVars.integration_redirect;
+      var migrate = optinVars.integrations_migrate;
+      window.history.pushState({}, document.title, optinVars.integrations_url);
+
+      if ('notification' === data.action) {
+        var status = 'success' === data.status ? 'success' : 'error',
+            delay = data.delay ? data.delay : 10000;
+        Module.Notification.open(status, data.message, delay);
+      } // We're not doing CTCT yet.
+      //if ( migrate.hasOwnProperty( 'provider_modal' ) && 'constantcontact' === migrate.provider_modal ) {
+      //	Module.ProviderMigration.open( migrate.provider_modal );
+      //}
+
+
+      if (migrate.hasOwnProperty('provider_modal') && 'aweber' === migrate.provider_modal) {
+        Module.ProviderMigration.open(migrate.provider_modal, migrate.integration_id);
+      }
+
+      if (migrate.hasOwnProperty('migration_notificaiton')) {
+        var _status = 'success' === migrate.migration_notificaiton.status ? 'success' : 'error',
+            _delay = migrate.migration_notificaiton.delay ? migrate.migration_notificaiton.delay : 10000;
+
+        Module.Notification.open(_status, migrate.migration_notificaiton.message, _delay);
+      }
+    }
+  });
+  new integrationsView();
+});
+/* global moment */
+Hustle.define('Entries.View', function ($) {
+  'use strict';
+
+  var page = '_page_hustle_entries';
+
+  if (page !== pagenow.substr(pagenow.length - page.length)) {
+    return;
+  }
+
+  var entriesView = Backbone.View.extend({
+    el: '.sui-wrap-hustle',
+    events: {
+      'click .sui-pagination-wrap .hustle-open-inline-filter': 'openFilterInline',
+      'click .sui-pagination-wrap .hustle-open-dialog-filter': 'openFilterModal',
+      'click .hustle-delete-entry-button': 'openDeleteModal',
+      'click .sui-active-filter-remove': 'removeFilter',
+      'change input[name=search_email]': 'toggleClearButton',
+      'change input[name=date_range]': 'toggleClearButton',
+      'apply.daterangepicker input[name=date_range]': 'toggleClearButton',
+      'click .hustle-entries-clear-filter': 'clearFilter'
+    },
+    initialize: function initialize() {
+      this.initializeDaterangepicker();
+      var entriesAlert = $('.hui-entries-alert');
+
+      if (entriesAlert.length) {
+        // Assign correct colspan.
+        entriesAlert.attr('colspan', entriesAlert.closest('.sui-table').find('> thead tr th').length); // Show message.
+
+        entriesAlert.find('i').hide();
+        entriesAlert.find('span').removeClass('sui-screen-reader-text');
+      }
+
+      $('input[name=search_email]').trigger('change');
+    },
+    initializeDaterangepicker: function initializeDaterangepicker() {
+      var $desktopInputs = this.$('.hui-box-actions input.hustle-entries-filter-date'),
+          $mobileInput = this.$('#hustle-dialog--filter-entries input.hustle-entries-filter-date'),
+          onApplyCallback = function onApplyCallback(ev, picker) {
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+      }; // Initialize for desktop fields.
+
+
+      var options = {
+        autoUpdateInput: false,
+        autoApply: true,
+        alwaysShowCalendars: true,
+        locale: optinVars.daterangepicker,
+        ranges: this.getDaterangepickerRanges()
+      };
+      $desktopInputs.daterangepicker(options);
+      $desktopInputs.on('apply.daterangepicker', onApplyCallback); // Initialize for mobile field.
+
+      var mobileOptions = Object.assign({
+        parentEl: '#hustle-dialog--filter-entries .sui-box-body'
+      }, options);
+      $mobileInput.daterangepicker(mobileOptions);
+      $mobileInput.on('apply.daterangepicker', onApplyCallback);
+    },
+    getDaterangepickerRanges: function getDaterangepickerRanges() {
+      var rangesWithLabels = {};
+      var labels = optinVars.daterangepicker.ranges,
+          momentRanges = {
+        today: [moment(), moment()],
+        yesterday: [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+        last_seven_days: [moment().subtract(6, 'days'), moment()],
+        last_thirty_days: [moment().subtract(29, 'days'), moment()],
+        this_month: [moment().startOf('month'), moment().endOf('month')],
+        last_month: [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+      };
+
+      for (var key in momentRanges) {
+        var label = labels[key],
+            range = momentRanges[key];
+        rangesWithLabels[label] = range;
+      }
+
+      return rangesWithLabels;
+    },
+    openFilterInline: function openFilterInline(e) {
+      var $this = this.$(e.target),
+          $wrapper = $this.closest('.sui-pagination-wrap'),
+          $button = $wrapper.find('.sui-button-icon'),
+          $filters = $this.closest('.hui-actions-bar').next('.sui-pagination-filter');
+      $button.toggleClass('sui-active');
+      $filters.toggleClass('sui-open');
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    openFilterModal: function openFilterModal(e) {
+      e.preventDefault();
+      SUI.openModal('hustle-dialog--filter-entries', $(e.currentTarget)[0], this.$('#hustle-dialog--filter-entries .hustle-modal-close')[0], true);
+    },
+    removeFilter: function removeFilter(e) {
+      var $this = this.$(e.target),
+          possibleFilters = ['order_by', 'search_email', 'date_range'],
+          currentFilter = $this.data('filter'),
+          re = new RegExp('&' + currentFilter + '=[^&]*', 'i');
+
+      if (-1 !== possibleFilters.indexOf(currentFilter)) {
+        location.href = location.href.replace(re, '');
+      }
+    },
+    openDeleteModal: function openDeleteModal(e) {
+      e.preventDefault();
+      var $this = $(e.target),
+          data = {
+        id: $this.data('id'),
+        nonce: $this.data('nonce'),
+        action: 'delete',
+        title: $this.data('title'),
+        description: $this.data('description'),
+        actionClass: ''
+      };
+      Module.deleteModal.open(data, $this[0]);
+    },
+    toggleClearButton: function toggleClearButton(e) {
+      var $form = $(e.target).closest('form'),
+          $clearFilter = $form.find('.hustle-entries-clear-filter');
+
+      if ($form.find('input[name=search_email]').val() || $form.find('input[name=date_range]').val()) {
+        $clearFilter.prop('disabled', false);
+      } else {
+        $clearFilter.prop('disabled', true);
+      }
+    },
+    clearFilter: function clearFilter(e) {
+      e.preventDefault();
+      this.$('input[name=search_email]').val('');
+      this.$('input[name=date_range]').val('');
+      this.toggleClearButton(e);
+    }
+  });
+  new entriesView();
+});
+Hustle.define('ProviderNotice.View', function ($) {
+  'use strict';
+
+  var providerNotice = Backbone.View.extend({
+    el: '.hustle-provider-notice',
+    cookieKey: '',
+    events: {
+      'click .dismiss-provider-migration-notice': 'HideProviderNotice'
+    },
+    initialize: function initialize() {
+      this.cookieKey = 'provider_migration_notice_';
+
+      if ($('.hustle-provider-notice').length) {
+        this.showProviderNotice();
+      }
+    },
+    HideProviderNotice: function HideProviderNotice(e) {
+      Optin.cookie.set(this.cookieKey + $(e.currentTarget).data('name'), 1, 7);
+      location.reload();
+    },
+    showProviderNotice: function showProviderNotice() {
+      var provider = $('.hustle-provider-notice').data('name'),
+          notice = Optin.cookie.get(this.cookieKey + provider);
+
+      if (1 !== notice) {
+        $('.hustle_migration_notice__' + provider).show();
+      }
+    }
+  });
+  new providerNotice();
+});
+/* global tinyMCE */
+Hustle.define('Settings.View', function ($, doc, win) {
+  'use strict';
+
+  var page = '_page_hustle_settings';
+
+  if (page !== pagenow.substr(pagenow.length - page.length)) {
+    return;
+  }
+
+  var viewSettings = Backbone.View.extend({
+    el: '.sui-wrap-hustle',
+    events: {
+      'click .sui-sidenav .sui-vertical-tab a': 'sidenav',
+      'change select.sui-mobile-nav': 'sidenavMobile',
+      'click .sui-pagination-wrap > button': 'pagination',
+      'click .hustle-load-on-click': 'addLoadingState',
+      // Save settings.
+      'click .hustle-settings-save': 'handleSave'
+    },
+    initialize: function initialize() {
+      var me = this,
+          recaptchaView = Hustle.get('Settings.reCaptcha_Settings'),
+          topMetricsView = Hustle.get('Settings.Top_Metrics_View'),
+          privacySettings = Hustle.get('Settings.Privacy_Settings'),
+          permissionsView = Hustle.get('Settings.Permissions_View'),
+          dataSettings = Hustle.get('Settings.Data_Settings'),
+          palettesView = Hustle.get('Settings.Palettes');
+      this.recaptchaView = new recaptchaView();
+      new topMetricsView();
+      new privacySettings();
+      new permissionsView();
+      new dataSettings();
+      new palettesView();
+      $(win).off('popstate', $.proxy(me.tabUpdate, me));
+      $(win).on('popstate', $.proxy(me.tabUpdate, me));
+      Hustle.Events.trigger('view.rendered', this);
+      this.doActionsBasedOnUrl();
+    },
+    doActionsBasedOnUrl: function doActionsBasedOnUrl() {
+      // Do stuff based on URL parameters.
+      if (Module.Utils.getUrlParam('show-notice')) {
+        // Display notices.
+        var status = 'success' === Module.Utils.getUrlParam('show-notice') ? 'success' : 'error',
+            notice = Module.Utils.getUrlParam('notice'),
+            message = notice && 'undefined' !== optinVars.messages[notice] ? optinVars.messages[notice] : Module.Utils.getUrlParam('notice-message');
+
+        if ('undefined' !== typeof message && message.length) {
+          Module.Notification.open(status, message);
+        }
+      } else if (Module.Utils.getUrlParam('404-downgrade-modal')) {
+        // Display the downgrade to 4.0.4 modal.
+        if (this.$('#hustle-dialog--404-downgrade').length) {
+          SUI.openModal('hustle-dialog--404-downgrade', 'hustle-popup-number');
+        }
+      }
+    },
+    sidenav: function sidenav(e) {
+      var tabName = $(e.target).data('tab');
+
+      if (tabName) {
+        this.tabJump(tabName, true);
+      }
+
+      e.preventDefault();
+    },
+    sidenavMobile: function sidenavMobile(e) {
+      var tabName = $(e.currentTarget).val();
+
+      if (tabName) {
+        this.tabJump(tabName, true);
+      }
+    },
+    tabUpdate: function tabUpdate(e) {
+      var state = e.originalEvent.state;
+
+      if (state) {
+        this.tabJump(state.tabSelected);
+      }
+    },
+    tabJump: function tabJump(tabName, updateHistory) {
+      var $tab = this.$el.find('a[data-tab="' + tabName + '"]'),
+          $sidenav = $tab.closest('.sui-vertical-tabs'),
+          $tabs = $sidenav.find('.sui-vertical-tab'),
+          $content = this.$el.find('.sui-box[data-tab]'),
+          $current = this.$el.find('.sui-box[data-tab="' + tabName + '"]');
+
+      if (updateHistory) {
+        history.pushState({
+          tabSelected: tabName
+        }, 'Hustle Settings', 'admin.php?page=hustle_settings&section=' + tabName);
+      }
+
+      $tabs.removeClass('current');
+      $content.hide();
+      $tab.parent().addClass('current');
+      $current.show();
+    },
+    pagination: function pagination(e) {
+      var $this = this.$(e.target),
+          $wrapper = $this.closest('.sui-pagination-wrap'),
+          $button = $wrapper.find('.sui-button-icon'),
+          $filters = $wrapper.next('.sui-pagination-filter');
+      $button.toggleClass('sui-active');
+      $filters.toggleClass('sui-open');
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    // ============================================================
+    // Handle saving actions
+    handleSave: function handleSave(e) {
+      e.preventDefault();
+      var self = this,
+          $this = $(e.currentTarget),
+          relatedFormId = $this.data('form-id'),
+          actionData = $this.data();
+      var data = new FormData();
+      tinyMCE.triggerSave(); // Grab the form's data if the action has a related form.
+
+      if ('undefined' !== typeof relatedFormId) {
+        var $form = $('#' + relatedFormId);
+
+        if ($form.length) {
+          data = new FormData($form[0]); // Add unchecked checkboxes.
+
+          $.each($form.find('input[type=checkbox]'), function () {
+            var $input = $(this);
+
+            if (!$input.is(':checked')) {
+              data.append($input.attr('name'), '0');
+            }
+          });
+        }
+      }
+
+      $.each(actionData, function (name, value) {
+        return data.append(name, value);
+      });
+      data.append('_ajax_nonce', optinVars.current.save_settings_nonce);
+      data.append('action', 'hustle_save_settings'); // Handle the button behavior.
+
+      $this.addClass('sui-button-onload');
+      $this.prop('disabled', true);
+      $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: data,
+        contentType: false,
+        processData: false
+      }).done(function (res) {
+        // If the response returned actionable data.
+        if (res.data) {
+          // If there's a defined callback, call it.
+          if (res.data.callback && 'undefined' !== self[res.data.callback]) {
+            // This calls the "action{ hustle action }" functions from this view.
+            // For example: actionToggleStatus();
+            self[res.data.callback]($this, res.data, res.success);
+          }
+
+          if (res.data.url) {
+            if (true === res.data.url) {
+              location.reload();
+            } else {
+              location.replace(res.data.url);
+            }
+          } else if (res.data.notification) {
+            Module.Notification.open(res.data.notification.status, res.data.notification.message, res.data.notification.delay);
+          } // Don't remove the 'loading' icon when redirecting/reloading.
+
+
+          if (!res.data.url) {
+            $('.sui-button-onload').removeClass('sui-button-onload');
+            $this.prop('disabled', false);
+          }
+        } else {
+          // Use default actions otherwise.
+          if (res.success) {
+            Module.Notification.open('success', optinVars.messages.settings_saved);
+          } else {
+            Module.Notification.open('error', optinVars.messages.something_went_wrong_reload);
+          }
+
+          $('.sui-button-onload').removeClass('sui-button-onload');
+          $this.prop('disabled', false);
+        }
+      }).fail(function () {
+        $('.sui-button-onload').removeClass('sui-button-onload');
+        $this.prop('disabled', false);
+        Module.Notification.open('error', optinVars.messages.something_went_wrong);
+      });
+    },
+
+    /**
+     * Callback action for when saving reCaptchas.
+     *
+     * @since 4.1.0
+     */
+    actionSaveRecaptcha: function actionSaveRecaptcha() {
+      this.recaptchaView.maybeRenderRecaptchas();
+    },
+    addLoadingState: function addLoadingState(e) {
+      var $button = $(e.currentTarget);
+      $button.addClass('sui-button-onload');
+    }
+  });
+  new viewSettings();
+});

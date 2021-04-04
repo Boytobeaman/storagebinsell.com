@@ -110,6 +110,7 @@
 		<li><?php esc_html_e( 'Mailchimp. Enabled when you activate and setup Mailchimp on Email Collection settings.', 'hustle' ); ?></li>
 		<li><?php esc_html_e( 'MailerLite. Enabled when you activate and setup MailerLite on Email Collection settings.', 'hustle' ); ?></li>
 		<li><?php esc_html_e( 'Mautic. Enabled when you activate and setup Mautic on Email Collection settings.', 'hustle' ); ?></li>
+		<li><?php esc_html_e( 'reCAPTCHA. Enabled when you activate and setup reCAPTCHA on non-Social sharing modules.', 'hustle' ); ?></li>
 		<li><?php esc_html_e( 'Pinterest. Enabled when you activate and setup Pinterest in Social Share Module.', 'hustle' ); ?></li>
 		<li><?php esc_html_e( 'SendGrid. Enabled when you activated and setup SendGrid on Email Collection settings.', 'hustle' ); ?></li>
 		<li><?php esc_html_e( 'SendinBlue. Enabled when you activated and setup SendinBlue on Email Collection settings.', 'hustle' ); ?></li>
@@ -134,6 +135,7 @@
 	<p><?php esc_html_e( 'We use MailerLite to manage our subscriber. Their privacy policy can be found here : https://www.mailerlite.com/privacy-policy.', 'hustle' ); ?></p>
 	<p><?php esc_html_e( 'We use Mautic to manage our subscriber. Their privacy policy can be found here : https://www.mautic.org/privacy-policy/.', 'hustle' ); ?></p>
 	<p><?php esc_html_e( 'We use Pinterest to share media. Their privacy policy can be found here : https://policy.pinterest.com/privacy-policy/.', 'hustle' ); ?></p>
+	<p><?php esc_html_e( 'We use reCAPTCHA to protect your website from fraud and abuse. Their privacy policy can be found here : https://policies.google.com/privacy.', 'hustle' ); ?></p>
 	<p><?php esc_html_e( 'We use SendGrid to manage our subscriber. Their privacy policy can be found here : https://sendgrid.com/policies/privacy/.', 'hustle' ); ?></p>
 	<p><?php esc_html_e( 'We use SendinBlue to manage our subscriber. Their privacy policy can be found here : https://www.sendinblue.com/legal/privacypolicy/.', 'hustle' ); ?></p>
 	<p><?php esc_html_e( 'We use Sendy to manage our subscriber. Their privacy policy can be found here : https://sendy.co/privacy-policy.', 'hustle' ); ?></p>

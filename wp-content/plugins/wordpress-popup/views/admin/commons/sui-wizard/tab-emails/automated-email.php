@@ -28,7 +28,7 @@ ob_start();
 	</div>
 
 	<div class="sui-col-md-6">
-		<select name="auto_email_unit" data-attribute="auto_email_unit">
+		<select name="auto_email_unit" class="sui-select" data-attribute="auto_email_unit">
 			<option value="seconds" <?php selected( $settings['auto_email_unit'], 'seconds' ); ?>><?php esc_html_e( 'seconds', 'hustle' ); ?></option>
 			<option value="minutes" <?php selected( $settings['auto_email_unit'], 'minutes' ); ?>><?php esc_html_e( 'minutes', 'hustle' ); ?></option>
 			<option value="hours" <?php selected( $settings['auto_email_unit'], 'hours' ); ?>><?php esc_html_e( 'hours', 'hustle' ); ?></option>
@@ -67,7 +67,7 @@ ob_start();
 
 		</div>
 
-		<select class="hustle-field-options" data-type="datepicker"></select>
+		<select class="sui-variables hustle-field-options" data-type="datepicker"></select>
 
 	</div>
 
@@ -95,7 +95,7 @@ ob_start();
 
 		</div>
 
-		<select class="hustle-field-options" data-type="timepicker"></select>
+		<select class="sui-variables hustle-field-options" data-type="timepicker"></select>
 
 	</div>
 
@@ -114,7 +114,7 @@ ob_start();
 		</div>
 
 		<div class="sui-col-md-6">
-			<select name="schedule_auto_email_unit" data-attribute="schedule_auto_email_unit">
+			<select name="schedule_auto_email_unit" class="sui-select" data-attribute="schedule_auto_email_unit">
 				<option value="seconds" <?php selected( $settings['schedule_auto_email_unit'], 'seconds' ); ?>><?php esc_html_e( 'seconds', 'hustle' ); ?></option>
 				<option value="minutes" <?php selected( $settings['schedule_auto_email_unit'], 'minutes' ); ?>><?php esc_html_e( 'minutes', 'hustle' ); ?></option>
 				<option value="hours" <?php selected( $settings['schedule_auto_email_unit'], 'hours' ); ?>><?php esc_html_e( 'hours', 'hustle' ); ?></option>
@@ -211,7 +211,7 @@ $options = array(
 								data-attribute="recipient"
 							/>
 
-							<select class="hustle-field-options" data-type="email"></select>
+							<select class="sui-variables" data-type="email"></select>
 
 						</div>
 
