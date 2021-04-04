@@ -22,9 +22,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="profile" href="https://gmpg.org/xfn/11">
-<script data-ad-client="ca-pub-2556371792604486" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
 <?php wp_head(); ?>
 <?php astra_head_bottom(); ?>
 </head>
