@@ -1,5 +1,6 @@
 ;jQuery(function($){
 	$(document).on("click",".product a.woocommerce-LoopProduct-link,.product-inquiry", function(e){
+		e.stopPropagation();
 		e.preventDefault();
 		
 		if($(e.target).hasClass("product-model") || $(e.target).closest(".product-model").length){
