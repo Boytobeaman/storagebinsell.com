@@ -1,9 +1,0 @@
-2021-04-04T05:50:47+00:00 CRITICAL Uncaught Error: Class 'Elementor\Shapes' not found in /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/elements/section.php:909
-Stack trace:
-#0 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.php(1929): Elementor\Element_Section->_register_controls()
-#1 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.php(488): Elementor\Controls_Stack->init_controls()
-#2 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.php(294): Elementor\Controls_Stack->get_stack()
-#3 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.php(2018): Elementor\Controls_Stack->get_controls()
-#4 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.php(1012): Elementor\Controls_Stack->sanitize_settings()
-#5 /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/base/controls-stack.p in /data/wwwroot/www.storagebinsell.com/wp-content/plugins/elementor/includes/elements/section.php on line 909
-
